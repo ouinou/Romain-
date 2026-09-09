@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord acheteur — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="dash-sidebar__logo"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"></a>
+    <nav class="dash-sidebar__nav">
+      <a href="dashboard-acheteur.html" class="is-active"><i data-lucide="layout-dashboard" class="icon icon--sm"></i> Tableau de bord</a>
+      <a href="recherche.html"><i data-lucide="search" class="icon icon--sm"></i> Recherches récentes</a>
+      <a href="#"><i data-lucide="heart" class="icon icon--sm"></i> Favoris</a>
+      <a href="#"><i data-lucide="file-text" class="icon icon--sm"></i> Demandes de devis</a>
+      <a href="messagerie.html"><i data-lucide="message-circle" class="icon icon--sm"></i> Fournisseurs contactés</a>
+      <a href="#"><i data-lucide="shopping-cart" class="icon icon--sm"></i> Commandes</a>
+      <a href="suivi.html"><i data-lucide="truck" class="icon icon--sm"></i> Expéditions</a>
+    </nav>
+    <p class="dash-sidebar__foot">Global Foods · Compte acheteur</p>
+  </aside>
+
+  <div>
+    <header class="dash-topbar">
+      <div>
+        <h3 style="margin:0;">Tableau de bord acheteur</h3>
+        <p class="text-small" style="margin:0;">Bienvenue, Global Foods</p>
+      </div>
+      <div class="flex gap-3" style="align-items:center;">
+        <button class="btn btn--secondary btn--sm"><i data-lucide="bell" class="icon icon--sm"></i></button>
+        <div class="avatar">GF</div>
+      </div>
+    </header>
+
+    <main class="dash-main">
+      <div class="dash-card-list">
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="heart" class="icon"></i></div><div><div class="stat-tile__value">14</div><p class="stat-tile__label">Fournisseurs favoris</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="file-text" class="icon"></i></div><div><div class="stat-tile__value">6</div><p class="stat-tile__label">Devis en attente</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="shopping-cart" class="icon"></i></div><div><div class="stat-tile__value">9</div><p class="stat-tile__label">Commandes en cours</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="truck" class="icon"></i></div><div><div class="stat-tile__value">3</div><p class="stat-tile__label">Expéditions en transit</p></div></div>
+      </div>
+
+      <div class="grid grid-2" style="align-items:flex-start;">
+        <div>
+          <div class="flex-between" style="margin-bottom: var(--space-4);">
+            <h4 style="margin:0;">Fournisseurs favoris</h4>
+            <a href="recherche.html" class="btn--ghost btn text-small">Voir tout <i data-lucide="arrow-right" class="icon icon--sm"></i></a>
+          </div>
+          <div class="grid" style="gap: var(--space-4);">
+            <a href="fournisseur-profil.html" class="card" style="display:flex; gap: var(--space-3); align-items:center;">
+              <img src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop" alt="" style="width:44px;height:44px;border-radius:var(--radius-md);object-fit:cover;">
+              <div style="flex:1;"><p style="margin:0;font-weight:600;color:var(--color-heading);font-size:var(--fs-small);">Entreprise ABC</p><p class="text-xsmall" style="margin:0;color:#9CA3AF;">Cameroun · 4,8 ★</p></div>
+              <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i></span>
+            </a>
+            <a href="fournisseur-profil.html" class="card" style="display:flex; gap: var(--space-3); align-items:center;">
+              <img src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=200&auto=format&fit=crop" alt="" style="width:44px;height:44px;border-radius:var(--radius-md);object-fit:cover;">
+              <div style="flex:1;"><p style="margin:0;font-weight:600;color:var(--color-heading);font-size:var(--fs-small);">Kivu AgroExport</p><p class="text-xsmall" style="margin:0;color:#9CA3AF;">RD Congo · 4,9 ★</p></div>
+              <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i></span>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex-between" style="margin-bottom: var(--space-4);">
+            <h4 style="margin:0;">Expéditions en cours</h4>
+            <a href="suivi.html" class="btn--ghost btn text-small">Suivre <i data-lucide="arrow-right" class="icon icon--sm"></i></a>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Commande</th><th>Fournisseur</th><th>Statut</th></tr></thead>
+              <tbody>
+                <tr><td>#AC-1042</td><td>Entreprise ABC</td><td><span class="badge badge--shipping">En transit</span></td></tr>
+                <tr><td>#AC-1039</td><td>Ivoire Textiles</td><td><span class="badge badge--verified">Livré</span></td></tr>
+                <tr><td>#AC-1031</td><td>Sahel Industries</td><td><span class="badge badge--new">Préparation</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

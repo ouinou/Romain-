@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recherche — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link>Accueil</a>
+      <a href="recherche.html" data-nav-link class="is-active">Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link>Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link>Expédition</a>
+      <a href="a-propos.html" data-nav-link>À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head">
+      <img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px">
+      <button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button>
+    </div>
+    <nav class="mobile-menu__links">
+      <a href="index.html">Accueil</a>
+      <a href="recherche.html" class="is-active">Fournisseurs</a>
+      <a href="recherche.html?type=produits">Produits</a>
+      <a href="dashboard-acheteur.html">Acheteurs</a>
+      <a href="suivi.html">Expédition</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="mobile-menu__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--block">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--block">Créer un compte</a>
+    </div>
+  </div>
+</div>
+
+<section class="section--alt" style="padding-block: var(--space-10);">
+  <div class="container">
+    <form class="search-bar" action="recherche.html" method="get">
+      <label class="visually-hidden" for="q">Que recherchez-vous ?</label>
+      <div class="search-bar__field">
+        <i data-lucide="search" class="icon"></i>
+        <input id="q" name="q" type="text" placeholder="Produit / Fournisseur / Service" value="Café vert">
+      </div>
+      <div class="search-bar__field">
+        <i data-lucide="map-pin" class="icon"></i>
+        <input name="lieu" type="text" placeholder="Pays / Ville">
+      </div>
+      <button type="submit" class="btn btn--primary">Rechercher</button>
+    </form>
+  </div>
+</section>
+
+<section class="section" style="padding-block: var(--space-10);">
+  <div class="container search-layout">
+
+    <!-- FILTRES -->
+    <aside class="filters" aria-label="Filtres de recherche">
+      <div class="filters__group">
+        <h4>Catégorie</h4>
+        <label class="checkbox-row"><input type="checkbox" checked> Agroalimentaire <span class="count" style="margin-left:auto;">312</span></label>
+        <label class="checkbox-row"><input type="checkbox"> Agriculture <span class="count" style="margin-left:auto;">198</span></label>
+        <label class="checkbox-row"><input type="checkbox"> Industrie <span class="count" style="margin-left:auto;">140</span></label>
+        <label class="checkbox-row"><input type="checkbox"> Textile <span class="count" style="margin-left:auto;">87</span></label>
+      </div>
+      <div class="filters__group">
+        <h4>Pays</h4>
+        <label class="checkbox-row"><input type="checkbox" checked> Cameroun <span class="count" style="margin-left:auto;">210</span></label>
+        <label class="checkbox-row"><input type="checkbox"> Sénégal <span class="count" style="margin-left:auto;">156</span></label>
+        <label class="checkbox-row"><input type="checkbox"> Côte d'Ivoire <span class="count" style="margin-left:auto;">134</span></label>
+        <label class="checkbox-row"><input type="checkbox"> RD Congo <span class="count" style="margin-left:auto;">98</span></label>
+      </div>
+      <div class="filters__group">
+        <h4>Type d'entreprise</h4>
+        <label class="radio-row"><input type="radio" name="type-ent"> Fabricant</label>
+        <label class="radio-row"><input type="radio" name="type-ent"> Grossiste</label>
+        <label class="radio-row"><input type="radio" name="type-ent" checked> Tous</label>
+      </div>
+      <div class="filters__group">
+        <h4>Fiabilité</h4>
+        <label class="checkbox-row"><input type="checkbox" checked> Fournisseur vérifié</label>
+        <label class="checkbox-row"><input type="checkbox"> Note 4★ et plus</label>
+        <label class="checkbox-row"><input type="checkbox"> Disponible maintenant</label>
+      </div>
+      <div class="filters__group">
+        <button class="btn btn--secondary btn--block btn--sm">Réinitialiser les filtres</button>
+      </div>
+    </aside>
+
+    <!-- RÉSULTATS -->
+    <div>
+      <div class="results-toolbar">
+        <span class="results-toolbar__count">248 fournisseurs trouvés</span>
+        <div class="results-toolbar__sort">
+          <label for="sort">Trier par</label>
+          <select id="sort" class="select" style="width:auto; padding-right:36px;">
+            <option>Pertinence</option>
+            <option>Note</option>
+            <option>Nouveauté</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <a href="fournisseur-profil.html" class="card" data-reveal>
+          <div class="supplier-card__top">
+            <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop" alt="">
+            <div><h4 class="supplier-card__name">Entreprise ABC</h4><p class="supplier-card__meta">Fabricant • Cameroun</p></div>
+          </div>
+          <div class="supplier-card__badges">
+            <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+            <span class="badge badge--premium">Premium</span>
+          </div>
+          <div class="supplier-card__stats">
+            <span class="rating"><i data-lucide="star" class="icon"></i> 4,8 <span class="rating__count">(96 avis)</span></span>
+            <strong>120 produits</strong>
+          </div>
+        </a>
+
+        <a href="fournisseur-profil.html" class="card" data-reveal>
+          <div class="supplier-card__top">
+            <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200&auto=format&fit=crop" alt="">
+            <div><h4 class="supplier-card__name">Sahel Industries</h4><p class="supplier-card__meta">Grossiste • Sénégal</p></div>
+          </div>
+          <div class="supplier-card__badges">
+            <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+            <span class="badge badge--new">Nouveau</span>
+          </div>
+          <div class="supplier-card__stats">
+            <span class="rating"><i data-lucide="star" class="icon"></i> 4,6 <span class="rating__count">(41 avis)</span></span>
+            <strong>58 produits</strong>
+          </div>
+        </a>
+
+        <a href="fournisseur-profil.html" class="card" data-reveal>
+          <div class="supplier-card__top">
+            <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=200&auto=format&fit=crop" alt="">
+            <div><h4 class="supplier-card__name">Kivu AgroExport</h4><p class="supplier-card__meta">Producteur • RD Congo</p></div>
+          </div>
+          <div class="supplier-card__badges">
+            <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+          </div>
+          <div class="supplier-card__stats">
+            <span class="rating"><i data-lucide="star" class="icon"></i> 4,9 <span class="rating__count">(203 avis)</span></span>
+            <strong>84 produits</strong>
+          </div>
+        </a>
+
+        <a href="fournisseur-profil.html" class="card" data-reveal>
+          <div class="supplier-card__top">
+            <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1523419409543-a5e549c1faa8?q=80&w=200&auto=format&fit=crop" alt="">
+            <div><h4 class="supplier-card__name">Ivoire Textiles</h4><p class="supplier-card__meta">Fabricant • Côte d'Ivoire</p></div>
+          </div>
+          <div class="supplier-card__badges">
+            <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+          </div>
+          <div class="supplier-card__stats">
+            <span class="rating"><i data-lucide="star" class="icon"></i> 4,4 <span class="rating__count">(28 avis)</span></span>
+            <strong>32 produits</strong>
+          </div>
+        </a>
+      </div>
+
+      <nav class="pagination" aria-label="Pagination des résultats">
+        <a href="#" class="pagination__item"><i data-lucide="chevron-left" class="icon icon--sm"></i></a>
+        <a href="#" class="pagination__item is-active">1</a>
+        <a href="#" class="pagination__item">2</a>
+        <a href="#" class="pagination__item">3</a>
+        <a href="#" class="pagination__item"><i data-lucide="chevron-right" class="icon icon--sm"></i></a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect">
+        <p>Connecter les marchés, simplifier les échanges.</p>
+      </div>
+      <div><h5>Plateforme</h5><div class="footer__links"><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a></div></div>
+      <div><h5>Entreprise</h5><div class="footer__links"><a href="a-propos.html">À propos</a><a href="a-propos.html#contact">Contact</a><a href="a-propos.html#faq">FAQ</a></div></div>
+      <div><h5>Légal</h5><div class="footer__links"><a href="#">Conditions d'utilisation</a><a href="#">Confidentialité</a><a href="#">Mentions légales</a></div></div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 AfriTrade Connect. Tous droits réservés.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

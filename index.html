@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AfriTrade Connect — Connecter les marchés, simplifier les échanges</title>
+<meta name="description" content="AfriTrade Connect met en relation fournisseurs, acheteurs et agences d'expédition sur une seule plateforme B2B.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link class="is-active">Accueil</a>
+      <a href="recherche.html?type=fournisseurs" data-nav-link>Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link>Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link>Expédition</a>
+      <a href="a-propos.html" data-nav-link>À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu">
+      <i data-lucide="menu" class="icon"></i>
+    </button>
+  </div>
+</header>
+
+<!-- Menu mobile -->
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head">
+      <img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px">
+      <button class="mobile-menu__close" data-menu-close aria-label="Fermer le menu"><i data-lucide="x" class="icon"></i></button>
+    </div>
+    <nav class="mobile-menu__links">
+      <a href="index.html" class="is-active">Accueil</a>
+      <a href="recherche.html?type=fournisseurs">Fournisseurs</a>
+      <a href="recherche.html?type=produits">Produits</a>
+      <a href="dashboard-acheteur.html">Acheteurs</a>
+      <a href="suivi.html">Expédition</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="mobile-menu__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--block">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--block">Créer un compte</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container hero__grid">
+    <div data-reveal>
+      <span class="eyebrow">Plateforme B2B africaine</span>
+      <h1 class="hero__title">Trouvez. Connectez. Échangez.</h1>
+      <p class="hero__subtitle">AfriTrade Connect met en relation fournisseurs, acheteurs et acteurs de l'expédition sur une seule plateforme.</p>
+      <div class="hero__ctas">
+        <a href="recherche.html?type=fournisseurs" class="btn btn--primary btn--lg">Explorer les fournisseurs</a>
+        <a href="inscription.html?role=fournisseur" class="btn btn--secondary btn--lg">Publier mon entreprise</a>
+      </div>
+
+      <form class="search-bar" action="recherche.html" method="get">
+        <label class="visually-hidden" for="hero-q">Que recherchez-vous ?</label>
+        <div class="search-bar__field">
+          <i data-lucide="search" class="icon"></i>
+          <input id="hero-q" name="q" type="text" placeholder="Produit / Fournisseur / Service">
+        </div>
+        <div class="search-bar__field">
+          <i data-lucide="map-pin" class="icon"></i>
+          <input name="lieu" type="text" placeholder="Pays / Ville">
+        </div>
+        <button type="submit" class="btn btn--primary">Rechercher</button>
+      </form>
+
+      <ul class="hero__trust">
+        <li><i data-lucide="shield-check" class="icon"></i> Fournisseurs vérifiés</li>
+        <li><i data-lucide="badge-check" class="icon"></i> Transactions sécurisées</li>
+        <li><i data-lucide="ship" class="icon"></i> Expédition suivie</li>
+      </ul>
+    </div>
+    <div class="hero__media" data-reveal>
+      <img src="https://images.unsplash.com/photo-1553413077-190983b6ba43?q=80&w=1200&auto=format&fit=crop" alt="Entrepôt et échanges commerciaux en Afrique">
+    </div>
+  </div>
+</section>
+
+<!-- ============ CATÉGORIES ============ -->
+<section class="section">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Secteurs</span>
+      <h2>Explorez par catégorie</h2>
+      <p>Parcourez les filières les plus actives sur la plateforme.</p>
+    </div>
+    <div class="grid grid-4">
+      <a href="recherche.html?categorie=agriculture" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="wheat" class="icon icon--lg"></i></div>
+        <h4>Agriculture</h4>
+        <p class="text-small">Cultures, semences, matériel</p>
+      </a>
+      <a href="recherche.html?categorie=agroalimentaire" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="wheat-off" class="icon icon--lg"></i></div>
+        <h4>Agroalimentaire</h4>
+        <p class="text-small">Transformation, distribution</p>
+      </a>
+      <a href="recherche.html?categorie=industrie" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="factory" class="icon icon--lg"></i></div>
+        <h4>Industrie</h4>
+        <p class="text-small">Équipements, machines</p>
+      </a>
+      <a href="recherche.html?categorie=construction" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="building-2" class="icon icon--lg"></i></div>
+        <h4>Construction</h4>
+        <p class="text-small">Matériaux, BTP</p>
+      </a>
+      <a href="recherche.html?categorie=electronique" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="cpu" class="icon icon--lg"></i></div>
+        <h4>Électronique</h4>
+        <p class="text-small">Composants, appareils</p>
+      </a>
+      <a href="recherche.html?categorie=textile" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="shirt" class="icon icon--lg"></i></div>
+        <h4>Textile</h4>
+        <p class="text-small">Tissus, confection</p>
+      </a>
+      <a href="recherche.html?categorie=services" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="briefcase" class="icon icon--lg"></i></div>
+        <h4>Services</h4>
+        <p class="text-small">Conseil, prestations</p>
+      </a>
+      <a href="recherche.html?categorie=logistique" class="card category-card" data-reveal>
+        <div class="category-card__icon"><i data-lucide="truck" class="icon icon--lg"></i></div>
+        <h4>Logistique</h4>
+        <p class="text-small">Transport, entreposage</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOURNISSEURS ============ -->
+<section class="section section--alt">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: var(--space-10); flex-wrap: wrap; gap: var(--space-4);">
+      <div class="section-head" style="margin-bottom:0;">
+        <span class="eyebrow">Confiance</span>
+        <h2>Découvrez des fournisseurs fiables</h2>
+        <p>Des entreprises vérifiées, évaluées par la communauté AfriTrade Connect.</p>
+      </div>
+      <a href="recherche.html?type=fournisseurs" class="btn btn--secondary">Voir tous les fournisseurs</a>
+    </div>
+
+    <div class="grid grid-3">
+      <a href="fournisseur-profil.html" class="card" data-reveal>
+        <div class="supplier-card__top">
+          <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop" alt="Logo Entreprise ABC">
+          <div>
+            <h4 class="supplier-card__name">Entreprise ABC</h4>
+            <p class="supplier-card__meta">Fabricant • Cameroun</p>
+          </div>
+        </div>
+        <div class="supplier-card__badges">
+          <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+          <span class="badge badge--premium">Premium</span>
+        </div>
+        <div class="supplier-card__stats">
+          <span class="rating"><i data-lucide="star" class="icon"></i> 4,8 <span class="rating__count">(96 avis)</span></span>
+          <strong>120 produits</strong>
+        </div>
+      </a>
+
+      <a href="fournisseur-profil.html" class="card" data-reveal>
+        <div class="supplier-card__top">
+          <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200&auto=format&fit=crop" alt="Logo Sahel Industries">
+          <div>
+            <h4 class="supplier-card__name">Sahel Industries</h4>
+            <p class="supplier-card__meta">Grossiste • Sénégal</p>
+          </div>
+        </div>
+        <div class="supplier-card__badges">
+          <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+          <span class="badge badge--new">Nouveau</span>
+        </div>
+        <div class="supplier-card__stats">
+          <span class="rating"><i data-lucide="star" class="icon"></i> 4,6 <span class="rating__count">(41 avis)</span></span>
+          <strong>58 produits</strong>
+        </div>
+      </a>
+
+      <a href="fournisseur-profil.html" class="card" data-reveal>
+        <div class="supplier-card__top">
+          <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=200&auto=format&fit=crop" alt="Logo Kivu AgroExport">
+          <div>
+            <h4 class="supplier-card__name">Kivu AgroExport</h4>
+            <p class="supplier-card__meta">Producteur • RD Congo</p>
+          </div>
+        </div>
+        <div class="supplier-card__badges">
+          <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+        </div>
+        <div class="supplier-card__stats">
+          <span class="rating"><i data-lucide="star" class="icon"></i> 4,9 <span class="rating__count">(203 avis)</span></span>
+          <strong>84 produits</strong>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMMENT ÇA MARCHE ============ -->
+<section class="section">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Simple et rapide</span>
+      <h2>Comment ça marche</h2>
+    </div>
+    <div class="steps">
+      <div class="steps__list">
+        <div class="step step--active" data-reveal>
+          <div class="step__number">01</div>
+          <h4>Recherchez</h4>
+          <p>Trouvez un fournisseur ou un produit.</p>
+        </div>
+        <div class="step" data-reveal>
+          <div class="step__number">02</div>
+          <h4>Comparez</h4>
+          <p>Consultez les profils, produits et évaluations.</p>
+        </div>
+        <div class="step" data-reveal>
+          <div class="step__number">03</div>
+          <h4>Connectez-vous</h4>
+          <p>Contactez directement votre partenaire.</p>
+        </div>
+        <div class="step" data-reveal>
+          <div class="step__number">04</div>
+          <h4>Expédiez</h4>
+          <p>Trouvez une solution logistique et suivez votre expédition.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXPÉDITION ============ -->
+<section class="section shipping-section">
+  <div class="container shipping-section__grid">
+    <div data-reveal>
+      <span class="eyebrow" style="color:#FFB874;">Logistique</span>
+      <h2>Votre commerce ne s'arrête pas à la commande.</h2>
+      <p>Trouvez également les professionnels de l'expédition et suivez vos marchandises.</p>
+      <div class="shipping-section__icons">
+        <span><i data-lucide="truck" class="icon icon--sm"></i> Transport routier</span>
+        <span><i data-lucide="ship" class="icon icon--sm"></i> Fret maritime</span>
+        <span><i data-lucide="package" class="icon icon--sm"></i> Suivi de colis</span>
+        <span><i data-lucide="warehouse" class="icon icon--sm"></i> Entreposage</span>
+      </div>
+      <a href="recherche.html?type=expedition" class="btn btn--primary btn--lg">Trouver une agence d'expédition</a>
+    </div>
+    <div class="shipping-section__media" data-reveal>
+      <img src="https://images.unsplash.com/photo-1494412651409-8963ce7935a7?q=80&w=1200&auto=format&fit=crop" alt="Conteneurs et navire de fret">
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="section">
+  <div class="container">
+    <div class="card" style="text-align:center; padding: var(--space-16) var(--space-6);" data-reveal>
+      <h2 style="margin-bottom: var(--space-3);">Prêt à développer votre activité ?</h2>
+      <p style="max-width:520px; margin-inline:auto;">Rejoignez des centaines d'entreprises qui commercent déjà sur AfriTrade Connect.</p>
+      <div class="hero__ctas" style="justify-content:center; margin-top: var(--space-6); margin-bottom:0;">
+        <a href="inscription.html" class="btn btn--primary btn--lg">Créer un compte gratuit</a>
+        <a href="a-propos.html" class="btn btn--secondary btn--lg">En savoir plus</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer" id="site-footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect">
+        <p>Connecter les marchés, simplifier les échanges.</p>
+        <div class="footer__social">
+          <a href="#" aria-label="Facebook"><i data-lucide="facebook" class="icon icon--sm"></i></a>
+          <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin" class="icon icon--sm"></i></a>
+          <a href="#" aria-label="Twitter / X"><i data-lucide="twitter" class="icon icon--sm"></i></a>
+          <a href="#" aria-label="Instagram"><i data-lucide="instagram" class="icon icon--sm"></i></a>
+        </div>
+      </div>
+      <div>
+        <h5>Plateforme</h5>
+        <div class="footer__links">
+          <a href="recherche.html?type=fournisseurs">Fournisseurs</a>
+          <a href="recherche.html?type=produits">Produits</a>
+          <a href="dashboard-acheteur.html">Acheteurs</a>
+          <a href="suivi.html">Expédition</a>
+        </div>
+      </div>
+      <div>
+        <h5>Entreprise</h5>
+        <div class="footer__links">
+          <a href="a-propos.html">À propos</a>
+          <a href="a-propos.html#contact">Contact</a>
+          <a href="a-propos.html#partenaires">Partenaires</a>
+          <a href="a-propos.html#faq">FAQ</a>
+        </div>
+      </div>
+      <div>
+        <h5>Légal</h5>
+        <div class="footer__links">
+          <a href="#">Conditions d'utilisation</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">Mentions légales</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 AfriTrade Connect. Tous droits réservés.</span>
+      <div class="footer__bottom-links">
+        <span><i data-lucide="mail" class="icon icon--sm"></i> contact@afritradeconnect.com</span>
+        <span><i data-lucide="map-pin" class="icon icon--sm"></i> Douala, Cameroun</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

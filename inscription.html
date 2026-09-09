@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer un compte — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="auth-shell">
+  <div class="auth-shell__visual">
+    <img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect" style="height:34px;">
+    <div>
+      <h2 style="color:#fff; max-width:380px;">Trouvez. Connectez. Échangez.</h2>
+      <p style="color:rgba(255,255,255,0.7); max-width:380px;">Créez votre compte gratuit en quelques minutes et publiez votre entreprise ou votre besoin d'achat.</p>
+    </div>
+    <ul style="color:rgba(255,255,255,0.75); font-size: var(--fs-small); display:flex; flex-direction:column; gap:12px;">
+      <li class="flex gap-2" style="align-items:center;"><i data-lucide="badge-check" class="icon icon--sm"></i> Profil vérifié gratuitement</li>
+      <li class="flex gap-2" style="align-items:center;"><i data-lucide="message-circle" class="icon icon--sm"></i> Messagerie directe avec vos partenaires</li>
+    </ul>
+  </div>
+  <div class="auth-shell__form">
+    <div class="auth-card">
+      <a href="index.html" class="auth-card__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+      <h2 style="font-size: var(--fs-h3);">Créer un compte</h2>
+      <p style="margin-bottom: var(--space-6);">Choisissez le profil qui correspond à votre activité.</p>
+
+      <div class="grid grid-3" style="margin-bottom: var(--space-6);">
+        <label class="card" style="text-align:center; padding: var(--space-4); cursor:pointer; border-color: var(--color-orange);">
+          <input type="radio" name="role" checked style="display:none;">
+          <i data-lucide="building-2" class="icon icon--lg" style="margin:0 auto 8px; color:var(--color-orange);"></i>
+          <span class="text-small" style="font-weight:600; color:var(--color-heading);">Fournisseur</span>
+        </label>
+        <label class="card" style="text-align:center; padding: var(--space-4); cursor:pointer;">
+          <input type="radio" name="role" style="display:none;">
+          <i data-lucide="shopping-cart" class="icon icon--lg" style="margin:0 auto 8px; color:var(--color-navy);"></i>
+          <span class="text-small" style="font-weight:600; color:var(--color-heading);">Acheteur</span>
+        </label>
+        <label class="card" style="text-align:center; padding: var(--space-4); cursor:pointer;">
+          <input type="radio" name="role" style="display:none;">
+          <i data-lucide="truck" class="icon icon--lg" style="margin:0 auto 8px; color:var(--color-navy);"></i>
+          <span class="text-small" style="font-weight:600; color:var(--color-heading);">Agence d'expédition</span>
+        </label>
+      </div>
+
+      <form>
+        <div class="form-group">
+          <label for="company">Nom de l'entreprise</label>
+          <input id="company" class="input" type="text" placeholder="Ex. Entreprise ABC">
+        </div>
+        <div class="form-group">
+          <label for="email2">Adresse e-mail professionnelle</label>
+          <input id="email2" class="input" type="email" placeholder="vous@entreprise.com">
+        </div>
+        <div class="form-group">
+          <label for="password2">Mot de passe</label>
+          <input id="password2" class="input" type="password" placeholder="8 caractères minimum">
+        </div>
+        <label class="checkbox-row" style="margin-bottom: var(--space-6);"><input type="checkbox"> J'accepte les conditions d'utilisation</label>
+        <button type="submit" class="btn btn--primary btn--block btn--lg">Créer mon compte</button>
+      </form>
+
+      <div class="auth-divider">ou</div>
+      <p class="text-small" style="text-align:center;">Déjà inscrit ? <a href="connexion.html" style="color:var(--color-orange); font-weight:600;">Se connecter</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

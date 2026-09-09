@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord fournisseur — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="dash-sidebar__logo"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"></a>
+    <nav class="dash-sidebar__nav">
+      <a href="dashboard-fournisseur.html" class="is-active"><i data-lucide="layout-dashboard" class="icon icon--sm"></i> Tableau de bord</a>
+      <a href="#"><i data-lucide="package" class="icon icon--sm"></i> Produits</a>
+      <a href="#"><i data-lucide="inbox" class="icon icon--sm"></i> Demandes reçues</a>
+      <a href="messagerie.html"><i data-lucide="message-circle" class="icon icon--sm"></i> Messages</a>
+      <a href="#"><i data-lucide="bar-chart-3" class="icon icon--sm"></i> Statistiques</a>
+      <a href="#"><i data-lucide="star" class="icon icon--sm"></i> Avis</a>
+      <a href="#"><i data-lucide="book-open" class="icon icon--sm"></i> Catalogue</a>
+    </nav>
+    <p class="dash-sidebar__foot">Entreprise ABC · Compte Premium</p>
+  </aside>
+
+  <div>
+    <header class="dash-topbar">
+      <div>
+        <h3 style="margin:0;">Tableau de bord fournisseur</h3>
+        <p class="text-small" style="margin:0;">Bienvenue, Entreprise ABC</p>
+      </div>
+      <div class="flex gap-3" style="align-items:center;">
+        <button class="btn btn--secondary btn--sm"><i data-lucide="bell" class="icon icon--sm"></i></button>
+        <div class="avatar">EA</div>
+      </div>
+    </header>
+
+    <main class="dash-main">
+      <div class="dash-card-list">
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="package" class="icon"></i></div><div><div class="stat-tile__value">120</div><p class="stat-tile__label">Produits actifs</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="inbox" class="icon"></i></div><div><div class="stat-tile__value">18</div><p class="stat-tile__label">Demandes reçues</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="message-circle" class="icon"></i></div><div><div class="stat-tile__value">7</div><p class="stat-tile__label">Messages non lus</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="star" class="icon"></i></div><div><div class="stat-tile__value">4,8</div><p class="stat-tile__label">Note moyenne</p></div></div>
+      </div>
+
+      <div class="flex-between" style="margin-bottom: var(--space-4);">
+        <h4 style="margin:0;">Demandes récentes</h4>
+        <a href="#" class="btn--ghost btn text-small">Voir tout <i data-lucide="arrow-right" class="icon icon--sm"></i></a>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Acheteur</th><th>Produit</th><th>Quantité</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Moussa K.</td><td>Café vert Arabica</td><td>2 t</td><td><span class="badge badge--new">Nouvelle</span></td><td><a href="#" class="btn btn--secondary btn--sm">Répondre</a></td></tr>
+            <tr><td>Aïcha S.</td><td>Huile de palme raffinée</td><td>1,5 t</td><td><span class="badge badge--available">En cours</span></td><td><a href="#" class="btn btn--secondary btn--sm">Répondre</a></td></tr>
+            <tr><td>Import Sarl</td><td>Fèves de cacao séchées</td><td>5 t</td><td><span class="badge badge--verified">Acceptée</span></td><td><a href="#" class="btn btn--secondary btn--sm">Voir</a></td></tr>
+            <tr><td>Global Foods</td><td>Café vert Arabica</td><td>3 t</td><td><span class="badge badge--error">Refusée</span></td><td><a href="#" class="btn btn--secondary btn--sm">Voir</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Café vert Arabica — Produit — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link>Accueil</a>
+      <a href="recherche.html" data-nav-link>Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link class="is-active">Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link>Expédition</a>
+      <a href="a-propos.html" data-nav-link>À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head"><img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px"><button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button></div>
+    <nav class="mobile-menu__links">
+      <a href="index.html">Accueil</a><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits" class="is-active">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a><a href="a-propos.html">À propos</a>
+    </nav>
+  </div>
+</div>
+
+<div class="container" style="padding-top: var(--space-6);">
+  <p class="text-small" style="color:#9CA3AF;"><a href="index.html" style="color:inherit;">Accueil</a> / <a href="recherche.html?type=produits" style="color:inherit;">Produits</a> / <a href="recherche.html?categorie=agroalimentaire" style="color:inherit;">Agroalimentaire</a> / Café vert Arabica</p>
+</div>
+
+<section class="section" style="padding-top: var(--space-6);">
+  <div class="container">
+    <div class="grid grid-2" style="align-items:flex-start;">
+      <!-- Média -->
+      <div class="card" style="padding:0; overflow:hidden;" data-reveal>
+        <div style="aspect-ratio:4/3; position:relative;">
+          <span class="badge badge--available" style="position:absolute; top:16px; left:16px; z-index:1;">Disponible</span>
+          <img src="https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=1200&auto=format&fit=crop" alt="Sacs de café vert Arabica" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+      </div>
+
+      <!-- Infos -->
+      <div data-reveal>
+        <span class="eyebrow">Agroalimentaire</span>
+        <h1 style="font-size: var(--fs-h2);">Café vert Arabica — Grade AA</h1>
+        <div class="flex gap-4" style="align-items:center; margin-bottom: var(--space-5); flex-wrap:wrap;">
+          <span class="rating"><i data-lucide="star" class="icon"></i> 4,7 <span class="rating__count">(64 avis)</span></span>
+          <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Fournisseur vérifié</span>
+        </div>
+
+        <a href="fournisseur-profil.html" class="card" style="display:flex; align-items:center; gap: var(--space-3); padding: var(--space-4); margin-bottom: var(--space-6);">
+          <img src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=200&auto=format&fit=crop" alt="" style="width:44px;height:44px;border-radius:var(--radius-md);object-fit:cover;">
+          <div style="flex:1;">
+            <p style="margin:0; font-weight:600; color:var(--color-heading); font-size: var(--fs-small);">Kivu AgroExport</p>
+            <p class="text-xsmall" style="margin:0; color:#9CA3AF;"><i data-lucide="map-pin" class="icon icon--sm" style="display:inline;vertical-align:-2px;"></i> Bukavu, RD Congo</p>
+          </div>
+          <i data-lucide="chevron-right" class="icon" style="color:#9CA3AF;"></i>
+        </a>
+
+        <div class="card" style="margin-bottom: var(--space-6);">
+          <div class="flex-between" style="margin-bottom: var(--space-4);">
+            <span class="text-small" style="color:var(--color-text);">Prix</span>
+            <strong style="color:var(--color-heading); font-size:1.25rem;">Sur devis</strong>
+          </div>
+          <div class="flex-between" style="margin-bottom: var(--space-4);">
+            <span class="text-small">Quantité minimale</span>
+            <span class="text-small" style="font-weight:600; color:var(--color-heading);">500 kg</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-small">Délai de production</span>
+            <span class="text-small" style="font-weight:600; color:var(--color-heading);">10–15 jours</span>
+          </div>
+        </div>
+
+        <div class="flex gap-3" style="flex-wrap:wrap;">
+          <a href="produit.html" class="btn btn--secondary btn--lg">Voir le produit</a>
+          <a href="messagerie.html" class="btn btn--primary btn--lg">Contacter le fournisseur</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglets détail -->
+    <div style="margin-top: var(--space-16);">
+      <div class="tabs" data-tabs="produit">
+        <button class="tabs__item is-active" data-tab="desc">Description</button>
+        <button class="tabs__item" data-tab="specs">Caractéristiques</button>
+        <button class="tabs__item" data-tab="avis">Avis (64)</button>
+      </div>
+      <div class="tab-panel" data-tab-panel="desc" data-tabs-target="produit">
+        <p style="max-width:720px;">Café vert Arabica grade AA, cultivé en altitude dans la région du Kivu. Tri manuel, séchage lent, taux d'humidité contrôlé. Conditionnement en sacs de jute de 60 kg, adapté à l'export.</p>
+        <p style="max-width:720px;">Limite à connaître : les volumes disponibles varient selon la saison de récolte — le fournisseur confirme la disponibilité exacte après contact.</p>
+      </div>
+      <div class="tab-panel" data-tab-panel="specs" data-tabs-target="produit" hidden>
+        <div class="table-wrap">
+          <table class="table">
+            <tbody>
+              <tr><th>Origine</th><td>Kivu, RD Congo</td></tr>
+              <tr><th>Conditionnement</th><td>Sac de jute, 60 kg</td></tr>
+              <tr><th>Certification</th><td>Commerce équitable (en cours)</td></tr>
+              <tr><th>Capacité d'export mensuelle</th><td>~40 tonnes</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-panel" data-tab-panel="avis" data-tabs-target="produit" hidden>
+        <div class="card review-card" style="max-width:560px;">
+          <div class="review-card__head">
+            <div class="avatar">MK</div>
+            <div><p class="review-card__name">Moussa K.</p><span class="text-xsmall review-card__date">Acheteur vérifié — il y a 2 mois</span></div>
+          </div>
+          <span class="rating" style="margin-bottom:8px;"><i data-lucide="star" class="icon"></i><i data-lucide="star" class="icon"></i><i data-lucide="star" class="icon"></i><i data-lucide="star" class="icon"></i><i data-lucide="star" class="icon"></i></span>
+          <p class="text-small" style="margin:0;">Qualité constante sur trois commandes, communication rapide.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produits similaires -->
+    <div style="margin-top: var(--space-16);">
+      <h3 style="margin-bottom: var(--space-6);">Produits similaires</h3>
+      <div class="grid grid-3">
+        <div class="card product-card">
+          <div class="product-card__image"><span class="badge badge--new">Nouveau</span><img src="https://images.unsplash.com/photo-1524350876685-274059332603?q=80&w=600&auto=format&fit=crop" alt=""></div>
+          <div class="product-card__body">
+            <span class="product-card__category">Agroalimentaire</span>
+            <h4 class="product-card__name">Cacao en fèves premium</h4>
+            <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Côte d'Ivoire</p>
+            <div class="product-card__footer"><span class="product-card__price">Demander un devis</span></div>
+          </div>
+        </div>
+        <div class="card product-card">
+          <div class="product-card__image"><img src="https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=600&auto=format&fit=crop" alt=""></div>
+          <div class="product-card__body">
+            <span class="product-card__category">Agroalimentaire</span>
+            <h4 class="product-card__name">Noix de cajou brutes</h4>
+            <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Sénégal</p>
+            <div class="product-card__footer"><span class="product-card__price">Demander un devis</span></div>
+          </div>
+        </div>
+        <div class="card product-card">
+          <div class="product-card__image"><img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=600&auto=format&fit=crop" alt=""></div>
+          <div class="product-card__body">
+            <span class="product-card__category">Agroalimentaire</span>
+            <h4 class="product-card__name">Huile de palme raffinée</h4>
+            <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Cameroun</p>
+            <div class="product-card__footer"><span class="product-card__price">Demander un devis</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"><p>Connecter les marchés, simplifier les échanges.</p></div>
+      <div><h5>Plateforme</h5><div class="footer__links"><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a></div></div>
+      <div><h5>Entreprise</h5><div class="footer__links"><a href="a-propos.html">À propos</a><a href="a-propos.html#contact">Contact</a><a href="a-propos.html#faq">FAQ</a></div></div>
+      <div><h5>Légal</h5><div class="footer__links"><a href="#">Conditions d'utilisation</a><a href="#">Confidentialité</a><a href="#">Mentions légales</a></div></div>
+    </div>
+    <div class="footer__bottom"><span>© 2026 AfriTrade Connect. Tous droits réservés.</span></div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

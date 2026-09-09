@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entreprise ABC — Profil fournisseur — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link>Accueil</a>
+      <a href="recherche.html" data-nav-link class="is-active">Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link>Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link>Expédition</a>
+      <a href="a-propos.html" data-nav-link>À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head"><img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px"><button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button></div>
+    <nav class="mobile-menu__links">
+      <a href="index.html">Accueil</a><a href="recherche.html" class="is-active">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a><a href="a-propos.html">À propos</a>
+    </nav>
+  </div>
+</div>
+
+<!-- HEADER PROFIL -->
+<div class="profile-header">
+  <div class="container">
+    <div class="profile-header__cover"></div>
+    <div class="profile-header__row">
+      <img class="profile-header__logo" src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop" alt="Logo Entreprise ABC">
+      <div class="profile-header__info">
+        <div class="flex gap-3" style="align-items:center; flex-wrap:wrap;">
+          <h1 style="font-size: var(--fs-h3); margin:0;">Entreprise ABC</h1>
+          <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+          <span class="badge badge--premium">Premium</span>
+        </div>
+        <div class="profile-header__meta">
+          <span><i data-lucide="factory" class="icon icon--sm"></i> Fabricant — Agroalimentaire</span>
+          <span><i data-lucide="map-pin" class="icon icon--sm"></i> Douala, Cameroun</span>
+          <span class="rating"><i data-lucide="star" class="icon"></i> 4,8 <span class="rating__count">(96 avis)</span></span>
+        </div>
+      </div>
+      <div class="profile-header__actions">
+        <a href="messagerie.html" class="btn btn--secondary"><i data-lucide="message-circle" class="icon icon--sm"></i> Message</a>
+        <a href="messagerie.html" class="btn btn--primary">Contacter</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="section" style="padding-top: var(--space-10);">
+  <div class="container">
+    <div class="grid" style="grid-template-columns: 1fr; gap: var(--space-10);">
+      <div class="tabs" data-tabs="profil">
+        <button class="tabs__item is-active" data-tab="apropos">À propos</button>
+        <button class="tabs__item" data-tab="produits">Produits</button>
+        <button class="tabs__item" data-tab="services">Services</button>
+        <button class="tabs__item" data-tab="avis">Avis</button>
+        <button class="tabs__item" data-tab="infos">Informations</button>
+        <button class="tabs__item" data-tab="contact">Contact</button>
+      </div>
+
+      <!-- À PROPOS -->
+      <div class="tab-panel" data-tab-panel="apropos" data-tabs-target="profil">
+        <div class="grid grid-2">
+          <div>
+            <h3>Présentation</h3>
+            <p>Entreprise ABC transforme et exporte des produits agroalimentaires depuis 2011. L'entreprise fournit des grossistes et des industriels en Afrique centrale et en Europe.</p>
+            <p>Point d'attention pour l'acheteur : les délais de production varient selon la saison — à confirmer directement avec le fournisseur avant commande.</p>
+            <h4 style="margin-top: var(--space-8);">Zone d'activité</h4>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <span class="badge badge--neutral">Cameroun</span>
+              <span class="badge badge--neutral">Gabon</span>
+              <span class="badge badge--neutral">Tchad</span>
+              <span class="badge badge--neutral">Export UE</span>
+            </div>
+          </div>
+          <div class="grid" style="gap: var(--space-4);">
+            <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="package" class="icon"></i></div><div><div class="stat-tile__value">120</div><p class="stat-tile__label">Produits</p></div></div>
+            <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="star" class="icon"></i></div><div><div class="stat-tile__value">4,8 / 5</div><p class="stat-tile__label">Note moyenne</p></div></div>
+            <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="calendar" class="icon"></i></div><div><div class="stat-tile__value">2011</div><p class="stat-tile__label">Membre depuis</p></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUITS -->
+      <div class="tab-panel" data-tab-panel="produits" data-tabs-target="profil" hidden>
+        <div class="grid grid-3">
+          <a href="produit.html" class="card product-card">
+            <div class="product-card__image"><span class="badge badge--available">Disponible</span><img src="https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=600&auto=format&fit=crop" alt=""></div>
+            <div class="product-card__body">
+              <span class="product-card__category">Agroalimentaire</span>
+              <h4 class="product-card__name">Café vert Arabica</h4>
+              <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Douala, Cameroun</p>
+              <div class="product-card__footer"><span class="product-card__price">Sur devis</span></div>
+            </div>
+          </a>
+          <a href="produit.html" class="card product-card">
+            <div class="product-card__image"><img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=600&auto=format&fit=crop" alt=""></div>
+            <div class="product-card__body">
+              <span class="product-card__category">Agroalimentaire</span>
+              <h4 class="product-card__name">Huile de palme raffinée</h4>
+              <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Douala, Cameroun</p>
+              <div class="product-card__footer"><span class="product-card__price">Sur devis</span></div>
+            </div>
+          </a>
+          <a href="produit.html" class="card product-card">
+            <div class="product-card__image"><span class="badge badge--new">Nouveau</span><img src="https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=600&auto=format&fit=crop" alt=""></div>
+            <div class="product-card__body">
+              <span class="product-card__category">Agroalimentaire</span>
+              <h4 class="product-card__name">Fèves de cacao séchées</h4>
+              <p class="product-card__supplier"><i data-lucide="map-pin" class="icon icon--sm"></i> Douala, Cameroun</p>
+              <div class="product-card__footer"><span class="product-card__price">Sur devis</span></div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- SERVICES -->
+      <div class="tab-panel" data-tab-panel="services" data-tabs-target="profil" hidden>
+        <div class="grid grid-3">
+          <div class="card"><h4><i data-lucide="package" class="icon" style="vertical-align:-5px;"></i> Conditionnement export</h4><p class="text-small">Emballage adapté au transport international.</p></div>
+          <div class="card"><h4><i data-lucide="clipboard-check" class="icon" style="vertical-align:-5px;"></i> Contrôle qualité</h4><p class="text-small">Inspection avant expédition sur demande.</p></div>
+          <div class="card"><h4><i data-lucide="truck" class="icon" style="vertical-align:-5px;"></i> Mise en relation transport</h4><p class="text-small">Coordination avec des agences partenaires.</p></div>
+        </div>
+      </div>
+
+      <!-- AVIS -->
+      <div class="tab-panel" data-tab-panel="avis" data-tabs-target="profil" hidden>
+        <div class="grid grid-2">
+          <div class="card review-card">
+            <div class="review-card__head"><div class="avatar">MK</div><div><p class="review-card__name">Moussa K.</p><span class="text-xsmall review-card__date">Acheteur vérifié — il y a 2 mois</span></div></div>
+            <span class="rating" style="margin-bottom:8px;">★★★★★</span>
+            <p class="text-small" style="margin:0;">Livraison conforme aux délais annoncés, bonne communication.</p>
+          </div>
+          <div class="card review-card">
+            <div class="review-card__head"><div class="avatar">AS</div><div><p class="review-card__name">Aïcha S.</p><span class="text-xsmall review-card__date">Acheteuse vérifiée — il y a 4 mois</span></div></div>
+            <span class="rating" style="margin-bottom:8px;">★★★★☆</span>
+            <p class="text-small" style="margin:0;">Bon rapport qualité-prix, un léger retard sur la deuxième commande.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFORMATIONS -->
+      <div class="tab-panel" data-tab-panel="infos" data-tabs-target="profil" hidden>
+        <div class="table-wrap" style="max-width:560px;">
+          <table class="table">
+            <tbody>
+              <tr><th>Forme juridique</th><td>SARL</td></tr>
+              <tr><th>Année de création</th><td>2011</td></tr>
+              <tr><th>Effectif</th><td>50–100 employés</td></tr>
+              <tr><th>Capacité de production</th><td>~200 tonnes / mois</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="tab-panel" data-tab-panel="contact" data-tabs-target="profil" hidden>
+        <form class="card" style="max-width:520px;">
+          <div class="form-group"><label for="c-name">Nom complet</label><input id="c-name" class="input" type="text" placeholder="Votre nom"></div>
+          <div class="form-group"><label for="c-email">E-mail</label><input id="c-email" class="input" type="email" placeholder="vous@entreprise.com"></div>
+          <div class="form-group"><label for="c-msg">Message</label><textarea id="c-msg" class="textarea" rows="4" placeholder="Décrivez votre besoin..."></textarea></div>
+          <button type="submit" class="btn btn--primary btn--block">Envoyer le message</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"><p>Connecter les marchés, simplifier les échanges.</p></div>
+      <div><h5>Plateforme</h5><div class="footer__links"><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a></div></div>
+      <div><h5>Entreprise</h5><div class="footer__links"><a href="a-propos.html">À propos</a><a href="a-propos.html#contact">Contact</a><a href="a-propos.html#faq">FAQ</a></div></div>
+      <div><h5>Légal</h5><div class="footer__links"><a href="#">Conditions d'utilisation</a><a href="#">Confidentialité</a><a href="#">Mentions légales</a></div></div>
+    </div>
+    <div class="footer__bottom"><span>© 2026 AfriTrade Connect. Tous droits réservés.</span></div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

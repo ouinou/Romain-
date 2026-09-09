@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messagerie — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="dash-sidebar__logo"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"></a>
+    <nav class="dash-sidebar__nav">
+      <a href="dashboard-acheteur.html"><i data-lucide="layout-dashboard" class="icon icon--sm"></i> Tableau de bord</a>
+      <a href="messagerie.html" class="is-active"><i data-lucide="message-circle" class="icon icon--sm"></i> Messagerie</a>
+      <a href="suivi.html"><i data-lucide="truck" class="icon icon--sm"></i> Expéditions</a>
+    </nav>
+    <p class="dash-sidebar__foot">Global Foods · Compte acheteur</p>
+  </aside>
+
+  <div>
+    <header class="dash-topbar">
+      <h3 style="margin:0;">Messagerie</h3>
+      <div class="flex gap-3" style="align-items:center;">
+        <div class="avatar">GF</div>
+      </div>
+    </header>
+
+    <main class="dash-main">
+      <div class="messenger">
+        <div class="messenger__list">
+          <div class="messenger__item is-active" data-thread-item>
+            <div class="avatar">EA</div>
+            <div style="flex:1;">
+              <p class="messenger__item-name">Entreprise ABC</p>
+              <p class="messenger__item-preview">D'accord, je prépare le devis...</p>
+            </div>
+          </div>
+          <div class="messenger__item" data-thread-item>
+            <div class="avatar">KA</div>
+            <div style="flex:1;">
+              <p class="messenger__item-name">Kivu AgroExport</p>
+              <p class="messenger__item-preview">Merci pour votre commande</p>
+            </div>
+          </div>
+          <div class="messenger__item" data-thread-item>
+            <div class="avatar">TL</div>
+            <div style="flex:1;">
+              <p class="messenger__item-name">TransAfrica Logistics</p>
+              <p class="messenger__item-preview">Le conteneur est en transit</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="messenger__thread">
+          <div class="messenger__thread-head">
+            <div class="avatar">EA</div>
+            <div>
+              <p style="margin:0; font-weight:600; color:var(--color-heading); font-size: var(--fs-small);">Entreprise ABC</p>
+              <span class="badge badge--verified" style="margin-top:2px;"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+            </div>
+          </div>
+          <div class="messenger__thread-body">
+            <div class="messenger__bubble messenger__bubble--in">Bonjour, je suis intéressé par 2 tonnes de café vert Arabica. Quel est le délai de production ?</div>
+            <div class="messenger__bubble messenger__bubble--out">Bonjour, comptez 10 à 15 jours selon la disponibilité du lot.</div>
+            <div class="messenger__bubble messenger__bubble--in">D'accord, je prépare le devis...</div>
+          </div>
+          <form class="messenger__composer" onsubmit="return false;">
+            <input class="input" type="text" placeholder="Écrire un message...">
+            <button class="btn btn--primary" type="submit"><i data-lucide="send" class="icon icon--sm"></i></button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

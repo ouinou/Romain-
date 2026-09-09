@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charte graphique — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<style>
+  .swatch { border-radius: var(--radius-lg); overflow:hidden; border:1px solid var(--color-border); }
+  .swatch__color { height: 88px; }
+  .swatch__meta { padding: var(--space-4); background: var(--color-white); }
+  .swatch__meta strong { display:block; color: var(--color-heading); font-size: var(--fs-small); }
+  .swatch__meta code { font-size: var(--fs-xsmall); color: var(--color-text); }
+  .type-row { display:flex; align-items: baseline; gap: var(--space-6); padding: var(--space-5) 0; border-bottom: 1px solid var(--color-border); }
+  .type-row span.label { width: 90px; flex-shrink:0; font-size: var(--fs-xsmall); color: #9CA3AF; text-transform: uppercase; letter-spacing: .04em; }
+  .icon-tile { display:flex; flex-direction:column; align-items:center; gap:8px; padding: var(--space-4); border:1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--fs-xsmall); color: var(--color-text); }
+  .swatch-radius { background: var(--color-navy-100); border: 1px dashed var(--color-navy); height: 72px; display:flex; align-items:center; justify-content:center; font-size: var(--fs-xsmall); color: var(--color-navy); font-weight:600; }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links">
+      <a href="index.html">Accueil</a>
+      <a href="styleguide.html" class="is-active">Charte graphique</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="index.html" class="btn btn--secondary btn--sm">Retour au site</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head">
+      <img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px">
+      <button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button>
+    </div>
+    <nav class="mobile-menu__links"><a href="index.html">Retour au site</a></nav>
+  </div>
+</div>
+
+<section class="section--alt" style="padding-block: var(--space-12);">
+  <div class="container">
+    <span class="eyebrow">Design system</span>
+    <h1 style="font-size: var(--fs-h2);">Charte graphique web — AfriTrade Connect</h1>
+    <p style="max-width:640px;">Référence vivante des tokens et composants utilisés sur l'ensemble de la plateforme : landing, recherche, fiches, profils, tableaux de bord et suivi partagent exactement ce système.</p>
+  </div>
+</section>
+
+<!-- COULEURS -->
+<section class="section">
+  <div class="container">
+    <h2>Couleurs</h2>
+    <p>Bleu nuit pour la confiance et la structure, orange pour l'action. Le reste du système reste neutre pour laisser respirer le contenu.</p>
+    <div class="grid grid-4" style="margin-top: var(--space-8);">
+      <div class="swatch"><div class="swatch__color" style="background:#002B5B"></div><div class="swatch__meta"><strong>Bleu nuit — Principal</strong><code>#002B5B</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#FF7A00"></div><div class="swatch__meta"><strong>Orange — Action (CTA)</strong><code>#FF7A00</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#FFFFFF; border-bottom:1px solid var(--color-border)"></div><div class="swatch__meta"><strong>Blanc — Fond</strong><code>#FFFFFF</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#F4F6F8"></div><div class="swatch__meta"><strong>Gris clair — Fond secondaire</strong><code>#F4F6F8</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#4B5563"></div><div class="swatch__meta"><strong>Gris texte</strong><code>#4B5563</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#E5E7EB"></div><div class="swatch__meta"><strong>Gris bordure</strong><code>#E5E7EB</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#16A34A"></div><div class="swatch__meta"><strong>Vert succès</strong><code>#16A34A</code></div></div>
+      <div class="swatch"><div class="swatch__color" style="background:#DC2626"></div><div class="swatch__meta"><strong>Rouge erreur</strong><code>#DC2626</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPOGRAPHIE -->
+<section class="section section--alt">
+  <div class="container">
+    <h2>Typographie — Inter</h2>
+    <div style="margin-top: var(--space-6);">
+      <div class="type-row"><span class="label">H1 / 700</span><span style="font-size: var(--fs-h1); font-weight:700; color:var(--color-heading);">Trouvez. Connectez.</span></div>
+      <div class="type-row"><span class="label">H2 / 700</span><span style="font-size: var(--fs-h2); font-weight:700; color:var(--color-heading);">Découvrez des fournisseurs</span></div>
+      <div class="type-row"><span class="label">H3 / 600</span><span style="font-size: var(--fs-h3); font-weight:600; color:var(--color-heading);">Comment ça marche</span></div>
+      <div class="type-row"><span class="label">H4 / 600</span><span style="font-size: var(--fs-h4); font-weight:600; color:var(--color-heading);">Entreprise ABC</span></div>
+      <div class="type-row"><span class="label">Texte / 400</span><span style="font-size: var(--fs-body); color:var(--color-text);">Texte courant, 16px, interligne 1.6, pour les descriptions et paragraphes.</span></div>
+      <div class="type-row"><span class="label">Petit</span><span style="font-size: var(--fs-small); color:var(--color-text);">Petit texte 13–14px pour les métadonnées.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- BOUTONS -->
+<section class="section">
+  <div class="container">
+    <h2>Boutons</h2>
+    <p>Border-radius 8px. Transitions rapides (150ms). Un état par usage.</p>
+    <div class="grid grid-3" style="margin-top: var(--space-8);">
+      <div class="card">
+        <h4>Principal</h4>
+        <div class="flex gap-3" style="flex-wrap:wrap; margin-top: var(--space-4);">
+          <button class="btn btn--primary">Trouver un fournisseur</button>
+          <button class="btn btn--primary" disabled>Désactivé</button>
+          <button class="btn btn--primary btn--loading">Chargement</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Secondaire</h4>
+        <div class="flex gap-3" style="flex-wrap:wrap; margin-top: var(--space-4);">
+          <button class="btn btn--secondary">Voir le profil</button>
+          <button class="btn btn--secondary" disabled>Désactivé</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Foncé</h4>
+        <div class="flex gap-3" style="flex-wrap:wrap; margin-top: var(--space-4);">
+          <button class="btn btn--dark">Se connecter</button>
+          <button class="btn btn--ghost">Lien discret <i data-lucide="arrow-right" class="icon icon--sm"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BADGES -->
+<section class="section section--alt">
+  <div class="container">
+    <h2>Badges</h2>
+    <div class="flex gap-3" style="flex-wrap:wrap; margin-top: var(--space-6);">
+      <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+      <span class="badge badge--new">Nouveau</span>
+      <span class="badge badge--premium">Premium</span>
+      <span class="badge badge--available">Disponible</span>
+      <span class="badge badge--shipping"><i data-lucide="truck" class="icon icon--sm"></i> Expédition</span>
+      <span class="badge badge--error">Rupture de stock</span>
+    </div>
+  </div>
+</section>
+
+<!-- CARTES -->
+<section class="section">
+  <div class="container">
+    <h2>Cartes</h2>
+    <p>Fond blanc, bordure #E5E7EB, radius 12px, ombre très légère. Légère élévation au survol.</p>
+    <div class="grid grid-3" style="margin-top: var(--space-8);">
+      <div class="card">
+        <h4>Carte simple</h4>
+        <p class="text-small">Utilisée pour les catégories, statistiques, informations diverses.</p>
+      </div>
+      <div class="card stat-tile">
+        <div class="stat-tile__icon"><i data-lucide="bar-chart-3" class="icon"></i></div>
+        <div>
+          <div class="stat-tile__value">1 248</div>
+          <p class="stat-tile__label">Fournisseurs vérifiés</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="supplier-card__top">
+          <img class="supplier-card__logo" src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=200&auto=format&fit=crop" alt="">
+          <div><h4 class="supplier-card__name">Entreprise ABC</h4><p class="supplier-card__meta">Fabricant • Cameroun</p></div>
+        </div>
+        <span class="badge badge--verified"><i data-lucide="badge-check" class="icon icon--sm"></i> Vérifié</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULAIRES -->
+<section class="section section--alt">
+  <div class="container">
+    <h2>Formulaires</h2>
+    <div class="grid grid-2" style="margin-top: var(--space-8); max-width: 720px;">
+      <div class="form-group">
+        <label for="sg-name">Nom de l'entreprise</label>
+        <input id="sg-name" class="input" type="text" placeholder="Ex. Entreprise ABC">
+      </div>
+      <div class="form-group form-error">
+        <label for="sg-email">Adresse e-mail</label>
+        <input id="sg-email" class="input" type="email" value="mail-invalide">
+        <p class="form-hint">Veuillez saisir une adresse e-mail valide.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ICONES -->
+<section class="section">
+  <div class="container">
+    <h2>Icônes — Lucide (ligne, minimaliste)</h2>
+    <div class="grid" style="grid-template-columns: repeat(6, 1fr); gap: var(--space-3); margin-top: var(--space-8);">
+      <div class="icon-tile"><i data-lucide="search" class="icon"></i>Recherche</div>
+      <div class="icon-tile"><i data-lucide="building-2" class="icon"></i>Fournisseur</div>
+      <div class="icon-tile"><i data-lucide="shopping-cart" class="icon"></i>Panier</div>
+      <div class="icon-tile"><i data-lucide="truck" class="icon"></i>Camion</div>
+      <div class="icon-tile"><i data-lucide="ship" class="icon"></i>Bateau</div>
+      <div class="icon-tile"><i data-lucide="map-pin" class="icon"></i>Localisation</div>
+      <div class="icon-tile"><i data-lucide="message-circle" class="icon"></i>Message</div>
+      <div class="icon-tile"><i data-lucide="star" class="icon"></i>Étoile</div>
+      <div class="icon-tile"><i data-lucide="badge-check" class="icon"></i>Vérification</div>
+      <div class="icon-tile"><i data-lucide="shield-check" class="icon"></i>Sécurité</div>
+      <div class="icon-tile"><i data-lucide="bar-chart-3" class="icon"></i>Statistiques</div>
+      <div class="icon-tile"><i data-lucide="user" class="icon"></i>Utilisateur</div>
+    </div>
+  </div>
+</section>
+
+<!-- RADIUS / OMBRES -->
+<section class="section section--alt">
+  <div class="container">
+    <h2>Rayons &amp; espacements</h2>
+    <div class="grid grid-4" style="margin-top: var(--space-8);">
+      <div class="swatch-radius" style="border-radius:6px;">6px — petits éléments</div>
+      <div class="swatch-radius" style="border-radius:8px;">8px — boutons</div>
+      <div class="swatch-radius" style="border-radius:12px;">12px — cartes</div>
+      <div class="swatch-radius" style="border-radius:16px;">16px — grands blocs</div>
+    </div>
+    <p class="text-small" style="margin-top: var(--space-6);">Espacement basé sur des multiples de 4/8px (tokens <code>--space-1</code> à <code>--space-24</code>). Ombres toujours discrètes : <code>--shadow-sm</code>, <code>--shadow-md</code>, <code>--shadow-lg</code>.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__bottom" style="border-top:none; padding-top:0;">
+    <span>© 2026 AfriTrade Connect — Charte graphique interne</span>
+    <a href="index.html" class="footer__links" style="display:inline-flex;">Retour au site →</a>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi d'expédition — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link>Accueil</a>
+      <a href="recherche.html" data-nav-link>Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link>Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link class="is-active">Expédition</a>
+      <a href="a-propos.html" data-nav-link>À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head"><img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px"><button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button></div>
+    <nav class="mobile-menu__links">
+      <a href="index.html">Accueil</a><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html" class="is-active">Expédition</a><a href="a-propos.html">À propos</a>
+    </nav>
+  </div>
+</div>
+
+<section class="section--alt" style="padding-block: var(--space-10);">
+  <div class="container">
+    <span class="eyebrow">Logistique</span>
+    <h1 style="font-size: var(--fs-h2);">Suivez votre expédition</h1>
+    <form class="search-bar" style="max-width:640px;" action="suivi.html" method="get">
+      <div class="search-bar__field" style="grid-column: 1 / -1;">
+        <i data-lucide="package" class="icon"></i>
+        <input name="ref" type="text" placeholder="Numéro de suivi ou de commande" value="EXP-2201">
+      </div>
+      <button type="submit" class="btn btn--primary">Suivre</button>
+    </form>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="card" style="margin-bottom: var(--space-10);">
+      <div class="flex-between" style="flex-wrap:wrap; gap: var(--space-4); margin-bottom: var(--space-6);">
+        <div>
+          <h3 style="margin-bottom:2px;">Expédition #EXP-2201</h3>
+          <p class="text-small" style="margin:0;">Douala, Cameroun → Anvers, Belgique · Entreprise ABC</p>
+        </div>
+        <span class="badge badge--shipping" style="font-size: var(--fs-small); padding:6px 14px;"><i data-lucide="ship" class="icon icon--sm"></i> En transit</span>
+      </div>
+
+      <div class="tracking-timeline">
+        <div class="tracking-step is-done">
+          <div class="tracking-step__dot"><i data-lucide="check" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Commande</p><p class="tracking-step__date">02 sept.</p></div>
+        </div>
+        <div class="tracking-step is-done">
+          <div class="tracking-step__dot"><i data-lucide="check" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Préparation</p><p class="tracking-step__date">03 sept.</p></div>
+        </div>
+        <div class="tracking-step is-done">
+          <div class="tracking-step__dot"><i data-lucide="check" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Collecte</p><p class="tracking-step__date">05 sept.</p></div>
+        </div>
+        <div class="tracking-step is-active">
+          <div class="tracking-step__dot"><i data-lucide="ship" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Expédition</p><p class="tracking-step__date">07 sept.</p></div>
+        </div>
+        <div class="tracking-step">
+          <div class="tracking-step__dot"><i data-lucide="navigation" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Transit</p><p class="tracking-step__date">Estimé 18 sept.</p></div>
+        </div>
+        <div class="tracking-step">
+          <div class="tracking-step__dot"><i data-lucide="anchor" class="icon icon--sm"></i></div>
+          <div class="tracking-step__line"></div>
+          <div><p class="tracking-step__label">Arrivée</p><p class="tracking-step__date">Estimé 24 sept.</p></div>
+        </div>
+        <div class="tracking-step">
+          <div class="tracking-step__dot"><i data-lucide="package-check" class="icon icon--sm"></i></div>
+          <div><p class="tracking-step__label">Livraison</p><p class="tracking-step__date">Estimé 26 sept.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h4>Détails de l'expédition</h4>
+        <div class="table-wrap" style="border:none;">
+          <table class="table" style="min-width:0;">
+            <tbody>
+              <tr><th>Transporteur</th><td>TransAfrica Logistics</td></tr>
+              <tr><th>Mode</th><td>Fret maritime — conteneur 20'</td></tr>
+              <tr><th>Poids</th><td>2 400 kg</td></tr>
+              <tr><th>Numéro de conteneur</th><td>TALU-882014</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Besoin d'aide ?</h4>
+        <p class="text-small">Contactez directement l'agence en charge de votre expédition pour toute question sur les délais ou les documents douaniers.</p>
+        <a href="messagerie.html" class="btn btn--secondary btn--block"><i data-lucide="message-circle" class="icon icon--sm"></i> Contacter TransAfrica Logistics</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"><p>Connecter les marchés, simplifier les échanges.</p></div>
+      <div><h5>Plateforme</h5><div class="footer__links"><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a></div></div>
+      <div><h5>Entreprise</h5><div class="footer__links"><a href="a-propos.html">À propos</a><a href="a-propos.html#contact">Contact</a><a href="a-propos.html#faq">FAQ</a></div></div>
+      <div><h5>Légal</h5><div class="footer__links"><a href="#">Conditions d'utilisation</a><a href="#">Confidentialité</a><a href="#">Mentions légales</a></div></div>
+    </div>
+    <div class="footer__bottom"><span>© 2026 AfriTrade Connect. Tous droits réservés.</span></div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

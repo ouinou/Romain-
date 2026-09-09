@@ -1,0 +1,10 @@
+<svg width="220" height="48" viewBox="0 0 220 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AfriTrade Connect">
+  <g>
+    <rect x="0" y="6" width="36" height="36" rx="10" fill="#FFFFFF"/>
+    <path d="M18 13 L28 33 H23.2 L21.3 29 H14.7 L12.8 33 H8 L18 13Z" fill="#002B5B"/>
+    <path d="M16.2 25.4 H19.8 L18 21.6 L16.2 25.4Z" fill="#002B5B"/>
+    <circle cx="27.5" cy="14.5" r="3.4" fill="#FF7A00"/>
+  </g>
+  <text x="46" y="22" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" letter-spacing="0.2">AFRITRADE</text>
+  <text x="46" y="38" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#FF7A00" letter-spacing="2">CONNECT</text>
+</svg>

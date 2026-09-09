@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>À propos — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container navbar__inner">
+    <a href="index.html" class="navbar__logo"><img src="assets/img/logo.svg" alt="AfriTrade Connect"></a>
+    <nav class="navbar__links" aria-label="Navigation principale">
+      <a href="index.html" data-nav-link>Accueil</a>
+      <a href="recherche.html" data-nav-link>Fournisseurs</a>
+      <a href="recherche.html?type=produits" data-nav-link>Produits</a>
+      <a href="dashboard-acheteur.html" data-nav-link>Acheteurs</a>
+      <a href="suivi.html" data-nav-link>Expédition</a>
+      <a href="a-propos.html" data-nav-link class="is-active">À propos</a>
+    </nav>
+    <div class="navbar__actions">
+      <a href="connexion.html" class="btn btn--secondary btn--sm">Se connecter</a>
+      <a href="inscription.html" class="btn btn--primary btn--sm">Créer un compte</a>
+    </div>
+    <button class="navbar__burger" data-menu-open aria-label="Ouvrir le menu"><i data-lucide="menu" class="icon"></i></button>
+  </div>
+</header>
+<div class="mobile-menu" data-mobile-menu>
+  <div class="mobile-menu__backdrop"></div>
+  <div class="mobile-menu__panel">
+    <div class="mobile-menu__head"><img src="assets/img/logo.svg" alt="AfriTrade Connect" style="height:28px"><button class="mobile-menu__close" data-menu-close><i data-lucide="x" class="icon"></i></button></div>
+    <nav class="mobile-menu__links">
+      <a href="index.html">Accueil</a><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a><a href="a-propos.html" class="is-active">À propos</a>
+    </nav>
+  </div>
+</div>
+
+<section class="section--alt" style="padding-block: var(--space-16);">
+  <div class="container" style="max-width:720px; text-align:center; margin-inline:auto;">
+    <span class="eyebrow">Notre mission</span>
+    <h1>Faciliter le commerce entre l'Afrique et le reste du monde</h1>
+    <p>AfriTrade Connect met en relation fournisseurs, acheteurs et acteurs de l'expédition sur une seule plateforme B2B, pensée pour la confiance et l'efficacité.</p>
+  </div>
+</section>
+
+<section class="section" id="partenaires">
+  <div class="container grid grid-3">
+    <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="building-2" class="icon"></i></div><div><div class="stat-tile__value">1 200+</div><p class="stat-tile__label">Fournisseurs</p></div></div>
+    <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="globe" class="icon"></i></div><div><div class="stat-tile__value">18</div><p class="stat-tile__label">Pays couverts</p></div></div>
+    <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="truck" class="icon"></i></div><div><div class="stat-tile__value">80+</div><p class="stat-tile__label">Agences d'expédition partenaires</p></div></div>
+  </div>
+</section>
+
+<section class="section section--alt" id="faq">
+  <div class="container" style="max-width:720px;">
+    <h2>Questions fréquentes</h2>
+    <div class="card" style="margin-bottom: var(--space-4);">
+      <h4>Comment un fournisseur est-il vérifié ?</h4>
+      <p class="text-small" style="margin:0;">Chaque entreprise transmet ses documents légaux, qui sont contrôlés par notre équipe avant l'attribution du badge « Vérifié ».</p>
+    </div>
+    <div class="card" style="margin-bottom: var(--space-4);">
+      <h4>La plateforme est-elle gratuite ?</h4>
+      <p class="text-small" style="margin:0;">La création de compte et la mise en relation sont gratuites. Un abonnement Premium optionnel donne accès à des mises en avant supplémentaires.</p>
+    </div>
+    <div class="card">
+      <h4>Puis-je suivre mes expéditions directement sur le site ?</h4>
+      <p class="text-small" style="margin:0;">Oui, dès qu'une agence partenaire prend en charge votre commande, un numéro de suivi est généré et consultable dans votre tableau de bord.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="contact">
+  <div class="container grid grid-2">
+    <div>
+      <h2>Contactez-nous</h2>
+      <p>Une question, un partenariat, un accompagnement pour votre entreprise ? Notre équipe vous répond sous 48h.</p>
+      <div class="flex gap-3" style="align-items:center; margin-bottom:12px;"><i data-lucide="mail" class="icon"></i> contact@afritradeconnect.com</div>
+      <div class="flex gap-3" style="align-items:center;"><i data-lucide="map-pin" class="icon"></i> Douala, Cameroun</div>
+    </div>
+    <form class="card">
+      <div class="form-group"><label for="a-name">Nom</label><input id="a-name" class="input" type="text" placeholder="Votre nom"></div>
+      <div class="form-group"><label for="a-email">E-mail</label><input id="a-email" class="input" type="email" placeholder="vous@entreprise.com"></div>
+      <div class="form-group"><label for="a-msg">Message</label><textarea id="a-msg" class="textarea" rows="4" placeholder="Votre message"></textarea></div>
+      <button type="submit" class="btn btn--primary btn--block">Envoyer</button>
+    </form>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"><p>Connecter les marchés, simplifier les échanges.</p></div>
+      <div><h5>Plateforme</h5><div class="footer__links"><a href="recherche.html">Fournisseurs</a><a href="recherche.html?type=produits">Produits</a><a href="dashboard-acheteur.html">Acheteurs</a><a href="suivi.html">Expédition</a></div></div>
+      <div><h5>Entreprise</h5><div class="footer__links"><a href="a-propos.html">À propos</a><a href="a-propos.html#contact">Contact</a><a href="a-propos.html#faq">FAQ</a></div></div>
+      <div><h5>Légal</h5><div class="footer__links"><a href="#">Conditions d'utilisation</a><a href="#">Confidentialité</a><a href="#">Mentions légales</a></div></div>
+    </div>
+    <div class="footer__bottom"><span>© 2026 AfriTrade Connect. Tous droits réservés.</span></div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

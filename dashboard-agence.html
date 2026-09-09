@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord agence d'expédition — AfriTrade Connect</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<div class="dash-shell">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="dash-sidebar__logo"><img src="assets/img/logo-inverse.svg" alt="AfriTrade Connect"></a>
+    <nav class="dash-sidebar__nav">
+      <a href="dashboard-agence.html" class="is-active"><i data-lucide="layout-dashboard" class="icon icon--sm"></i> Tableau de bord</a>
+      <a href="#"><i data-lucide="inbox" class="icon icon--sm"></i> Demandes</a>
+      <a href="#"><i data-lucide="ship" class="icon icon--sm"></i> Expéditions</a>
+      <a href="#"><i data-lucide="box" class="icon icon--sm"></i> Colis</a>
+      <a href="suivi.html"><i data-lucide="map-pin" class="icon icon--sm"></i> Suivi</a>
+      <a href="messagerie.html"><i data-lucide="users" class="icon icon--sm"></i> Clients</a>
+    </nav>
+    <p class="dash-sidebar__foot">TransAfrica Logistics</p>
+  </aside>
+
+  <div>
+    <header class="dash-topbar">
+      <div>
+        <h3 style="margin:0;">Tableau de bord agence d'expédition</h3>
+        <p class="text-small" style="margin:0;">Bienvenue, TransAfrica Logistics</p>
+      </div>
+      <div class="flex gap-3" style="align-items:center;">
+        <button class="btn btn--secondary btn--sm"><i data-lucide="bell" class="icon icon--sm"></i></button>
+        <div class="avatar">TL</div>
+      </div>
+    </header>
+
+    <main class="dash-main">
+      <div class="dash-card-list">
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="inbox" class="icon"></i></div><div><div class="stat-tile__value">11</div><p class="stat-tile__label">Nouvelles demandes</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="ship" class="icon"></i></div><div><div class="stat-tile__value">27</div><p class="stat-tile__label">Expéditions actives</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="box" class="icon"></i></div><div><div class="stat-tile__value">143</div><p class="stat-tile__label">Colis suivis</p></div></div>
+        <div class="card stat-tile"><div class="stat-tile__icon"><i data-lucide="users" class="icon"></i></div><div><div class="stat-tile__value">58</div><p class="stat-tile__label">Clients actifs</p></div></div>
+      </div>
+
+      <div class="flex-between" style="margin-bottom: var(--space-4);">
+        <h4 style="margin:0;">Expéditions en cours</h4>
+        <a href="suivi.html" class="btn--ghost btn text-small">Voir le suivi complet <i data-lucide="arrow-right" class="icon icon--sm"></i></a>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Référence</th><th>Client</th><th>Origine → Destination</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>#EXP-2201</td><td>Entreprise ABC</td><td>Douala → Anvers</td><td><span class="badge badge--shipping">En transit</span></td><td><a href="suivi.html" class="btn btn--secondary btn--sm">Suivre</a></td></tr>
+            <tr><td>#EXP-2198</td><td>Kivu AgroExport</td><td>Bukavu → Mombasa</td><td><span class="badge badge--new">Collecte</span></td><td><a href="suivi.html" class="btn btn--secondary btn--sm">Suivre</a></td></tr>
+            <tr><td>#EXP-2190</td><td>Ivoire Textiles</td><td>Abidjan → Marseille</td><td><span class="badge badge--verified">Livré</span></td><td><a href="suivi.html" class="btn btn--secondary btn--sm">Voir</a></td></tr>
+            <tr><td>#EXP-2185</td><td>Sahel Industries</td><td>Dakar → Casablanca</td><td><span class="badge badge--error">Bloqué en douane</span></td><td><a href="suivi.html" class="btn btn--secondary btn--sm">Voir</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
