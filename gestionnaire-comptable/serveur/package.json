@@ -17,7 +17,8 @@
     "journal:verifier": "node --env-file-if-exists=.env dist/src/cli/verifier-journal.js",
     "sauvegarder": "node --env-file-if-exists=.env dist/src/cli/sauvegarder.js",
     "restaurer": "node --env-file-if-exists=.env dist/src/cli/restaurer.js",
-    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts"
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "demo:initialiser": "node --env-file-if-exists=.env dist/src/cli/demo-initialiser.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

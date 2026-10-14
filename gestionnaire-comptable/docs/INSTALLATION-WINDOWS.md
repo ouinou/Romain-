@@ -30,8 +30,16 @@ Cela crée la base `gestionnaire_comptable` et trois rôles : `gc_owner` (migrat
 ## 4. Installer Node.js et le serveur
 
 1. Installer Node.js 22 LTS (installateur `.msi` de nodejs.org).
-2. Copier le dossier `serveur` dans `C:\GestionnaireComptable\serveur`.
-3. Dans ce dossier :
+2. Copier les dossiers `serveur` et `interface` dans `C:\GestionnaireComptable\`.
+3. Compiler l'interface (le serveur la servira automatiquement) :
+
+```bat
+cd C:\GestionnaireComptable\interface
+npm ci
+npm run build
+```
+
+4. Puis, dans `C:\GestionnaireComptable\serveur` :
 
 ```bat
 npm ci
@@ -39,10 +47,10 @@ npm run build
 copy .env.exemple .env
 ```
 
-4. Éditer `.env` : chaînes de connexion, et deux clés générées avec
+5. Éditer `.env` : chaînes de connexion, et deux clés générées avec
    `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
    Imprimer ou copier la clé de sauvegarde et la ranger hors du serveur.
-5. Restreindre les droits du fichier `.env` au compte qui exécute le service (clic droit → Propriétés → Sécurité).
+6. Restreindre les droits du fichier `.env` au compte qui exécute le service (clic droit → Propriétés → Sécurité).
 
 ## 5. Créer le schéma et la première entreprise
 
@@ -84,7 +92,10 @@ Ouvrir le port dans le pare-feu, uniquement pour le réseau privé :
 netsh advfirewall firewall add rule name="Gestionnaire Comptable" dir=in action=allow protocol=TCP localport=8443 profile=private
 ```
 
-Test depuis un autre poste : `https://192.168.1.10:8443/api/sante` doit répondre `{"statut":"ok"}`.
+Test depuis un autre poste : `https://192.168.1.10:8443/api/sante` doit répondre `{"statut":"ok"}`, et `https://192.168.1.10:8443/` doit afficher l'écran de connexion.
+
+**Pour une simple évaluation** (jamais sur la base de production), une entreprise fictive peut être créée :
+`set GC_MODE_DEMO=oui` puis `npm run demo:initialiser`. Les identifiants s'affichent à la fin.
 
 ## 8. Sauvegardes et contrôle du journal
 

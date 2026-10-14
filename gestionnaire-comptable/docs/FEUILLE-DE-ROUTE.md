@@ -18,12 +18,19 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] 30 tests automatisés sur PostgreSQL réel : authentification, permissions, isolation, journal, secrets absents des journaux, sauvegarde et restauration
 - [x] Documentation : architecture, sécurité, API, installation Windows
 
+## Fait (v0.1, étape 7 : interface, en attente de validation)
+
+- [x] Interface web reliée au serveur : connexion, invitation, réinitialisation, code maître, activation MFA par QR code
+- [x] Tableau de bord selon les droits, utilisateurs, rôles (grille module × action), journal (filtres, intégrité, export), entreprise, mon compte
+- [x] Confirmation par mot de passe intégrée, motifs obligatoires, codes secrets affichés une seule fois
+- [x] Parcours de bout en bout automatisé dans un vrai navigateur (13 étapes, 0 erreur, 0 violation CSP)
+- [x] Version de démonstration en un seul fichier, avec serveur simulé
+
 ## À faire ensuite
 
-**Interface web (section 2).** Elle se branche sur l'API existante :
-- écran de connexion avec saisie du code MFA et QR code d'activation ;
-- tableau de bord, administration des utilisateurs et des rôles (grille module × action), journal avec filtres et contrôle d'intégrité ;
-- textes regroupés dans un fichier de langue, pour ajouter d'autres langues plus tard.
+**Interface (après validation du design).**
+- textes regroupés dans un fichier de langue, pour ajouter d'autres langues plus tard ;
+- jeu d'icônes dessiné, à la place des symboles provisoires du menu.
 
 **Modules métier.** Ils attendent la suite du cahier des charges, coupée à la section 6 :
 - comptabilité générale SYSCOHADA révisé (plan de comptes, journaux, écritures équilibrées, lettrage, clôtures, contre-passation au lieu de suppression) ;

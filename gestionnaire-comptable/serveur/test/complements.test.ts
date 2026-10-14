@@ -211,3 +211,12 @@ describe("Sauvegarde, restauration et copie externe du journal", () => {
     assert.ok(r4.anomalies.some((a) => a.probleme.includes("contenu modifié")));
   });
 });
+
+describe("Profil courant", () => {
+  test("La MFA n'est signalée comme requise que si l'entreprise l'impose", async () => {
+    const e = await entrepriseActive(env, "MOI-01", { mfa: false });
+    assert.equal((await e.admin.get("/api/auth/moi")).corps.mfa.requise, false);
+    const f = await entrepriseActive(env, "MOI-02");
+    assert.equal((await f.admin.get("/api/auth/moi")).corps.mfa.requise, true);
+  });
+});

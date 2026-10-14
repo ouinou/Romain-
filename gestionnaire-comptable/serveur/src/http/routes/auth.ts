@@ -160,7 +160,11 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
     const { rows: roles } = await ctx.c.query(
       "SELECT r.id, r.role_key, r.display_name FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.archived_at IS NULL WHERE ur.user_id = $1 ORDER BY r.display_name",
       [ctx.utilisateur.id]);
-    const { rows: [mfa] } = await ctx.c.query("SELECT bool_or(r.mfa_required) AS requis FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1", [ctx.utilisateur.id]);
+    // MFA « requise » = un rôle détenu l'exige ET l'entreprise impose la MFA (même règle que le contrôle des sessions).
+    const { rows: [mfa] } = await ctx.c.query(
+      `SELECT coalesce(bool_or(r.mfa_required), false) AND coalesce((co.settings->>'mfaObligatoire')::boolean, true) AS requis
+         FROM companies co LEFT JOIN user_roles ur ON ur.user_id = $1 LEFT JOIN roles r ON r.id = ur.role_id AND r.archived_at IS NULL
+        WHERE co.id = $2 GROUP BY co.settings`, [ctx.utilisateur.id, ctx.entrepriseId]);
     return {
       utilisateur: ctx.utilisateur,
       entreprise: { id: e.id, code: e.company_code, raisonSociale: e.legal_name, pays: e.country_code, devise: e.currency_code },

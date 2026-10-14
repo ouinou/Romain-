@@ -233,10 +233,12 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
   app.get("/api/utilisateurs/:id/connexions", proteger(deps, { permission: "users.read" }, async (req, ctx) => {
     const id = idParam(req);
     const { page, taille, offset } = pagination(req.query as Record<string, string>);
+    const { rows: [{ total }] } = await ctx.c.query(
+      "SELECT count(*)::int AS total FROM audit_events WHERE actor_user_id = $1 AND event_type IN ('auth', 'security')", [id]);
     const { rows } = await ctx.c.query(
-      `SELECT occurred_at, action, outcome, host(ip_address) AS ip, event_details->>'raison' AS raison
+      `SELECT occurred_at, event_type, action, outcome, host(ip_address) AS ip, event_details->>'raison' AS raison
          FROM audit_events WHERE actor_user_id = $1 AND event_type IN ('auth', 'security')
         ORDER BY sequence_no DESC LIMIT $2 OFFSET $3`, [id, taille, offset]);
-    return { elements: rows.map((r) => ({ date: r.occurred_at, action: r.action, resultat: r.outcome, ip: r.ip, raison: r.raison })), page, taille };
+    return { elements: rows.map((r) => ({ date: r.occurred_at, type: r.event_type, action: r.action, resultat: r.outcome, ip: r.ip, raison: r.raison })), total, page, taille };
   }));
 }

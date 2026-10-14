@@ -9,8 +9,9 @@ import { routesRoles } from "./routes/roles.js";
 import { routesAudit } from "./routes/audit.js";
 import { routesEntreprise } from "./routes/entreprise.js";
 import { routesNotifications } from "./routes/notifications.js";
+import { servirInterface } from "./interface.js";
 
-export function construireApp(deps: Dependances, options: FastifyServerOptions = {}) {
+export function construireApp(deps: Dependances, options: FastifyServerOptions = {}, dossierInterface?: string) {
   const app = Fastify({ bodyLimit: 1_048_576, trustProxy: false, ...options });
   app.register(cookie);
 
@@ -25,7 +26,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
     rep.header("x-content-type-options", "nosniff");
     rep.header("x-frame-options", "DENY");
     rep.header("referrer-policy", "no-referrer");
-    rep.header("content-security-policy", "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    rep.header("content-security-policy", "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
     if (req.url.startsWith("/api/")) rep.header("cache-control", "no-store");
   });
 
@@ -53,5 +54,6 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   routesAudit(app, deps);
   routesEntreprise(app, deps);
   routesNotifications(app, deps);
+  if (dossierInterface) servirInterface(app, dossierInterface);
   return app;
 }
