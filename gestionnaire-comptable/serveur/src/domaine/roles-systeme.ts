@@ -48,12 +48,10 @@ export const ROLES_SYSTEME: RoleSysteme[] = [
   },
   {
     cle: "accountant", libelle: "Comptable", mfa: false,
-    description: "Saisie et correction tracée des écritures, pièces justificatives, états comptables.",
+    description: "Saisie et correction tracée des écritures et des pièces. Pas d'accès par défaut aux comptes bancaires, à la paie ni aux résultats globaux : à accorder explicitement par l'entreprise.",
     permissions: [
       ...p("accounting", "read", "create", "update", "submit", "cancel", "print", "export"),
-      ...p("treasury", "read", "create", "submit", "print"),
-      ...p("cash", "read"), ...p("sales", "read"), ...p("purchases", "read"),
-      ...p("reports", "read", "print"),
+      ...p("sales", "read"), ...p("purchases", "read"),
     ],
   },
   {

@@ -4,6 +4,8 @@ import { transaction } from "../db.js";
 import { ROLES_SYSTEME } from "./roles-systeme.js";
 import { journaliser, journaliserSysteme } from "./audit.js";
 import { empreinteJeton, genererJeton } from "../securite/jetons.js";
+import { genererCodeMaitre, normaliserCodeMaitre } from "../securite/code-maitre.js";
+import { hacherMotDePasse } from "../securite/motdepasse.js";
 
 export interface NouvelleEntreprise {
   code: string; raisonSociale: string; adminEmail: string; adminNom: string;
@@ -13,18 +15,21 @@ export interface NouvelleEntreprise {
 /**
  * Crée une entreprise, ses rôles système et son administrateur principal (statut « invité »).
  * Réservé à l'exploitation (outil en ligne de commande, connexion propriétaire gc_owner).
- * Renvoie le jeton d'invitation de l'administrateur : à lui remettre en main propre, valable 72 h.
+ * Renvoie le jeton d'invitation de l'administrateur (valable 72 h) et le code maître de l'entreprise :
+ * deux secrets affichés une seule fois, à remettre à deux personnes différentes de préférence.
  */
 export async function creerEntreprise(poolProprietaire: Pool, n: NouvelleEntreprise) {
   const code = n.code.trim().toUpperCase();
   if (!/^[A-Z0-9][A-Z0-9-]{3,31}$/.test(code)) throw new Error("Code entreprise invalide : 4 à 32 caractères, lettres majuscules, chiffres et tirets.");
   const id = randomUUID();
   const jeton = genererJeton();
+  const codeMaitre = genererCodeMaitre();
+  const hashCodeMaitre = await hacherMotDePasse(normaliserCodeMaitre(codeMaitre));
   const res = await transaction(poolProprietaire, id, async (c) => {
     await c.query(
-      `INSERT INTO companies (id, company_code, legal_name, country_code, currency_code, rccm, niu)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [id, code, n.raisonSociale.trim(), n.pays ?? "CM", n.devise ?? "XAF", n.rccm ?? null, n.niu ?? null]);
+      `INSERT INTO companies (id, company_code, legal_name, country_code, currency_code, rccm, niu, master_code_hash, master_code_created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8, now())`,
+      [id, code, n.raisonSociale.trim(), n.pays ?? "CM", n.devise ?? "XAF", n.rccm ?? null, n.niu ?? null, hashCodeMaitre]);
     let roleAdminId = "";
     for (const r of ROLES_SYSTEME) {
       const { rows } = await c.query(
@@ -44,7 +49,7 @@ export async function creerEntreprise(poolProprietaire: Pool, n: NouvelleEntrepr
       [admin.id, empreinteJeton(jeton)]);
     await journaliser(c, { type: "company", action: "create", objetType: "company", objetId: id, apres: { code, raisonSociale: n.raisonSociale }, details: { origine: "outil d'exploitation" } });
     await journaliser(c, { type: "users", action: "invite", objetType: "user", objetId: admin.id, apres: { email: n.adminEmail, role: "company_admin" }, details: { origine: "outil d'exploitation" } });
-    return { entrepriseId: id, code, adminId: admin.id as string, jetonInvitation: jeton, expireLe: tok.expires_at as Date };
+    return { entrepriseId: id, code, adminId: admin.id as string, jetonInvitation: jeton, expireLe: tok.expires_at as Date, codeMaitre };
   });
   await journaliserSysteme(poolProprietaire, "company.create", "success", { code, entrepriseId: id });
   return res;

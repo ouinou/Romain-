@@ -18,6 +18,8 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | POST | `/reinitialisation` | — | `{ codeEntreprise, jeton, motDePasse }`. |
 | POST | `/mfa/initialisation` | connecté | Renvoie `secret` et `uri` (otpauth://, à afficher en QR code). |
 | POST | `/mfa/activation` | connecté | `{ code }`. |
+| POST | `/confirmation` | connecté | `{ motDePasse, codeMfa? }`. Valide les opérations sensibles pendant 5 min. Erreur `confirmation_requise` sur une route sensible sans confirmation récente. |
+| POST | `/recuperation` | — | `{ codeEntreprise, codeMaitre, email }` : rétablit l'accès d'un administrateur actif. Renvoie un code de réinitialisation de 30 min ; le code maître est consommé. |
 | GET | `/sessions` | connecté | Mes sessions ouvertes. |
 | DELETE | `/sessions/:id` | connecté | Fermer une de mes sessions. |
 
@@ -27,15 +29,15 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 |---|---|---|---|
 | GET | `/` | users.read | Filtres `recherche`, `statut` (invited, active, disabled), `role`, `tri` (nom, email, connexion, creation). |
 | GET | `/:id` | users.read | |
-| POST | `/` | users.create (+ users.admin pour attribuer des rôles) | `{ nom, email, roles?, accesExpireLe? }`. Renvoie le code d'invitation, affiché une seule fois. |
+| POST | `/` | users.create (+ users.admin et confirmation pour attribuer des rôles) | `{ nom, email, roles?, accesExpireLe? }`. Renvoie le code d'invitation, affiché une seule fois. |
 | PATCH | `/:id` | users.update | `{ nom?, accesExpireLe? }`. |
-| POST | `/:id/desactivation` | users.admin | `{ motif }`. Ferme ses sessions. Interdit sur soi-même et sur le dernier administrateur. |
-| POST | `/:id/reactivation` | users.admin | `{ motif }`. |
-| POST | `/:id/deverrouillage` | users.admin | Lève un verrouillage après échecs. |
-| PUT | `/:id/roles` | users.admin | `{ roles: [id], motif }`. Interdit sur soi-même. |
+| POST | `/:id/desactivation` | users.admin + confirmation | `{ motif }`. Ferme ses sessions. Interdit sur soi-même et sur le dernier administrateur. |
+| POST | `/:id/reactivation` | users.admin + confirmation | `{ motif }`. |
+| POST | `/:id/deverrouillage` | users.admin + confirmation | Lève un verrouillage après échecs. |
+| PUT | `/:id/roles` | users.admin + confirmation | `{ roles: [id], motif }`. Interdit sur soi-même. |
 | POST | `/:id/invitation` | users.create | Nouveau code d'invitation. |
-| POST | `/:id/reinitialisation-mot-de-passe` | users.admin | `{ motif }`. Code valable 30 min. |
-| POST | `/:id/revocation-sessions` | users.admin | `{ motif }`. |
+| POST | `/:id/reinitialisation-mot-de-passe` | users.admin + confirmation | `{ motif }`. Code valable 30 min. |
+| POST | `/:id/revocation-sessions` | users.admin + confirmation | `{ motif }`. |
 | GET | `/:id/connexions` | users.read | Historique des connexions, échecs compris. |
 
 ## Rôles
@@ -47,7 +49,7 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | GET | `/api/roles/:id` | roles.read | |
 | POST | `/api/roles` | roles.create (+ roles.admin si permissions) | `{ cle, libelle, description?, mfaRequise?, permissions?, copierDe? }`. |
 | PATCH | `/api/roles/:id` | roles.update | Rôles personnalisés uniquement. |
-| PUT | `/api/roles/:id/permissions` | roles.admin | `{ permissions, motif }`. Interdit sur un rôle système ou sur un rôle que l'on détient. |
+| PUT | `/api/roles/:id/permissions` | roles.admin + confirmation | `{ permissions, motif }`. Interdit sur un rôle système ou sur un rôle que l'on détient. |
 | POST | `/api/roles/:id/archivage` | roles.archive | `{ motif }`. Le rôle ne doit plus être attribué. |
 
 ## Journal d'audit
@@ -56,7 +58,7 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 |---|---|---|---|
 | GET | `/api/audit` | audit.read | Filtres `type`, `action`, `resultat`, `utilisateur`, `du`, `au` (AAAA-MM-JJ), `recherche`. |
 | GET | `/api/audit/integrite` | audit.read | Vérifie la chaîne d'empreintes ; la vérification est elle-même journalisée. |
-| GET | `/api/audit/export` | audit.export | CSV (séparateur `;`, UTF-8 avec BOM), mêmes filtres. Export journalisé. |
+| GET | `/api/audit/export` | audit.export + confirmation | CSV (séparateur `;`, UTF-8 avec BOM), mêmes filtres. Export journalisé. |
 | POST/PUT/PATCH/DELETE | `/api/audit…` | — | Toujours refusé (403) et journalisé comme tentative de modification. |
 
 ## Entreprise et notifications
@@ -64,7 +66,8 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | Méthode | Route | Permission | Remarques |
 |---|---|---|---|
 | GET | `/api/entreprise` | company.read | |
-| PATCH | `/api/entreprise` | company.update (+ company.admin pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, parametres?: { mfaObligatoire } }`. |
+| PATCH | `/api/entreprise` | company.update (+ company.admin et confirmation pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, parametres?: { mfaObligatoire, inactiviteJours } }`. |
+| POST | `/api/entreprise/code-maitre` | company.admin + confirmation | Génère un nouveau code maître, affiché une seule fois ; l'ancien cesse d'être valable. |
 | GET | `/api/notifications` | connecté | Avec le nombre de notifications non lues. |
 | POST | `/api/notifications/:id/lecture` | connecté | |
 | GET | `/api/sante` | — | État du serveur et de la base. |

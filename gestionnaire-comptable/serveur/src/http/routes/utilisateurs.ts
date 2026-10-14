@@ -3,7 +3,7 @@ import { z } from "zod";
 import { UUID, type Client } from "../../db.js";
 import { revoquerSessions } from "../../domaine/sessions.js";
 import { empreinteJeton, genererJeton } from "../../securite/jetons.js";
-import { exiger, pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
+import { exiger, exigerConfirmation, pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
 import { ErreurHttp, nonTrouve } from "../erreurs.js";
 
 const motif = z.string().trim().min(3, "Indiquez un motif (3 caractères minimum).").max(500);
@@ -118,7 +118,7 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
       roles: idsRoles.default([]),
       accesExpireLe: z.coerce.date().nullable().optional(),
     }).parse(req.body);
-    if (d.roles.length) exiger(ctx, "users.admin");
+    if (d.roles.length) { exiger(ctx, "users.admin"); exigerConfirmation(ctx); }
     if (d.accesExpireLe && d.accesExpireLe < new Date()) throw new ErreurHttp(400, "date_passee", "La date de fin d'accès doit être dans le futur.");
     const existe = await ctx.c.query("SELECT 1 FROM app_users WHERE lower(email) = $1", [d.email]);
     if (existe.rowCount) throw new ErreurHttp(409, "email_existant", "Un compte utilise déjà cette adresse e-mail dans cette entreprise.");
@@ -150,7 +150,7 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
     return vue(await chargerUtilisateur(ctx.c, id));
   }));
 
-  app.post("/api/utilisateurs/:id/desactivation", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.post("/api/utilisateurs/:id/desactivation", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ motif }).parse(req.body);
     pasSurSoiMeme(ctx, id, "désactiver");
@@ -165,19 +165,19 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
     return vue(await chargerUtilisateur(ctx.c, id));
   }));
 
-  app.post("/api/utilisateurs/:id/reactivation", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.post("/api/utilisateurs/:id/reactivation", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ motif }).parse(req.body);
     const { rows: [u] } = await ctx.c.query("SELECT status, password_hash IS NOT NULL AS a_mdp FROM app_users WHERE id = $1 FOR UPDATE", [id]);
     if (!u) throw nonTrouve("Utilisateur");
     if (u.status !== "disabled") throw new ErreurHttp(409, "non_desactive", "Seul un compte désactivé peut être réactivé.");
     const statut = u.a_mdp ? "active" : "invited";
-    await ctx.c.query("UPDATE app_users SET status = $2, failed_login_count = 0, locked_until = NULL WHERE id = $1", [id, statut]);
+    await ctx.c.query("UPDATE app_users SET status = $2, failed_login_count = 0, locked_until = NULL, reactivated_at = now() WHERE id = $1", [id, statut]);
     await ctx.journaliser({ type: "users", action: "enable", objetType: "user", objetId: id, motif: d.motif, avant: { statut: "disabled" }, apres: { statut } });
     return vue(await chargerUtilisateur(ctx.c, id));
   }));
 
-  app.post("/api/utilisateurs/:id/deverrouillage", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.post("/api/utilisateurs/:id/deverrouillage", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const r = await ctx.c.query("UPDATE app_users SET failed_login_count = 0, locked_until = NULL WHERE id = $1 AND locked_until > now()", [id]);
     if (!r.rowCount) throw new ErreurHttp(409, "non_verrouille", "Ce compte n'est pas verrouillé.");
@@ -185,7 +185,7 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
     return vue(await chargerUtilisateur(ctx.c, id));
   }));
 
-  app.put("/api/utilisateurs/:id/roles", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.put("/api/utilisateurs/:id/roles", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ roles: idsRoles, motif }).parse(req.body);
     pasSurSoiMeme(ctx, id, "modifier les rôles de");
@@ -209,7 +209,7 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
   }));
 
   // Réinitialisation hors ligne : l'administrateur remet le code en main propre (pas de serveur e-mail requis).
-  app.post("/api/utilisateurs/:id/reinitialisation-mot-de-passe", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.post("/api/utilisateurs/:id/reinitialisation-mot-de-passe", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ motif }).parse(req.body);
     pasSurSoiMeme(ctx, id, "réinitialiser le mot de passe de");
@@ -220,7 +220,7 @@ export function routesUtilisateurs(app: FastifyInstance, deps: Dependances) {
     return { reinitialisation };
   }));
 
-  app.post("/api/utilisateurs/:id/revocation-sessions", proteger(deps, { permission: "users.admin" }, async (req, ctx) => {
+  app.post("/api/utilisateurs/:id/revocation-sessions", proteger(deps, { permission: "users.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ motif }).parse(req.body);
     await chargerUtilisateur(ctx.c, id);

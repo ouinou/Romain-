@@ -13,7 +13,9 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Journal d'audit en ajout seul, chaîné, vérifiable, avec ancrages externes
 - [x] Notifications (sécurité)
 - [x] Sauvegarde chiffrée, restauration contrôlée
-- [x] 19 tests d'intégration sur PostgreSQL réel
+- [x] Code maître de l'entreprise (récupération d'accès contrôlée), confirmation avant les opérations sensibles, désactivation des comptes inutilisés
+- [x] Copie du journal sur un support distinct
+- [x] 30 tests automatisés sur PostgreSQL réel : authentification, permissions, isolation, journal, secrets absents des journaux, sauvegarde et restauration
 - [x] Documentation : architecture, sécurité, API, installation Windows
 
 ## À faire ensuite

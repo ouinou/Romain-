@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
-import { transaction, UUID } from "../../db.js";
+import { transaction, UUID, type Client } from "../../db.js";
 import { journaliser, journaliserSysteme, notifier } from "../../domaine/audit.js";
 import { creerSession, revoquerSessions, chargerPermissions } from "../../domaine/sessions.js";
 import { hacherMotDePasse, politiqueMotDePasse, verifierMotDePasse } from "../../securite/motdepasse.js";
-import { empreinteJeton } from "../../securite/jetons.js";
+import { empreinteJeton, genererJeton } from "../../securite/jetons.js";
 import { genererSecretTotp, uriOtpauth, verifierTotp } from "../../securite/totp.js";
 import { chiffrer, dechiffrer } from "../../securite/chiffrement.js";
 import { Limiteur } from "../../securite/limiteur.js";
+import { normaliserCodeMaitre } from "../../securite/code-maitre.js";
 import { COOKIE_SESSION, proteger, type Dependances } from "../contexte.js";
 import { ErreurHttp } from "../erreurs.js";
 
@@ -65,7 +66,9 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
       const { rows: [u] } = await c.query(
         `SELECT id, email, full_name, password_hash, status, failed_login_count, mfa_enabled, mfa_secret_enc, mfa_last_step,
                 locked_until IS NOT NULL AND locked_until > now() AS verrouille,
-                access_expires_at IS NOT NULL AND access_expires_at < now() AS acces_expire
+                access_expires_at IS NOT NULL AND access_expires_at < now() AS acces_expire,
+                greatest(last_login_at, reactivated_at, password_changed_at, created_at) AS derniere_activite,
+                (SELECT coalesce((settings->>'inactiviteJours')::int, 90) FROM companies WHERE id = company_id) AS inactivite_jours
            FROM app_users WHERE lower(email) = $1 FOR UPDATE`, [d.email]);
 
       if (!u) {
@@ -94,6 +97,18 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
       if (!(await verifierMotDePasse(u.password_hash, d.motDePasse))) {
         await enregistrerEchec("mot_de_passe");
         return { erreur: new ErreurHttp(401, "identifiants_invalides", IDENTIFIANTS_INVALIDES) };
+      }
+      // Compte inutilisé depuis trop longtemps : désactivé automatiquement (sauf s'il est le dernier administrateur).
+      if (u.status === "active" && u.inactivite_jours > 0 &&
+          Date.now() - new Date(u.derniere_activite).getTime() > u.inactivite_jours * 86_400_000 &&
+          !(await estDernierAdmin(c, u.id))) {
+        await c.query("UPDATE app_users SET status = 'disabled' WHERE id = $1", [u.id]);
+        await revoquerSessions(c, u.id, "compte_inutilise");
+        await journaliser(c, { type: "users", action: "auto_disable_inactive", objetType: "user", objetId: u.id, ip,
+          avant: { statut: "active" }, apres: { statut: "disabled" }, details: { joursSansActivite: u.inactivite_jours } });
+        await notifier(c, { permission: "users.admin", type: "warning", titre: "Compte inutilisé désactivé",
+          corps: `${u.full_name} n'avait pas utilisé son compte depuis plus de ${u.inactivite_jours} jours. Réactivez-le si nécessaire.` });
+        return { erreur: new ErreurHttp(403, "compte_inactif", `Compte désactivé après ${u.inactivite_jours} jours sans utilisation. Contactez votre administrateur.`) };
       }
       if (u.status !== "active" || u.acces_expire) {
         await echec("login", { raison: u.acces_expire ? "acces_expire" : `statut_${u.status}` }, u.id, "denied");
@@ -233,6 +248,113 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
     return { ok: true };
   }));
 
+  // ---------------------------------------------------------------- Confirmation avant opération sensible
+  // Mot de passe (et code MFA s'il est activé) ressaisis : valable quelques minutes pour cette session.
+  // Les échecs comptent pour le verrouillage du compte, comme à la connexion.
+  app.post("/api/auth/confirmation", proteger(deps, { permission: null, avantMfa: true }, async (req, ctx) => {
+    const d = z.object({ motDePasse: z.string().min(1).max(256), codeMfa: z.string().trim().regex(/^\d{6}$/).optional() }).parse(req.body);
+    const { rows: [u] } = await ctx.c.query(
+      "SELECT password_hash, failed_login_count, mfa_enabled, mfa_secret_enc, mfa_last_step FROM app_users WHERE id = $1 FOR UPDATE", [ctx.utilisateur.id]);
+    let raison: string | null = null, pas: number | null = null;
+    if (!(await verifierMotDePasse(u.password_hash, d.motDePasse))) raison = "mot_de_passe";
+    else if (u.mfa_enabled) {
+      pas = d.codeMfa ? verifierTotp(dechiffrer(cfg.cleChiffrement, u.mfa_secret_enc), d.codeMfa, Number(u.mfa_last_step)) : null;
+      if (pas === null) raison = d.codeMfa ? "code_mfa" : "code_mfa_absent";
+    }
+    if (raison) {
+      const n = u.failed_login_count + 1;
+      const verrou = n >= cfg.echecsAvantVerrouillage;
+      await ctx.c.query(
+        `UPDATE app_users SET failed_login_count = $2, locked_until = CASE WHEN $3 THEN now() + make_interval(mins => $4) ELSE locked_until END WHERE id = $1`,
+        [ctx.utilisateur.id, verrou ? 0 : n, verrou, cfg.verrouillageMinutes]);
+      await ctx.journaliser({ type: "auth", action: "step_up", resultat: "failure", details: { raison } });
+      if (verrou) {
+        await revoquerSessions(ctx.c, ctx.utilisateur.id, "echecs_confirmation");
+        await ctx.journaliser({ type: "security", action: "account_locked", objetType: "user", objetId: ctx.utilisateur.id, details: { echecs: n, contexte: "confirmation" } });
+        await notifier(ctx.c, { permission: "users.admin", type: "security", titre: "Compte verrouillé", corps: `${ctx.utilisateur.nom} : ${n} échecs de confirmation. Sessions fermées.` });
+      }
+      // Réponse d'erreur sans exception : la transaction est validée et le compteur d'échecs conservé.
+      ctx.rep.status(401);
+      return { erreur: raison === "code_mfa_absent"
+        ? { code: "mfa_requis", message: "Saisissez aussi le code de votre application d'authentification." }
+        : { code: "confirmation_refusee", message: "Mot de passe ou code incorrect." } };
+    }
+    if (pas !== null) await ctx.c.query("UPDATE app_users SET mfa_last_step = $2 WHERE id = $1", [ctx.utilisateur.id, pas]);
+    await ctx.c.query("UPDATE app_users SET failed_login_count = 0 WHERE id = $1", [ctx.utilisateur.id]);
+    await ctx.c.query("UPDATE user_sessions SET reauth_at = now() WHERE id = $1", [ctx.sessionId]);
+    await ctx.journaliser({ type: "auth", action: "step_up" });
+    return { ok: true, valableMinutes: cfg.confirmationMinutes };
+  }));
+
+  // ---------------------------------------------------------------- Récupération d'accès par le code maître
+  // Rétablit l'accès d'un administrateur actif (mot de passe ou téléphone MFA perdu).
+  // Le code est consommé, la MFA de ce compte est réinitialisée, ses sessions fermées,
+  // et un code de réinitialisation de 30 min est remis. Tous les administrateurs sont prévenus.
+  app.post("/api/auth/recuperation", async (req) => {
+    const ip = req.ip;
+    limiter(ip);
+    const d = z.object({
+      codeEntreprise: z.string().trim().min(1).max(32),
+      codeMaitre: z.string().trim().min(10).max(60),
+      email: z.string().trim().toLowerCase().email().max(254),
+    }).parse(req.body);
+    const refus = new ErreurHttp(400, "recuperation_refusee", "Récupération impossible : vérifiez le code entreprise, le code maître et l'adresse de l'administrateur.");
+    const entrepriseId = await entrepriseParCode(d.codeEntreprise, ip, "recuperation");
+    if (!entrepriseId) { await verifierMotDePasse(null, d.codeMaitre); throw refus; }
+
+    const sortie = await transaction(pool, entrepriseId, async (c) => {
+      const { rows: [e] } = await c.query(
+        `SELECT master_code_hash, master_code_failed_count,
+                master_code_locked_until IS NOT NULL AND master_code_locked_until > now() AS verrouille
+           FROM companies WHERE id = $1 FOR UPDATE`, [entrepriseId]);
+      const trace = (resultat: "failure" | "denied" | "success", details: Record<string, unknown>, acteurId: string | null = null) =>
+        journaliser(c, { type: "security", action: "master_code_recovery", resultat, acteurId, ip, details: { email: d.email, ...details } });
+      if (e.verrouille) {
+        await trace("denied", { raison: "code_maitre_verrouille" });
+        return { erreur: new ErreurHttp(423, "code_maitre_verrouille", "Trop d'essais avec le code maître. Réessayez dans une heure.") };
+      }
+      const valide = await verifierMotDePasse(e.master_code_hash, normaliserCodeMaitre(d.codeMaitre));
+      if (!valide) {
+        const n = e.master_code_failed_count + 1, verrou = n >= 5;
+        await c.query(
+          `UPDATE companies SET master_code_failed_count = $2,
+                  master_code_locked_until = CASE WHEN $3 THEN now() + interval '1 hour' ELSE master_code_locked_until END WHERE id = $1`,
+          [entrepriseId, verrou ? 0 : n, verrou]);
+        await trace("failure", { raison: e.master_code_hash ? "code_incorrect" : "aucun_code_actif", echecs: n });
+        if (verrou) await notifier(c, { permission: "users.admin", type: "security", titre: "Code maître bloqué",
+          corps: "5 essais incorrects du code maître. Il est bloqué pour une heure." });
+        return { erreur: refus };
+      }
+      const { rows: [u] } = await c.query(
+        `SELECT u.id, u.full_name FROM app_users u
+          WHERE lower(u.email) = $1 AND u.status = 'active'
+            AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.archived_at IS NULL
+                          JOIN role_permissions rp ON rp.role_id = r.id JOIN permissions p ON p.id = rp.permission_id
+                         WHERE ur.user_id = u.id AND p.permission_key = 'users.admin')
+          FOR UPDATE OF u`, [d.email]);
+      if (!u) {
+        await trace("denied", { raison: "pas_un_administrateur_actif" });
+        return { erreur: refus };
+      }
+      await c.query("UPDATE companies SET master_code_hash = NULL, master_code_failed_count = 0, master_code_locked_until = NULL WHERE id = $1", [entrepriseId]);
+      await c.query(
+        `UPDATE app_users SET mfa_enabled = false, mfa_secret_enc = NULL, mfa_pending_secret_enc = NULL,
+                              failed_login_count = 0, locked_until = NULL WHERE id = $1`, [u.id]);
+      const fermees = await revoquerSessions(c, u.id, "recuperation_code_maitre");
+      await c.query("UPDATE user_tokens SET used_at = now() WHERE user_id = $1 AND purpose = 'password_reset' AND used_at IS NULL", [u.id]);
+      const jeton = genererJeton();
+      const { rows: [t] } = await c.query(
+        `INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at) VALUES ($1, 'password_reset', $2, now() + interval '30 minutes') RETURNING expires_at`,
+        [u.id, empreinteJeton(jeton)]);
+      await trace("success", { sessionsFermees: fermees, mfaReinitialisee: true }, u.id);
+      await notifier(c, { permission: "users.admin", type: "security", titre: "Code maître utilisé",
+        corps: `Le code maître a servi à rétablir l'accès de ${u.full_name}. Il n'est plus valable : un administrateur doit en générer un nouveau. Si cette opération n'était pas prévue, réagissez immédiatement.` });
+      return { valeur: { reinitialisation: { jeton, expireLe: t.expires_at }, message: "Accès rétabli. Choisissez un nouveau mot de passe, puis réactivez la double authentification et générez un nouveau code maître." } };
+    });
+    if ("erreur" in sortie) throw sortie.erreur;
+    return sortie.valeur;
+  });
+
   // ---------------------------------------------------------------- Mes sessions
   app.get("/api/auth/sessions", proteger(deps, { permission: null, avantMfa: true }, async (_req, ctx) => {
     const { rows } = await ctx.c.query(
@@ -249,4 +371,18 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
     await ctx.journaliser({ type: "auth", action: "session_revoke", objetType: "session", objetId: id });
     return { ok: true };
   }));
+}
+
+/** Vrai si ce compte est le seul administrateur actif (permission users.admin) de l'entreprise. */
+async function estDernierAdmin(c: Client, utilisateurId: string) {
+  const { rows: [r] } = await c.query(
+    `SELECT count(DISTINCT u.id) FILTER (WHERE u.id <> $1)::int AS autres,
+            count(DISTINCT u.id) FILTER (WHERE u.id = $1)::int AS moi
+       FROM app_users u
+       JOIN user_roles ur ON ur.user_id = u.id
+       JOIN roles ro ON ro.id = ur.role_id AND ro.archived_at IS NULL
+       JOIN role_permissions rp ON rp.role_id = ro.id
+       JOIN permissions p ON p.id = rp.permission_id AND p.permission_key = 'users.admin'
+      WHERE u.status = 'active'`, [utilisateurId]);
+  return r.moi > 0 && r.autres === 0;
 }

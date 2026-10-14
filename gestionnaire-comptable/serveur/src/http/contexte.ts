@@ -17,6 +17,8 @@ export interface Ctx {
   sessionId: string;
   utilisateur: { id: string; email: string; nom: string; mfaActive: boolean };
   permissions: Set<string>;
+  /** L'utilisateur a ressaisi son mot de passe il y a moins de quelques minutes. */
+  confirmee: boolean;
   ip: string;
   a: (permission: string) => boolean;
   /** Journalise avec l'auteur, la session et l'adresse IP de la requête. */
@@ -38,6 +40,8 @@ interface Options {
   permission: string | null;
   /** Route accessible même si la double authentification reste à configurer. */
   avantMfa?: boolean;
+  /** Opération sensible : exige une confirmation récente par mot de passe (et code MFA). */
+  sensible?: boolean;
 }
 
 type Traitement<T> = (req: FastifyRequest, ctx: Ctx) => Promise<T>;
@@ -67,8 +71,10 @@ export function proteger<T>(deps: Dependances, opts: Options, traitement: Traite
           });
           return { erreur: new ErreurHttp(403, "acces_refuse", "Vous n'avez pas la permission nécessaire pour cette action.") };
         }
+        if (opts.sensible && !v.confirmee) return { erreur: erreurConfirmation() };
         const ctx: Ctx = {
           c, entrepriseId: ck.entrepriseId, sessionId: v.sessionId, utilisateur: v.utilisateur, permissions: v.permissions, ip, rep,
+          confirmee: v.confirmee,
           a: (p) => v.permissions.has(p),
           journaliser: (e) => journaliser(c, { ...ctxAudit, ...e }),
         };
@@ -88,6 +94,14 @@ export function exiger(ctx: Ctx, permission: string) {
   if (!ctx.a(permission))
     throw new ErreurHttp(403, "acces_refuse", "Vous n'avez pas la permission nécessaire pour cette action.",
       { type: "security", action: "access_denied", resultat: "denied", details: { permission } });
+}
+
+const erreurConfirmation = () =>
+  new ErreurHttp(403, "confirmation_requise", "Opération sensible : confirmez votre identité en ressaisissant votre mot de passe.");
+
+/** Pour une opération qui ne devient sensible que dans certains cas (ex. création d'un compte AVEC des rôles). */
+export function exigerConfirmation(ctx: Ctx) {
+  if (!ctx.confirmee) throw erreurConfirmation();
 }
 
 /** Pagination commune : page ≥ 1, taille entre 1 et 100. */

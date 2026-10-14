@@ -8,6 +8,8 @@ export interface SessionValide {
   permissions: Set<string>;
   /** Un rôle détenu exige la MFA, l'entreprise l'impose, et l'utilisateur ne l'a pas encore activée. */
   mfaAConfigurer: boolean;
+  /** Mot de passe ressaisi récemment dans cette session (opérations sensibles). */
+  confirmee: boolean;
 }
 
 export async function creerSession(c: Client, cfg: Config, utilisateurId: string, ip: string | null, agent: string | null) {
@@ -28,6 +30,7 @@ export async function validerSession(c: Client, cfg: Config, jeton: string): Pro
     `SELECT s.id, s.revoked_at, s.user_id,
             (now() - s.last_seen_at) > make_interval(mins => $2) AS inactive,
             now() > s.expires_at AS expiree,
+            s.reauth_at IS NOT NULL AND (now() - s.reauth_at) < make_interval(mins => $3) AS confirmee,
             u.status, u.email, u.full_name, u.mfa_enabled,
             u.access_expires_at IS NOT NULL AND u.access_expires_at < now() AS acces_expire,
             coalesce((co.settings->>'mfaObligatoire')::boolean, true) AS mfa_obligatoire
@@ -36,7 +39,7 @@ export async function validerSession(c: Client, cfg: Config, jeton: string): Pro
        JOIN companies co ON co.id = s.company_id
       WHERE s.token_hash = $1
       FOR UPDATE OF s`,
-    [empreinteJeton(jeton), cfg.sessionInactiviteMinutes]);
+    [empreinteJeton(jeton), cfg.sessionInactiviteMinutes, cfg.confirmationMinutes]);
   if (!s || s.revoked_at) return { refus: "Session inconnue ou fermée. Reconnectez-vous." };
   const raison = s.inactive ? "inactivite" : s.expiree ? "duree_maximale" : s.status !== "active" ? "compte_inactif" : s.acces_expire ? "acces_expire" : null;
   if (raison) {
@@ -50,6 +53,7 @@ export async function validerSession(c: Client, cfg: Config, jeton: string): Pro
     utilisateur: { id: s.user_id, email: s.email, nom: s.full_name, mfaActive: s.mfa_enabled },
     permissions,
     mfaAConfigurer: mfaRequis && s.mfa_obligatoire && !s.mfa_enabled,
+    confirmee: s.confirmee,
   };
 }
 

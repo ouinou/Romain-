@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { UUID, type Client } from "../../db.js";
-import { exiger, proteger, type Dependances } from "../contexte.js";
+import { exiger, exigerConfirmation, proteger, type Dependances } from "../contexte.js";
 import { ErreurHttp, nonTrouve } from "../erreurs.js";
 
 const cleRole = z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_]{2,40}$/, "Clé : lettres minuscules, chiffres et _ (3 à 41 caractères).");
@@ -71,7 +71,7 @@ export function routesRoles(app: FastifyInstance, deps: Dependances) {
     }).parse(req.body);
     let perms = d.permissions;
     if (d.copierDe) perms = [...new Set([...perms, ...(await chargerRole(ctx.c, d.copierDe)).permissions])];
-    if (perms.length) exiger(ctx, "roles.admin");
+    if (perms.length) { exiger(ctx, "roles.admin"); exigerConfirmation(ctx); }
     await verifierPermissionsConnues(ctx.c, perms);
     const existe = await ctx.c.query("SELECT 1 FROM roles WHERE role_key = $1", [d.cle]);
     if (existe.rowCount) throw new ErreurHttp(409, "cle_existante", "Un rôle utilise déjà cette clé.");
@@ -103,7 +103,7 @@ export function routesRoles(app: FastifyInstance, deps: Dependances) {
   }));
 
   // Changement de permissions : interdit sur les rôles système et sur un rôle que l'on détient soi-même.
-  app.put("/api/roles/:id/permissions", proteger(deps, { permission: "roles.admin" }, async (req, ctx) => {
+  app.put("/api/roles/:id/permissions", proteger(deps, { permission: "roles.admin", sensible: true }, async (req, ctx) => {
     const id = idParam(req);
     const d = z.object({ permissions: listePermissions, motif }).parse(req.body);
     const avant = await chargerRole(ctx.c, id);

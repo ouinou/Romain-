@@ -51,7 +51,10 @@ npm run migrer
 npm run entreprise:creer -- --code GC-MONENTREPRISE --raison-sociale "Mon Entreprise SARL" --admin-email admin@monentreprise.cm --admin-nom "Prénom Nom" --niu M0123456789X --rccm RC/DLA/2026/B/0001
 ```
 
-Le code d'invitation affiché n'apparaît qu'une fois. Le remettre en main propre à l'administrateur, qui choisira son mot de passe puis activera la double authentification.
+Deux secrets s'affichent, une seule fois chacun :
+
+- **le code maître de l'entreprise** (`GCM-…`) : à imprimer et à remettre sous enveloppe scellée au dirigeant, rangée dans un coffre. Il ne doit pas rester chez l'administrateur informatique. Il sert seulement si l'administrateur perd l'accès (mot de passe oublié, téléphone perdu). Après usage, l'administrateur en génère un nouveau depuis le logiciel ;
+- **le code d'invitation** de l'administrateur : à lui remettre en main propre. Il choisira son mot de passe, puis activera la double authentification.
 
 ## 6. Activer HTTPS sur le réseau local
 
@@ -92,7 +95,7 @@ Dans le Planificateur de tâches Windows, créer deux tâches qui s'exécutent d
 | Sauvegarde | `npm run sauvegarder` | chaque soir |
 | Contrôle du journal | `npm run journal:verifier` | chaque soir, après la sauvegarde |
 
-Copier régulièrement le dossier de sauvegardes et le fichier d'ancrages sur un support séparé (disque externe rangé ailleurs, autre machine).
+Renseigner `GC_DOSSIER_COPIE_JOURNAL` et `GC_FICHIER_ANCRAGES` vers un support que l'administrateur technique ne contrôle pas seul : partage réseau d'un autre poste, NAS, disque externe. Copier aussi régulièrement le dossier de sauvegardes sur un support séparé.
 
 **Tester la restauration au moins une fois par trimestre**, dans une base neuve :
 

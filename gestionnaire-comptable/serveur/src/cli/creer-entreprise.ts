@@ -18,6 +18,7 @@ await executer(async () => {
     });
     console.log(`Entreprise créée : ${r.code} (${r.entrepriseId})`);
     console.log(`Administrateur invité : ${o["admin-email"]}`);
-    console.log(`\nCode d'invitation (à remettre en main propre, affiché une seule fois, valable jusqu'au ${r.expireLe.toLocaleString("fr-FR")}) :\n\n  ${r.jetonInvitation}\n`);
+    console.log(`\nCode maître de l'entreprise (récupération d'accès ; à imprimer et remettre sous enveloppe scellée au dirigeant, affiché une seule fois) :\n\n  ${r.codeMaitre}\n`);
+    console.log(`Code d'invitation (à remettre en main propre, affiché une seule fois, valable jusqu'au ${r.expireLe.toLocaleString("fr-FR")}) :\n\n  ${r.jetonInvitation}\n`);
   } finally { await pool.end(); }
 });

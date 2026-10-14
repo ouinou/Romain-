@@ -11,6 +11,8 @@ export interface Config {
   sessionDureeMaxHeures: number;
   cookieSecurise: boolean;
   tls?: { cert: Buffer; key: Buffer };
+  /** Durée de validité d'une confirmation par mot de passe avant une opération sensible. */
+  confirmationMinutes: number;
   echecsAvantVerrouillage: number;
   verrouillageMinutes: number;
   tentativesParIpParFenetre: number;
@@ -41,6 +43,7 @@ export function chargerConfig(): Config {
     sessionDureeMaxHeures: entier("GC_SESSION_DUREE_MAX_HEURES", 10),
     cookieSecurise: tls !== undefined || process.env.GC_COOKIE_SECURISE === "oui",
     tls,
+    confirmationMinutes: entier("GC_CONFIRMATION_MINUTES", 5),
     echecsAvantVerrouillage: entier("GC_ECHECS_AVANT_VERROUILLAGE", 5),
     verrouillageMinutes: entier("GC_VERROUILLAGE_MINUTES", 15),
     tentativesParIpParFenetre: entier("GC_TENTATIVES_PAR_IP", 30),

@@ -15,11 +15,11 @@ import { codeHotp, base32Decoder, pasCourant } from "../src/securite/totp.js";
  * Prérequis : rôles gc_owner, gc_app, gc_backup créés sur le serveur désigné par GC_TEST_SUPER.
  */
 const SUPER = process.env.GC_TEST_SUPER ?? "postgresql://postgres@%2Ftmp:5433/postgres";
-const url = (role: string, base: string) => { const u = new URL(SUPER); u.username = role; u.pathname = "/" + base; return u.toString(); };
+export const url = (role: string, base: string) => { const u = new URL(SUPER); u.username = role; u.pathname = "/" + base; return u.toString(); };
 
 export const cfgTest: Config = {
   port: 0, hote: "127.0.0.1", baseDeDonnees: "", cleChiffrement: randomBytes(32),
-  sessionInactiviteMinutes: 15, sessionDureeMaxHeures: 10, cookieSecurise: false,
+  sessionInactiviteMinutes: 15, sessionDureeMaxHeures: 10, cookieSecurise: false, confirmationMinutes: 5,
   echecsAvantVerrouillage: 5, verrouillageMinutes: 15, tentativesParIpParFenetre: 1000, fenetreTentativesMinutes: 10,
 };
 
@@ -86,6 +86,7 @@ export async function entrepriseActive(env: Env, code: string, opts: { mfa?: boo
   if (acc.statut !== 200) throw new Error("acceptation: " + JSON.stringify(acc.corps));
   const cx = await admin.post("/api/auth/connexion", { codeEntreprise: code, email, motDePasse: MDP });
   if (cx.statut !== 200) throw new Error("connexion: " + JSON.stringify(cx.corps));
+  await confirmer(admin);
   return { ...r, email, admin };
 }
 
@@ -99,6 +100,7 @@ export async function utilisateurAvecRole(env: Env, e: Awaited<ReturnType<typeof
   await agent.post("/api/auth/invitation/acceptation", { codeEntreprise: e.code, jeton: cr.corps.invitation.jeton, motDePasse: MDP });
   const cx = await agent.post("/api/auth/connexion", { codeEntreprise: e.code, email, motDePasse: MDP });
   if (cx.statut !== 200) throw new Error("connexion: " + JSON.stringify(cx.corps));
+  await confirmer(agent);
   return { agent, id: cr.corps.utilisateur.id as string };
 }
 
@@ -106,4 +108,10 @@ export async function utilisateurAvecRole(env: Env, e: Awaited<ReturnType<typeof
 export async function journal(env: Env, entrepriseId: string) {
   const { rows } = await env.superu.query("SELECT * FROM audit_events WHERE company_id = $1 ORDER BY sequence_no", [entrepriseId]);
   return rows;
+}
+
+/** Confirmation par mot de passe (opérations sensibles), valable quelques minutes. */
+export async function confirmer(agent: Agent, codeMfa?: string) {
+  const r = await agent.post("/api/auth/confirmation", { motDePasse: MDP, ...(codeMfa ? { codeMfa } : {}) });
+  if (r.statut !== 200) throw new Error("confirmation: " + JSON.stringify(r.corps));
 }

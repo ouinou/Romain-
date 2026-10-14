@@ -57,7 +57,7 @@ export function routesAudit(app: FastifyInstance, deps: Dependances) {
   }));
 
   // Export CSV (séparateur « ; », compatible Excel en français). L'export lui-même est journalisé.
-  app.get("/api/audit/export", proteger(deps, { permission: "audit.export" }, async (req, ctx) => {
+  app.get("/api/audit/export", proteger(deps, { permission: "audit.export", sensible: true }, async (req, ctx) => {
     const q = req.query as Record<string, string | undefined>;
     const { where, valeurs } = filtres(q);
     const lignes = await lister(ctx.c, where, valeurs, 50_000, 0);

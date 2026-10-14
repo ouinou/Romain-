@@ -14,6 +14,9 @@ Ce document dit ce que le logiciel protège réellement, et où sont les limites
 | Révocation | Immédiate lors d'une désactivation, d'un changement ou d'une réinitialisation de mot de passe, ou sur demande d'un administrateur. |
 | Invitations et réinitialisations | Codes à usage unique (72 h pour une invitation, 30 min pour une réinitialisation), remis en main propre. Aucun serveur de messagerie n'est nécessaire. |
 | Accès temporaires | Date de fin d'accès par utilisateur (stagiaire, auditeur externe). |
+| Comptes inutilisés | Désactivés automatiquement à la tentative de connexion après 90 jours sans usage (réglable, 0 = jamais). Le dernier administrateur actif n'est jamais désactivé ainsi. |
+| Opérations sensibles | Mot de passe, et code MFA s'il est actif, ressaisis dans les 5 dernières minutes : désactivation, réactivation, déverrouillage, changement de rôles ou de permissions, réinitialisation, fermeture de sessions, export du journal, paramètres de sécurité, nouveau code maître. Les échecs comptent pour le verrouillage. |
+| Code maître | Secret de récupération propre à l'entreprise (environ 119 bits), haché en Argon2id, affiché une seule fois. Il rétablit l'accès d'un administrateur actif et rien d'autre : il réinitialise sa MFA, ferme ses sessions et délivre un code de réinitialisation de 30 min. Usage unique, 5 essais puis blocage d'une heure, notification à tous les administrateurs. Ce n'est pas une porte dérobée : l'éditeur ne le connaît pas, il n'est pas dans le code et il ne donne accès à aucune donnée. |
 | Comportement inhabituel | Connexion depuis une adresse IP jamais utilisée par ce compte en 90 jours → événement `unusual_login` et notification. |
 | CSRF | SameSite=Strict, plus un en-tête `X-GC-Requete` exigé sur toute requête qui modifie. |
 
@@ -30,8 +33,11 @@ Ce document dit ce que le logiciel protège réellement, et où sont les limites
 3. La base impose elle-même l'horodatage, la séquence et l'empreinte : le serveur ne peut pas les falsifier.
 4. Chaque empreinte inclut la précédente. Modifier ou supprimer un événement au milieu rompt la chaîne, et la vérification (`GET /api/audit/integrite` ou `npm run journal:verifier`) le signale.
 5. **Ancrages** : `journal:verifier` note la dernière séquence et son empreinte dans un fichier hors de la base. À la vérification suivante, la suppression des derniers événements, ou un recalcul complet de la chaîne, est détectée.
+6. **Copie externe** : avec `GC_DOSSIER_COPIE_JOURNAL`, le même outil recopie chaque nouvel événement (fichiers JSONL, un par entreprise) sur un support distinct. Il vérifie aussi que le dernier événement copié est toujours identique en base.
 
-**Limite à connaître.** Un superutilisateur PostgreSQL, ou quelqu'un qui a un accès administrateur au serveur Windows, peut désactiver les déclencheurs, réécrire la table et recalculer toutes les empreintes. Les points 1 à 4 ne l'arrêtent pas. Seul le point 5 le révèle, **à condition que le fichier d'ancrages soit conservé ailleurs** : clé USB rangée, autre machine, ou impression signée lors des clôtures. Les sauvegardes externes jouent le même rôle. C'est pour cela que le mot de passe `postgres` et le compte administrateur Windows ne doivent pas être détenus par les mêmes personnes que l'administration fonctionnelle du logiciel.
+**Ce qui n'est jamais écrit dans les journaux :** mots de passe (justes ou faux), jetons de session, codes d'invitation ou de réinitialisation, code maître, secrets MFA. Un test automatisé le vérifie.
+
+**Limite à connaître.** Un superutilisateur PostgreSQL, ou quelqu'un qui a un accès administrateur au serveur Windows, peut désactiver les déclencheurs, réécrire la table et recalculer toutes les empreintes. Les points 1 à 4 ne l'arrêtent pas. Seuls les points 5 et 6 le révèlent, **à condition que les ancrages et la copie soient conservés ailleurs** : clé USB rangée, autre machine, ou impression signée lors des clôtures. Les sauvegardes externes jouent le même rôle. C'est pour cela que le mot de passe `postgres` et le compte administrateur Windows ne doivent pas être détenus par les mêmes personnes que l'administration fonctionnelle du logiciel.
 
 ## Séparation des responsabilités
 
