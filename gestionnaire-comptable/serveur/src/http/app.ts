@@ -10,6 +10,9 @@ import { routesAudit } from "./routes/audit.js";
 import { routesEntreprise } from "./routes/entreprise.js";
 import { routesNotifications } from "./routes/notifications.js";
 import { servirInterface } from "./interface.js";
+import { routesReferentielComptable } from "./routes/comptabilite-referentiel.js";
+import { routesEcritures } from "./routes/comptabilite-ecritures.js";
+import { routesEtatsComptables } from "./routes/comptabilite-etats.js";
 
 export function construireApp(deps: Dependances, options: FastifyServerOptions = {}, dossierInterface?: string) {
   const app = Fastify({ bodyLimit: 1_048_576, trustProxy: false, ...options });
@@ -54,6 +57,9 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   routesAudit(app, deps);
   routesEntreprise(app, deps);
   routesNotifications(app, deps);
+  routesReferentielComptable(app, deps);
+  routesEcritures(app, deps);
+  routesEtatsComptables(app, deps);
   if (dossierInterface) servirInterface(app, dossierInterface);
   return app;
 }

@@ -38,7 +38,7 @@ export const ROLES_SYSTEME: RoleSysteme[] = [
     cle: "finance_director", libelle: "Directeur financier", mfa: true,
     description: "Finances, trésorerie et rapports détaillés ; validation des dépenses selon délégation.",
     permissions: [
-      ...p("accounting", "read", "approve", "cancel", "print", "export"),
+      ...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
       ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export"),
       ...p("cash", "read", "approve", "print"),
       ...p("sales", "read", "print"), ...p("purchases", "read", "approve", "print"),
