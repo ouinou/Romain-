@@ -1,0 +1,70 @@
+# API du serveur (v0.1)
+
+Toutes les réponses sont en JSON, sauf l'export CSV. Les erreurs ont la forme `{ "erreur": { "code", "message" } }`.
+
+Toute requête autre que GET doit porter l'en-tête `X-GC-Requete: 1`. La session est portée par le cookie `gc_session` (HttpOnly), posé à la connexion.
+
+Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défaut), et renvoient `{ elements, total, page, taille }`.
+
+## Authentification (`/api/auth`)
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| POST | `/connexion` | — | `{ codeEntreprise, email, motDePasse, codeMfa? }`. Codes d'erreur : `identifiants_invalides`, `mfa_requis`, `mfa_invalide`, `compte_verrouille`, `compte_inactif`, `trop_de_tentatives`. |
+| POST | `/deconnexion` | connecté | Ferme la session. |
+| GET | `/moi` | connecté | Utilisateur, entreprise, rôles, permissions, état MFA. |
+| POST | `/mot-de-passe` | connecté | `{ ancien, nouveau }`. Ferme les autres sessions. |
+| POST | `/invitation/acceptation` | — | `{ codeEntreprise, jeton, motDePasse }` : active un compte invité. |
+| POST | `/reinitialisation` | — | `{ codeEntreprise, jeton, motDePasse }`. |
+| POST | `/mfa/initialisation` | connecté | Renvoie `secret` et `uri` (otpauth://, à afficher en QR code). |
+| POST | `/mfa/activation` | connecté | `{ code }`. |
+| GET | `/sessions` | connecté | Mes sessions ouvertes. |
+| DELETE | `/sessions/:id` | connecté | Fermer une de mes sessions. |
+
+## Utilisateurs (`/api/utilisateurs`)
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/` | users.read | Filtres `recherche`, `statut` (invited, active, disabled), `role`, `tri` (nom, email, connexion, creation). |
+| GET | `/:id` | users.read | |
+| POST | `/` | users.create (+ users.admin pour attribuer des rôles) | `{ nom, email, roles?, accesExpireLe? }`. Renvoie le code d'invitation, affiché une seule fois. |
+| PATCH | `/:id` | users.update | `{ nom?, accesExpireLe? }`. |
+| POST | `/:id/desactivation` | users.admin | `{ motif }`. Ferme ses sessions. Interdit sur soi-même et sur le dernier administrateur. |
+| POST | `/:id/reactivation` | users.admin | `{ motif }`. |
+| POST | `/:id/deverrouillage` | users.admin | Lève un verrouillage après échecs. |
+| PUT | `/:id/roles` | users.admin | `{ roles: [id], motif }`. Interdit sur soi-même. |
+| POST | `/:id/invitation` | users.create | Nouveau code d'invitation. |
+| POST | `/:id/reinitialisation-mot-de-passe` | users.admin | `{ motif }`. Code valable 30 min. |
+| POST | `/:id/revocation-sessions` | users.admin | `{ motif }`. |
+| GET | `/:id/connexions` | users.read | Historique des connexions, échecs compris. |
+
+## Rôles
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/api/permissions/catalogue` | roles.read | Modules et actions. |
+| GET | `/api/roles` | roles.read | `?archives=oui` pour inclure les rôles archivés. |
+| GET | `/api/roles/:id` | roles.read | |
+| POST | `/api/roles` | roles.create (+ roles.admin si permissions) | `{ cle, libelle, description?, mfaRequise?, permissions?, copierDe? }`. |
+| PATCH | `/api/roles/:id` | roles.update | Rôles personnalisés uniquement. |
+| PUT | `/api/roles/:id/permissions` | roles.admin | `{ permissions, motif }`. Interdit sur un rôle système ou sur un rôle que l'on détient. |
+| POST | `/api/roles/:id/archivage` | roles.archive | `{ motif }`. Le rôle ne doit plus être attribué. |
+
+## Journal d'audit
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/api/audit` | audit.read | Filtres `type`, `action`, `resultat`, `utilisateur`, `du`, `au` (AAAA-MM-JJ), `recherche`. |
+| GET | `/api/audit/integrite` | audit.read | Vérifie la chaîne d'empreintes ; la vérification est elle-même journalisée. |
+| GET | `/api/audit/export` | audit.export | CSV (séparateur `;`, UTF-8 avec BOM), mêmes filtres. Export journalisé. |
+| POST/PUT/PATCH/DELETE | `/api/audit…` | — | Toujours refusé (403) et journalisé comme tentative de modification. |
+
+## Entreprise et notifications
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/api/entreprise` | company.read | |
+| PATCH | `/api/entreprise` | company.update (+ company.admin pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, parametres?: { mfaObligatoire } }`. |
+| GET | `/api/notifications` | connecté | Avec le nombre de notifications non lues. |
+| POST | `/api/notifications/:id/lecture` | connecté | |
+| GET | `/api/sante` | — | État du serveur et de la base. |

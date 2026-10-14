@@ -1,0 +1,35 @@
+# Feuille de route
+
+## Fait (v0.1, socle)
+
+Couvre les sections 1 à 6 du cahier des charges, côté serveur.
+
+- [x] Architecture serveur + PostgreSQL, fonctionnement hors ligne sur réseau local
+- [x] Multi-entreprises avec isolation par Row-Level Security
+- [x] Authentification : invitations, connexion, déconnexion, verrouillage, limitation par IP, expiration et révocation des sessions, accès temporaires, réinitialisation hors ligne
+- [x] Double authentification TOTP, obligatoire pour les rôles sensibles
+- [x] Permissions granulaires 14 modules × 10 actions, 10 rôles système, rôles personnalisés
+- [x] Garde-fous : pas d'auto-attribution, dernier administrateur protégé
+- [x] Journal d'audit en ajout seul, chaîné, vérifiable, avec ancrages externes
+- [x] Notifications (sécurité)
+- [x] Sauvegarde chiffrée, restauration contrôlée
+- [x] 19 tests d'intégration sur PostgreSQL réel
+- [x] Documentation : architecture, sécurité, API, installation Windows
+
+## À faire ensuite
+
+**Interface web (section 2).** Elle se branche sur l'API existante :
+- écran de connexion avec saisie du code MFA et QR code d'activation ;
+- tableau de bord, administration des utilisateurs et des rôles (grille module × action), journal avec filtres et contrôle d'intégrité ;
+- textes regroupés dans un fichier de langue, pour ajouter d'autres langues plus tard.
+
+**Modules métier.** Ils attendent la suite du cahier des charges, coupée à la section 6 :
+- comptabilité générale SYSCOHADA révisé (plan de comptes, journaux, écritures équilibrées, lettrage, clôtures, contre-passation au lieu de suppression) ;
+- trésorerie et banques, caisse, ventes, achats, stocks, RH et paie ;
+- états financiers OHADA (bilan, compte de résultat, TAFIRE / tableau des flux) et déclarations fiscales camerounaises.
+
+**Exploitation.**
+- installateur Windows (service, certificat, tâches planifiées) ;
+- restauration par entreprise ;
+- chaînage du journal système ;
+- règles de détection supplémentaires (horaires, volumes d'export).
