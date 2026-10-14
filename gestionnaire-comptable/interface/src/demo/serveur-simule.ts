@@ -5,6 +5,7 @@
  * le vrai contrôle se fait dans serveur/ (PostgreSQL, Argon2id, RLS, journal chaîné).
  */
 import { definirTransport } from "../api";
+import { traiterComptabilite, initialiserComptabilite } from "./comptabilite-simulee";
 
 const MDP_DEMO = "Demonstration-2026!";
 const CODE = "GC-DEMO-2026";
@@ -32,7 +33,7 @@ const roles: Role[] = [
   role("general_manager", "Directeur général", "Vue d'ensemble, rapports de direction et validation selon le circuit défini.", true,
     [...METIER.flatMap((m) => p(m, "read")), ...p("reports", "print", "export"), ...p("accounting", "approve"), ...p("treasury", "approve"), ...p("purchases", "approve"), ...p("audit", "read"), ...p("users", "read"), ...p("company", "read")]),
   role("finance_director", "Directeur financier", "Finances, trésorerie et rapports détaillés ; validation selon délégation.", true,
-    [...p("accounting", "read", "approve", "cancel", "print", "export"), ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export"), ...p("reports", "read", "print", "export")]),
+    [...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"), ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export"), ...p("payroll", "read", "approve"), ...p("reports", "read", "print", "export")]),
   role("accountant", "Comptable", "Écritures et pièces. Banques, paie et résultats globaux sur autorisation explicite.", false,
     [...p("accounting", "read", "create", "update", "submit", "cancel", "print", "export"), ...p("sales", "read"), ...p("purchases", "read")]),
   role("cashier", "Caissier", "Mouvements de caisse et solde de sa caisse uniquement.", false, p("cash", "read", "create", "submit", "print")),
@@ -52,7 +53,9 @@ const utilisateurs: Util[] = [
   util("Amina Mahamat", "amina.mahamat@demo.cm", "cashier", "active", 130),
   util("Jean Bemba", "jean.bemba@demo.cm", "stock_manager", "active", 60 * 26),
   util("Nadia Koyom", "nadia.koyom@demo.cm", "purchasing_manager", "active", 60 * 30),
-  util("Ousmane Djibrine", "ousmane.djibrine@demo.cm", "finance_director", "invited", null),
+  util("Ousmane Djibrine", "ousmane.djibrine@demo.cm", "finance_director", "active", 60 * 3),
+  util("Joseph Atangana", "joseph.atangana@demo.cm", "general_manager", "active", 60 * 24 * 2),
+  util("Rachel Ewane", "rachel.ewane@demo.cm", "hr_manager", "invited", null),
   util("Auditeur externe", "audit@demo.cm", "auditor", "disabled", 60 * 24 * 12),
 ];
 const entreprise = { id: id(), code: CODE, raisonSociale: "ITI Démonstration SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: null as string | null, parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };
@@ -273,10 +276,15 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
     if (a2 === "lecture") { notifications.find((n) => n.id === a1)?.lus.add(u.id); return { ok: true }; }
     return { elements: vis.map((n) => ({ id: n.id, type: n.type, titre: n.titre, texte: n.texte, date: n.date, lue: n.lus.has(u.id) })), nonLues: vis.filter((n) => !n.lus.has(u.id)).length, page: 1, taille: 20 };
   }
+  if (mod === "comptabilite") return traiterComptabilite(m, chemin, q, c, {
+    exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
+    erreur: (s: number, code: string, message: string) => new E(s, code, message),
+  });
   throw new E(404, "introuvable", "Adresse inconnue.");
 }
 
 export function installer() {
+  initialiserComptabilite(Object.fromEntries(utilisateurs.map((u) => [u.email, u.id])));
   definirTransport(async (methode, url, corps) => {
     await new Promise((r) => setTimeout(r, 120));   // petite latence réaliste
     const u = new URL(url, location.href);

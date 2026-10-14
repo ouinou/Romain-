@@ -71,3 +71,29 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | GET | `/api/notifications` | connecté | Avec le nombre de notifications non lues. |
 | POST | `/api/notifications/:id/lecture` | connecté | |
 | GET | `/api/sante` | — | État du serveur et de la base. |
+
+## Comptabilité (`/api/comptabilite`)
+
+Montants : entiers en FCFA. Toutes les routes respectent les comptes protégés (voir `COMPTABILITE.md`).
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/comptes` | accounting.read | Filtres `recherche`, `classe`, `imputables=oui`, `actifs=oui`. |
+| POST | `/comptes` | accounting.admin | `{ numero, libelle }` : sous-compte rattaché au compte parent existant. |
+| PATCH | `/comptes/:id` | accounting.admin | `{ libelle?, actif? }`. Le numéro ne change pas. |
+| POST | `/comptes/import` | accounting.admin + confirmation | `{ contenu }` CSV `numero;libelle` : ajoute les comptes absents. |
+| GET / POST | `/journaux` | read / admin | `{ code, libelle, type }`. |
+| PATCH | `/journaux/:id` | accounting.admin | `{ libelle?, actif? }`. |
+| GET / POST | `/exercices` | read / admin | `{ code, debut, fin }` ; pas de chevauchement. |
+| POST | `/exercices/:id/cloture` | accounting.admin + confirmation | `{ motif }`. Définitive ; refusée s'il reste des brouillards. |
+| GET / PATCH | `/parametres` | read / admin + confirmation | `{ separationSaisieValidation }`. |
+| PUT | `/comptes-proteges` | accounting.admin + confirmation | `{ groupes: [{ prefixe, libelle, permission }], motif }`. |
+| GET | `/ecritures` | accounting.read | Filtres `exercice`, `journal`, `statut` (brouillard, validee), `du`, `au`, `recherche`. |
+| GET | `/ecritures/:id` | accounting.read | Écriture avec ses lignes, son auteur, son validateur et ses liens d'extourne. |
+| POST | `/ecritures` | accounting.create | `{ journalId, date, piece, datePiece?, libelle, lignes: [{ compteId, libelle?, debit, credit }] }`. Brouillard, éventuellement déséquilibré. |
+| PUT / DELETE | `/ecritures/:id` | accounting.update | Brouillards uniquement. |
+| POST | `/ecritures/:id/validation` | accounting.approve + confirmation | Équilibre, séparation des tâches et numérotation contrôlés par la base. |
+| POST | `/ecritures/:id/extourne` | accounting.cancel + confirmation | `{ date?, motif }`. |
+| GET | `/tableau-de-bord` | accounting.read | Synthèse de l'exercice. |
+| GET | `/grand-livre`, `/balance` | accounting.read | Filtres `exercice`, `du`, `au`, `compte` (début de numéro), `journal`, `brouillons=oui`. |
+| GET | `/grand-livre/export`, `/balance/export` | accounting.export | CSV, tracé dans le journal. |

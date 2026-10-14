@@ -5,6 +5,7 @@ export const RESULTATS: Record<string, string> = { success: "Réussi", denied: "
 
 export const TYPES_EVENEMENT: Record<string, string> = {
   auth: "Authentification", users: "Utilisateurs", roles: "Rôles", company: "Entreprise", security: "Sécurité", audit: "Journal", backups: "Sauvegardes",
+  accounting: "Comptabilité",
 };
 
 const ACTIONS: Record<string, string> = {
@@ -23,6 +24,14 @@ const ACTIONS: Record<string, string> = {
   "security.audit_tamper_attempt": "Tentative de modification du journal", "security.security_settings_change": "Paramètres de sécurité modifiés",
   "security.master_code_recovery": "Récupération par code maître", "security.master_code_regenerate": "Nouveau code maître",
   "audit.verify": "Vérification d'intégrité du journal", "audit.export": "Export du journal",
+  "accounting.entry_create": "Saisie d'une écriture (brouillard)", "accounting.entry_update": "Modification d'un brouillard",
+  "accounting.entry_delete": "Suppression d'un brouillard", "accounting.entry_validate": "Validation d'une écriture",
+  "accounting.entry_reverse": "Extourne d'une écriture", "accounting.export": "Export d'un état comptable",
+  "accounting.account_create": "Création d'un compte", "accounting.account_update": "Modification d'un compte",
+  "accounting.accounts_import": "Import du plan comptable", "accounting.journal_create": "Création d'un journal",
+  "accounting.journal_update": "Modification d'un journal", "accounting.fiscal_year_create": "Création d'un exercice",
+  "accounting.fiscal_year_close": "Clôture d'un exercice", "security.accounting_settings_change": "Paramètres comptables modifiés",
+  "security.protected_accounts_change": "Comptes protégés modifiés",
 };
 export const libelleAction = (type: string, action: string, resultat?: string) =>
   (ACTIONS[`${type}.${action}`] ?? `${TYPES_EVENEMENT[type] ?? type} : ${action}`) +

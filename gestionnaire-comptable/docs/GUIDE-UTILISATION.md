@@ -61,6 +61,17 @@ Menu **Entreprise** : raison sociale, RCCM, NIU, adresse et téléphone. Les ré
 
 Le **code maître** sert uniquement à rétablir l'accès d'un administrateur bloqué, depuis l'écran de connexion (« Administrateur bloqué : utiliser le code maître »). Il est à usage unique : générez-en un nouveau après chaque utilisation. Conservez-le imprimé, sous enveloppe scellée, chez le dirigeant.
 
-## 7. Mon compte
+## 7. Comptabilité générale
+
+Menu **Comptabilité**, visible avec le droit de consultation comptable. Voir aussi `COMPTABILITE.md` pour les règles et leurs limites.
+
+- **Saisir une écriture** : *Écritures* → *Nouvelle écriture*. Choisissez le journal, la date, la référence de la pièce et le libellé, puis les lignes (compte, débit ou crédit). Les totaux et l'écart se mettent à jour en direct ; *Reporter l'écart* complète la dernière ligne vide. L'écriture est enregistrée en **brouillard**, même déséquilibrée.
+- **Valider** : une autre personne habilitée (par défaut le DAF) ouvre le brouillard et clique sur *Valider*. Il faut un écart nul et la ressaisie du mot de passe. L'écriture reçoit alors le numéro suivant du journal et ne peut plus être modifiée.
+- **Corriger une écriture validée** : *Extourner*, avec un motif. Une écriture inverse annule l'effet de l'originale, qui reste dans les livres. Saisissez ensuite l'écriture correcte.
+- **Grand livre** et **Balance générale** : filtrez par exercice, période, compte (début de numéro) ou journal. Une balance complète doit être équilibrée. Si des comptes protégés vous sont masqués, la balance est signalée « partielle ».
+- **Plan comptable** : la liste fournie est restreinte et marquée « À vérifier ». Le DAF peut ajouter des sous-comptes, archiver un compte ou importer le plan officiel en CSV.
+- **Exercices et paramètres** : création et clôture (définitive) des exercices, séparation saisie / validation, comptes protégés.
+
+## 8. Mon compte
 
 Changez votre mot de passe (vos autres sessions sont alors fermées), activez la double authentification et fermez les sessions que vous ne reconnaissez pas.

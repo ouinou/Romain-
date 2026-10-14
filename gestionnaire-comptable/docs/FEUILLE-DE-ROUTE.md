@@ -26,7 +26,21 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Parcours de bout en bout automatisé dans un vrai navigateur (13 étapes, 0 erreur, 0 violation CSP)
 - [x] Version de démonstration en un seul fichier, avec serveur simulé
 
+## Fait (v0.1, étape 8 : module Comptabilité générale)
+
+- [x] Plan de comptes SYSCOHADA (liste restreinte à vérifier), import du plan officiel en CSV
+- [x] Journaux, exercices, clôture définitive
+- [x] Saisie en brouillard, validation équilibrée, numérotation continue, séparation saisie / validation
+- [x] Écritures validées intangibles, correction par extourne motivée (garanties par PostgreSQL)
+- [x] Comptes protégés selon les permissions (banques, personnel, résultat)
+- [x] Grand livre, balance générale, exports CSV tracés
+- [x] 16 tests d'intégration comptables (47 au total côté serveur) et parcours complet dans le navigateur
+- [x] Palette bleu nuit et orange vif
+
 ## À faire ensuite
+
+**Comptabilité (suite).** À-nouveaux, affectation du résultat, pièces justificatives, périodes mensuelles, comptes de tiers et lettrage, TVA paramétrable, états financiers SYSCOHADA. Les règles sont à valider par un expert-comptable (voir `COMPTABILITE.md`, section 7).
+
 
 **Interface (après validation du design).**
 - textes regroupés dans un fichier de langue, pour ajouter d'autres langues plus tard ;

@@ -67,8 +67,8 @@ try {
   await p.waitForFunction(() => document.querySelectorAll("tbody tr").length === 1);
   etape("recherche d'utilisateurs");
   await p.getByPlaceholder("Rechercher un nom ou un e-mail…").fill("");
-  await p.getByRole("cell", { name: /Paul Ngaro/ }).click();
-  await p.getByRole("heading", { name: "Paul Ngaro" }).waitFor();
+  await p.getByRole("cell", { name: /Jean Bemba/ }).click();
+  await p.getByRole("heading", { name: "Jean Bemba" }).waitFor();
   await capture(p, "fiche-utilisateur");
 
   // Opération sensible : désactivation → motif → confirmation par mot de passe demandée par le serveur
@@ -174,6 +174,71 @@ try {
   await p.getByLabel("Résultat").selectOption({ label: "Refusé" });
   await p.getByRole("cell", { name: /Accès refusé/ }).first().waitFor();
   etape("le refus d'accès de la caissière apparaît dans le journal");
+
+  // --- Comptabilité ---------------------------------------------------------------
+  assert.equal(await menu(p, "Tableau comptable").count(), 0, "l'administratrice n'a aucun accès comptable par défaut");
+
+  // Comptable : saisie d'un brouillard, d'abord déséquilibré, puis corrigé ; pas de bouton Valider.
+  const k = await nouvellePage();
+  await connexion(k, "paul.ngaro@demo.cm");
+  await menu(k, "Tableau comptable").click();
+  await k.getByRole("heading", { name: "Comptabilité générale" }).waitFor();
+  await capture(k, "comptabilite-tableau");
+  await menu(k, "Balance générale").click();
+  await k.getByText("Balance partielle.").waitFor();
+  etape("comptable : balance partielle (banque masquée)");
+  await menu(k, "Écritures").click();
+  await k.getByRole("button", { name: "+ Nouvelle écriture" }).click();
+  await k.getByLabel("Journal *").selectOption({ label: "AC · Achats" });
+  await k.getByLabel("Référence de la pièce").fill("FAC-TEST-001");
+  await k.getByLabel("Libellé *", { exact: true }).fill("Achat de cartouches d'encre");
+  await k.getByLabel("Compte de la ligne 1").selectOption({ label: "605 · Autres achats" });
+  await k.getByLabel("Débit de la ligne 1").fill("45000");
+  await k.getByLabel("Compte de la ligne 2").selectOption({ label: "401 · Fournisseurs, dettes en compte" });
+  await k.getByLabel("Crédit de la ligne 2").fill("40000");
+  await k.getByText("Écart : 5 000").waitFor();
+  await k.getByLabel("Crédit de la ligne 2").fill("45 000");
+  await k.getByText("Écriture équilibrée").waitFor();
+  await capture(k, "comptabilite-saisie");
+  await k.getByRole("button", { name: "Enregistrer le brouillard" }).click();
+  await k.getByRole("heading", { name: /Brouillard/ }).waitFor();
+  assert.equal(await k.getByRole("button", { name: "Valider" }).count(), 0, "le comptable ne valide pas");
+  const urlEcriture = k.url();
+  etape("comptable : saisie d'un brouillard équilibré, sans droit de validation");
+
+  // DAF : validation (confirmation par mot de passe), puis extourne motivée.
+  const f = await nouvellePage();
+  await connexion(f, "ousmane.djibrine@demo.cm");
+  await f.getByRole("heading", { name: /Bonjour Ousmane/ }).waitFor();
+  await f.goto(urlEcriture);
+  await f.getByRole("button", { name: "Valider" }).click();
+  await f.getByRole("dialog").getByRole("button", { name: "Valider" }).click();
+  await f.getByRole("dialog", { name: "Confirmez votre identité" }).getByLabel("Mot de passe").fill(MDP);
+  await f.getByRole("button", { name: "Confirmer" }).click();
+  await f.getByRole("heading", { name: /Écriture n° 2/ }).waitFor();
+  await capture(f, "comptabilite-ecriture-validee");
+  etape("DAF : validation avec confirmation, numéro 2 attribué dans le journal AC");
+  await f.getByRole("button", { name: "Extourner" }).click();
+  await f.getByLabel("Motif de la correction").fill("Facture saisie en double");
+  await f.getByRole("dialog").getByRole("button", { name: "Extourner" }).click();
+  await f.getByText(/Extourne de l'écriture/).waitFor();
+  etape("DAF : extourne motivée, liée à l'écriture d'origine");
+
+  await menu(f, "Balance générale").click();
+  await f.getByText(/Balance équilibrée/).waitFor();
+  await f.getByText(/Résultat de la période/).waitFor();
+  await capture(f, "comptabilite-balance");
+  await f.getByRole("cell", { name: "605", exact: true }).click();
+  await f.getByRole("heading", { name: "Grand livre" }).waitFor();
+  await f.getByText(/605 · Autres achats/).waitFor();
+  await capture(f, "comptabilite-grand-livre");
+  etape("DAF : balance complète équilibrée avec résultat, grand livre du compte 605");
+  await menu(f, "Plan comptable").click();
+  await f.getByRole("cell", { name: "Autres achats" }).first().waitFor();
+  await capture(f, "comptabilite-plan");
+  const debordCompta = await f.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  assert.ok(debordCompta <= 0);
+  etape("plan comptable");
 
   // Déconnexion
   await p.getByRole("button", { name: "Déconnexion" }).click();

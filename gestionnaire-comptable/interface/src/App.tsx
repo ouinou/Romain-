@@ -15,10 +15,28 @@ import { FicheRole } from "./pages/FicheRole";
 import { Journal } from "./pages/Journal";
 import { Entreprise } from "./pages/Entreprise";
 import { MonCompte } from "./pages/MonCompte";
+import { TableauComptable } from "./pages/comptabilite/TableauComptable";
+import { PlanComptable } from "./pages/comptabilite/PlanComptable";
+import { Journaux } from "./pages/comptabilite/Journaux";
+import { Ecritures } from "./pages/comptabilite/Ecritures";
+import { SaisieEcriture } from "./pages/comptabilite/SaisieEcriture";
+import { FicheEcriture } from "./pages/comptabilite/FicheEcriture";
+import { GrandLivre } from "./pages/comptabilite/GrandLivre";
+import { Balance } from "./pages/comptabilite/Balance";
+import { ParametresComptables } from "./pages/comptabilite/ParametresComptables";
 
 interface EntreeNav { chemin: string; libelle: string; icone: string; permission?: string }
 const NAV: { titre: string; entrees: EntreeNav[] }[] = [
   { titre: "Pilotage", entrees: [{ chemin: "/", libelle: "Tableau de bord", icone: "▦" }] },
+  { titre: "Comptabilité", entrees: [
+    { chemin: "/comptabilite", libelle: "Tableau comptable", icone: "◧", permission: "accounting.read" },
+    { chemin: "/comptabilite/ecritures", libelle: "Écritures", icone: "✎", permission: "accounting.read" },
+    { chemin: "/comptabilite/grand-livre", libelle: "Grand livre", icone: "☷", permission: "accounting.read" },
+    { chemin: "/comptabilite/balance", libelle: "Balance générale", icone: "⚖", permission: "accounting.read" },
+    { chemin: "/comptabilite/plan", libelle: "Plan comptable", icone: "▤", permission: "accounting.read" },
+    { chemin: "/comptabilite/journaux", libelle: "Journaux", icone: "▥", permission: "accounting.read" },
+    { chemin: "/comptabilite/parametres", libelle: "Exercices et paramètres", icone: "⚙", permission: "accounting.read" },
+  ] },
   { titre: "Administration", entrees: [
     { chemin: "/utilisateurs", libelle: "Utilisateurs", icone: "♙", permission: "users.read" },
     { chemin: "/roles", libelle: "Rôles et permissions", icone: "▤", permission: "roles.read" },
@@ -74,7 +92,8 @@ function Bandeau() {
   return (
     <div className="bandeau-demo" role="note">
       Démonstration : serveur simulé dans le navigateur, données fictives, aucune sécurité réelle (le vrai logiciel s'installe sur le serveur de l'entreprise).
-      Connexion : code <b>GC-DEMO-2026</b>, <b>mariam.saleh@demo.cm</b> (administratrice) ou <b>amina.mahamat@demo.cm</b> (caissière), mot de passe <b>Demonstration-2026!</b>
+      Code <b>GC-DEMO-2026</b>, mot de passe <b>Demonstration-2026!</b>. Comptes : <b>mariam.saleh@demo.cm</b> (administratrice), <b>paul.ngaro@demo.cm</b> (comptable),
+      {" "}<b>ousmane.djibrine@demo.cm</b> (DAF), <b>joseph.atangana@demo.cm</b> (DG), <b>amina.mahamat@demo.cm</b> (caissière).
     </div>
   );
 }
@@ -94,9 +113,25 @@ function Coquille() {
     case "journal": titre = "Journal d'audit"; page = !a("audit.read") ? interdit : <Journal />; break;
     case "entreprise": titre = "Entreprise"; page = !a("company.read") ? interdit : <Entreprise />; break;
     case "mon-compte": titre = "Mon compte"; page = <MonCompte />; break;
+    case "comptabilite": {
+      const [, , ecritureId, mode] = route.split("/").filter(Boolean);
+      const pages: Record<string, [string, JSX.Element]> = {
+        plan: ["Plan comptable", <PlanComptable />], journaux: ["Journaux comptables", <Journaux />],
+        "grand-livre": ["Grand livre", <GrandLivre />], balance: ["Balance générale", <Balance />],
+        parametres: ["Exercices et paramètres", <ParametresComptables />],
+        ecritures: ["Écritures", !ecritureId ? <Ecritures /> : ecritureId === "nouvelle"
+          ? (a("accounting.create") ? <SaisieEcriture /> : interdit)
+          : mode === "modifier" ? (a("accounting.update") ? <SaisieEcriture id={ecritureId} /> : interdit) : <FicheEcriture id={ecritureId} />],
+      };
+      const [t, p] = (id && pages[id]) || ["Tableau comptable", <TableauComptable />];
+      titre = t; page = a("accounting.read") ? p : interdit;
+      break;
+    }
     default: titre = "Tableau de bord"; page = <TableauDeBord />;
   }
-  const actif = "/" + (section ?? "");
+  // Entrée de menu active : la plus longue qui préfixe la route (ex. /comptabilite/ecritures/… → Écritures).
+  const actif = NAV.flatMap((g) => g.entrees.map((e) => e.chemin)).filter((c) => c === "/" ? route === "/" : route === c || route.startsWith(c + "/"))
+    .sort((x, y) => y.length - x.length)[0] ?? "/";
 
   return (
     <div className={"app" + (menu ? " menu-ouvert" : "")}>
