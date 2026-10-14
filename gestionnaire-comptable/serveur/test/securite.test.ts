@@ -163,7 +163,7 @@ describe("Permissions et utilisateurs", () => {
     assert.equal(refus.outcome, "denied");
     assert.equal(refus.event_details.permission, "users.read");
     const moi = await agent.get("/api/auth/moi");
-    assert.deepEqual(moi.corps.permissions, ["cash.create", "cash.print", "cash.read", "cash.submit"]);
+    assert.deepEqual(moi.corps.permissions, ["cash.create", "cash.print", "cash.read", "cash.submit", "sales.create", "sales.print", "sales.read"]);
   });
 
   test("La désactivation ferme immédiatement les sessions", async () => {

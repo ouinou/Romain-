@@ -38,6 +38,10 @@ export async function chargerEcriture(c: Client, id: string, permissions: string
             ua.full_name AS auteur, uv.full_name AS validateur,
             o.entry_number AS origine_numero, oj.code AS origine_journal,
             x.id AS extourne_id, x.entry_number AS extourne_numero,
+            CASE e.source_type
+              WHEN 'invoice' THEN (SELECT json_build_object('type', 'facture', 'id', i.id, 'reference', i.number) FROM invoices i WHERE i.id = e.source_id)
+              WHEN 'treasury_movement' THEN (SELECT json_build_object('type', 'mouvement', 'id', m.id, 'reference', m.reference) FROM treasury_movements m WHERE m.id = e.source_id)
+            END AS origine,
             EXISTS (SELECT 1 FROM entry_lines l JOIN accounts a ON a.id = l.account_id
                      WHERE l.entry_id = e.id AND ${compteMasque("a", 2)}) AS masquee
        FROM journal_entries e
@@ -65,6 +69,7 @@ export async function chargerEcriture(c: Client, id: string, permissions: string
     extourneDe: e.reversal_of ? { id: e.reversal_of, numero: e.origine_numero, journal: e.origine_journal, motif: e.reversal_reason } : null,
     extourneePar: e.extourne_id ? { id: e.extourne_id, numero: e.extourne_numero } : null,
     lignes: ls, totalDebit, totalCredit, equilibree: totalDebit === totalCredit && totalDebit > 0 && ls.length >= 2,
+    origine: e.origine as { type: "facture" | "mouvement"; id: string; reference: string } | null,
   };
 }
 
@@ -121,10 +126,12 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     if (q.du && !Number.isNaN(Date.parse(q.du))) ajouter("e.entry_date >= ?::date", q.du);
     if (q.au && !Number.isNaN(Date.parse(q.au))) ajouter("e.entry_date <= ?::date", q.au);
     if (q.recherche) ajouter("(e.label ILIKE ? OR e.piece_reference ILIKE ?)", `%${q.recherche.trim()}%`);
+    if (q.origine === "operations") f.push("e.source_type IS NOT NULL");
+    if (q.origine === "saisie") f.push("e.source_type IS NULL");
     const where = "WHERE " + f.join(" AND ");
     const { rows: [{ total }] } = await ctx.c.query(`SELECT count(*)::int AS total FROM journal_entries e ${where}`, v);
     const { rows } = await ctx.c.query(
-      `SELECT e.id, e.status, e.entry_number, e.entry_date::text AS date, e.piece_reference, e.label, j.code AS journal, e.reversal_of,
+      `SELECT e.id, e.status, e.entry_number, e.entry_date::text AS date, e.piece_reference, e.label, j.code AS journal, e.reversal_of, e.source_type,
               ua.full_name AS auteur,
               (SELECT coalesce(sum(debit), 0) FROM entry_lines WHERE entry_id = e.id) AS debit,
               (SELECT coalesce(sum(credit), 0) FROM entry_lines WHERE entry_id = e.id) AS credit,
@@ -137,7 +144,8 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
         const debit = versEntier(e.debit), credit = versEntier(e.credit);
         return { id: e.id, statut: e.status === "validated" ? "validee" : "brouillard", numero: e.entry_number, date: e.date, journal: e.journal,
           piece: e.piece_reference, libelle: e.label, auteur: e.auteur, totalDebit: debit, totalCredit: credit,
-          equilibree: debit === credit && debit > 0 && e.nb_lignes >= 2, extourne: !!e.reversal_of, extournee: e.extournee };
+          equilibree: debit === credit && debit > 0 && e.nb_lignes >= 2, extourne: !!e.reversal_of, extournee: e.extournee,
+          origine: e.source_type === "invoice" ? "facture" : e.source_type === "treasury_movement" ? "tresorerie" : null };
       }),
       total, page, taille,
     };
@@ -171,6 +179,7 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     const avant = await chargerEcriture(ctx.c, id, [...ctx.permissions]);
     if (!avant) throw nonTrouve("Écriture");
     if (avant.statut !== "brouillard") throw new ErreurHttp(409, "ecriture_validee", "Une écriture validée ne se modifie pas. Utilisez une extourne.");
+    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${avant.origine.type === "facture" ? "la facture" : "le mouvement"} ${avant.origine.reference} : corrigez l'opération d'origine.`);
     await verifierJournal(ctx.c, d.journalId);
     await verifierComptes(ctx, d.lignes.map((l) => l.compteId));
     const exercice = await exerciceOuvertPour(ctx.c, d.date);
@@ -189,6 +198,7 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     const avant = await chargerEcriture(ctx.c, id, [...ctx.permissions]);
     if (!avant) throw nonTrouve("Écriture");
     if (avant.statut !== "brouillard") throw new ErreurHttp(409, "ecriture_validee", "Une écriture validée ne se supprime pas. Utilisez une extourne.");
+    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${avant.origine.type === "facture" ? "la facture" : "le mouvement"} ${avant.origine.reference} : elle ne se supprime pas.`);
     await avecReglesBase(() => ctx.c.query("DELETE FROM journal_entries WHERE id = $1", [id]));
     await ctx.journaliser({ type: "accounting", action: "entry_delete", objetType: "entry", objetId: id, avant: resume(avant) });
     return { ok: true };
@@ -211,6 +221,30 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     const apres = (await chargerEcriture(ctx.c, id, [...ctx.permissions]))!;
     await ctx.journaliser({ type: "accounting", action: "entry_validate", objetType: "entry", objetId: id, avant: { statut: "brouillard" }, apres: resume(apres) });
     return apres;
+  }));
+
+  // Validation par lots (écritures générées par les ventes et la trésorerie, ou brouillards saisis).
+  // Chaque écriture est validée dans un point de sauvegarde : un refus n'empêche pas les autres.
+  app.post("/api/comptabilite/ecritures/validation-groupee", proteger(deps, { permission: "accounting.approve", sensible: true }, async (req, ctx) => {
+    const d = z.object({ ids: z.array(z.string().regex(UUID)).min(1).max(200) }).parse(req.body);
+    const resultats: { id: string; ok: boolean; numero?: number; erreur?: string }[] = [];
+    for (const id of new Set(d.ids)) {
+      await ctx.c.query("SAVEPOINT validation");
+      try {
+        const e = await chargerEcriture(ctx.c, id, [...ctx.permissions]);
+        if (!e) throw new ErreurHttp(404, "introuvable", "Écriture introuvable.");
+        if (e.statut !== "brouillard") throw new ErreurHttp(409, "deja_validee", "Déjà validée.");
+        await avecReglesBase(() => ctx.c.query("UPDATE journal_entries SET status = 'validated', validated_by = $2 WHERE id = $1", [id, ctx.utilisateur.id]));
+        const { rows: [v] } = await ctx.c.query("SELECT entry_number FROM journal_entries WHERE id = $1", [id]);
+        await ctx.journaliser({ type: "accounting", action: "entry_validate", objetType: "entry", objetId: id, avant: { statut: "brouillard" }, apres: resume({ ...e, statut: "validee", numero: v.entry_number }), details: { lot: true } });
+        await ctx.c.query("RELEASE SAVEPOINT validation");
+        resultats.push({ id, ok: true, numero: v.entry_number });
+      } catch (err) {
+        await ctx.c.query("ROLLBACK TO SAVEPOINT validation");
+        resultats.push({ id, ok: false, erreur: err instanceof ErreurHttp ? err.message : "Erreur inattendue." });
+      }
+    }
+    return { validees: resultats.filter((r) => r.ok).length, refusees: resultats.filter((r) => !r.ok).length, resultats };
   }));
 
   // Extourne : écriture inverse, validée, liée à l'originale, avec motif. L'originale reste intacte.

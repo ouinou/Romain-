@@ -39,9 +39,9 @@ export const ROLES_SYSTEME: RoleSysteme[] = [
     description: "Finances, trésorerie et rapports détaillés ; validation des dépenses selon délégation.",
     permissions: [
       ...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
-      ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export"),
+      ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
       ...p("cash", "read", "approve", "print"),
-      ...p("sales", "read", "print"), ...p("purchases", "read", "approve", "print"),
+      ...p("sales", "read", "create", "print"), ...p("purchases", "read", "approve", "print"),
       ...p("payroll", "read", "approve"),
       ...p("reports", "read", "print", "export"),
     ],
@@ -57,7 +57,8 @@ export const ROLES_SYSTEME: RoleSysteme[] = [
   {
     cle: "cashier", libelle: "Caissier", mfa: false,
     description: "Mouvements de caisse et solde de sa caisse uniquement.",
-    permissions: p("cash", "read", "create", "submit", "print"),
+    // Ventes au comptant : le caissier émet la facture de ce qu'il encaisse.
+    permissions: [...p("cash", "read", "create", "submit", "print"), ...p("sales", "read", "create", "print")],
   },
   {
     cle: "stock_manager", libelle: "Gestionnaire de stocks", mfa: false,

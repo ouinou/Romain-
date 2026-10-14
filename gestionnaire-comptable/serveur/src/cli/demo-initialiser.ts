@@ -2,6 +2,7 @@ import { transaction } from "../db.js";
 import { creerEntreprise } from "../domaine/entreprises.js";
 import { journaliser } from "../domaine/audit.js";
 import { hacherMotDePasse } from "../securite/motdepasse.js";
+import { genererEcriture } from "../domaine/comptabilite/generation.js";
 import { executer, poolProprietaire } from "./outils.js";
 
 /**
@@ -62,6 +63,24 @@ await executer(async () => {
           await c.query("INSERT INTO entry_lines (entry_id, line_no, account_id, debit, credit) SELECT $1, $2, id, $4, $5 FROM accounts WHERE account_number = $3", [e.id, i + 1, compte, d, cr]);
         if (validateur) await c.query("UPDATE journal_entries SET status = 'validated', validated_by = $2 WHERE id = $1", [e.id, validateur]);
       }
+      // Trésorerie : caisse attitrée à la caissière, banque et mobile money ; fonds de caisse initial.
+      const amina = await id("amina.mahamat@demo.cm");
+      const tresorerie: [string, string, string, string][] = [["cash", "Caisse principale", "5711", "CA"], ["bank", "Banque fictive", "5211", "BQ"], ["mobile", "Mobile money (fictif)", "5212", "BQ"]];
+      const ids: Record<string, { id: string; compte: string; journal: string }> = {};
+      for (const [kind, nom, numero, journal] of tresorerie) {
+        const { rows: [a] } = await c.query("INSERT INTO accounts (account_number, label, postable, source) VALUES ($1,$2,true,'company') RETURNING id", [numero, nom]);
+        const { rows: [t] } = await c.query("INSERT INTO treasury_accounts (kind, name, account_id, journal_id) SELECT $1, $2, $3, id FROM journals WHERE code = $4 RETURNING id, journal_id", [kind, nom, a.id, journal]);
+        ids[kind] = { id: t.id, compte: a.id, journal: t.journal_id };
+      }
+      await c.query("INSERT INTO treasury_account_holders (treasury_account_id, user_id) VALUES ($1,$2)", [ids.cash.id, amina]);
+      const { rows: [capital] } = await c.query("SELECT id FROM accounts WHERE account_number = '101'");
+      const { rows: [m] } = await c.query(
+        `INSERT INTO treasury_movements (treasury_account_id, direction, kind, amount, movement_date, reference, label, category, counterpart_account_id, created_by)
+         VALUES ($1, 'in', 'receipt', 100000, make_date($2, 1, 3), '', 'Fonds de caisse initial', 'apport', $3, $4) RETURNING id, reference`, [ids.cash.id, an, capital.id, ousmane]);
+      await genererEcriture(c, { journalId: ids.cash.journal, date: `${an}-01-03`, piece: m.reference, libelle: "Fonds de caisse initial", auteur: ousmane,
+        source: { type: "treasury_movement", id: m.id }, lignes: [{ compteId: ids.cash.compte, debit: 100000, credit: 0 }, { compteId: capital.id, debit: 0, credit: 100000 }] });
+      // TVA de démonstration : 19,25 % (taux À VÉRIFIER dans la loi de finances en vigueur avant tout usage réel).
+      await c.query(`UPDATE companies SET settings = jsonb_set(settings, '{fiscal}', '{"tvaApplicable": true, "tauxTvaPdm": 1925, "mentionsFacture": "Document de démonstration : données fictives, taux de TVA à vérifier."}') WHERE id = $1`, [e.entrepriseId]);
     });
     console.log("Entreprise de démonstration créée (données fictives).");
     console.log("  Code entreprise : GC-DEMO-2026");

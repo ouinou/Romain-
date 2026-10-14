@@ -13,6 +13,8 @@ import { servirInterface } from "./interface.js";
 import { routesReferentielComptable } from "./routes/comptabilite-referentiel.js";
 import { routesEcritures } from "./routes/comptabilite-ecritures.js";
 import { routesEtatsComptables } from "./routes/comptabilite-etats.js";
+import { routesTresorerie } from "./routes/tresorerie.js";
+import { routesVentes } from "./routes/ventes.js";
 
 export function construireApp(deps: Dependances, options: FastifyServerOptions = {}, dossierInterface?: string) {
   const app = Fastify({ bodyLimit: 1_048_576, trustProxy: false, ...options });
@@ -27,9 +29,15 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
 
   app.addHook("onSend", async (req, rep) => {
     rep.header("x-content-type-options", "nosniff");
-    rep.header("x-frame-options", "DENY");
     rep.header("referrer-policy", "no-referrer");
-    rep.header("content-security-policy", "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
+    if (String(rep.getHeader("content-type") ?? "").startsWith("application/pdf")) {
+      // Facture PDF : affichable dans un cadre de la même origine pour l'impression directe.
+      rep.header("x-frame-options", "SAMEORIGIN");
+      rep.header("content-security-policy", "frame-ancestors 'self'");
+    } else {
+      rep.header("x-frame-options", "DENY");
+      rep.header("content-security-policy", "default-src 'self'; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
+    }
     if (req.url.startsWith("/api/")) rep.header("cache-control", "no-store");
   });
 
@@ -60,6 +68,8 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   routesReferentielComptable(app, deps);
   routesEcritures(app, deps);
   routesEtatsComptables(app, deps);
+  routesTresorerie(app, deps);
+  routesVentes(app, deps);
   if (dossierInterface) servirInterface(app, dossierInterface);
   return app;
 }
