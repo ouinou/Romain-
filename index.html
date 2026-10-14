@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Publications ITI – Incubateur Technologique de l'Innovation</title>
+<meta name="description" content="Nous avons analysé 1 262 offres d&#x27;emploi publiées au Tchad entre janvier 2025 et septembre 2026 : qui recrute, pour quels profils, où, et nos recommandations.">
+<meta property="og:site_name" content="ITI – Incubateur Technologique de l'Innovation">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Emploi au Tchad : ce que disent 1 262 offres publiées en ligne | ITI">
+<meta property="og:description" content="Nous avons analysé 1 262 offres d&#x27;emploi publiées au Tchad entre janvier 2025 et septembre 2026 : qui recrute, pour quels profils, où, et nos recommandations.">
+<meta name="author" content="Ing. OUINOU NGASSALA Romain">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style id="iti-style">
+/* Layout : une revue technique — en-tête de marque, rubriques en onglets, une colonne de lecture de 68ch pour les articles. */
+:root {
+  --ink: #001B4B;          /* bleu du logo ITI */
+  --flame: #F2330D;        /* orange du logo ITI */
+  --bg: #F7F8FA;
+  --paper: #FFFFFF;
+  --fg: #14212F;
+  --muted: #5A6878;
+  --line: #DCE2E9;
+  --chip: #EAF0F6;
+  --bar-muted: #BFC9D4;
+  --on-ink: #FFFFFF;
+  --display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #9CC3EA; --flame: #FF7449; --bg: #0E1620; --paper: #142130; --fg: #E6ECF2;
+    --muted: #9AA9B9; --line: #26384B; --chip: #1C2D40; --bar-muted: #3A4D62; --on-ink: #0E1620;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #9CC3EA; --flame: #FF7449; --bg: #0E1620; --paper: #142130; --fg: #E6ECF2;
+  --muted: #9AA9B9; --line: #26384B; --chip: #1C2D40; --bar-muted: #3A4D62; --on-ink: #0E1620;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+a { color: var(--ink); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--flame); outline-offset: 2px; border-radius: 3px; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 20px; }
+
+/* En-tête */
+.masthead { border-bottom: 1px solid var(--line); background: var(--paper); }
+.masthead .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--fg); }
+.brand-logo { height: 64px; width: auto; display: block; background: #FFFFFF; border-radius: 6px; padding: 4px 8px; }
+.brand-text { font-family: var(--mono); font-size: 12px; line-height: 1.4; color: var(--muted); max-width: 22ch; }
+@media (max-width: 480px) { .brand-text { display: none; } .brand-logo { height: 54px; } }
+.site-link { font-family: var(--mono); font-size: 13px; color: var(--muted); text-decoration: none; border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px; }
+.site-link:hover { color: var(--fg); border-color: var(--muted); }
+
+/* Bandeau de titre */
+.intro { padding-block: 40px 20px; }
+.kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--flame); }
+.intro h1 { font-family: var(--display); font-weight: 800; font-stretch: 75%; font-size: clamp(40px, 7vw, 76px); line-height: .95; margin: 8px 0 12px; color: var(--fg); text-wrap: balance; letter-spacing: -.01em; }
+.intro p { max-width: 60ch; color: var(--muted); margin: 0; font-size: 18px; }
+
+/* Rubriques */
+.rubriques { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.rubriques .wrap { display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; scrollbar-width: thin; }
+.chip { flex: none; font-family: var(--display); font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--paper); color: var(--fg); padding: 7px 12px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.chip .n { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.chip[aria-pressed="true"] .n { color: var(--on-ink); opacity: .8; }
+
+/* Liste */
+.list { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 32px; padding-block: 28px 56px; }
+@media (max-width: 820px) { .list { grid-template-columns: minmax(0, 1fr); } }
+.feed { display: grid; gap: 20px; align-content: start; min-width: 0; }
+.card { display: grid; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 24px; text-decoration: none; color: var(--fg); transition: border-color .15s; }
+.card:hover { border-color: var(--ink); }
+.card.lead { border-top: 4px solid var(--flame); }
+.meta { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.tag { color: var(--flame); text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
+.card h2 { font-family: var(--display); font-weight: 750; font-stretch: 85%; font-size: clamp(24px, 3.4vw, 34px); line-height: 1.08; margin: 0; text-wrap: balance; }
+.card:not(.lead) h2 { font-size: 22px; }
+.card p { margin: 0; color: var(--muted); }
+.figures { display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.figures div { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.figures b { display: block; font-family: var(--display); font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.readmore { font-family: var(--display); font-weight: 700; color: var(--ink); }
+.empty { background: var(--paper); border: 1px dashed var(--line); border-radius: 6px; padding: 28px; color: var(--muted); }
+.empty strong { color: var(--fg); font-family: var(--display); }
+
+.side { display: grid; gap: 20px; align-content: start; min-width: 0; }
+.side section { border-top: 2px solid var(--fg); padding-top: 12px; }
+.side h3 { font-family: var(--display); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; }
+.side p { margin: 0 0 8px; font-size: 15px; color: var(--muted); }
+.side .soon { font-family: var(--display); font-weight: 700; color: var(--fg); font-size: 17px; line-height: 1.25; margin-bottom: 6px; }
+.status { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 3px; background: var(--chip); color: var(--ink); }
+.side ul { margin: 0; padding-left: 18px; font-size: 15px; color: var(--muted); }
+
+/* Article */
+.article { padding-block: 28px 64px; }
+.back { font-family: var(--display); font-weight: 600; font-size: 15px; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; }
+.article header { max-width: 68ch; margin: 18px auto 28px; }
+.article h1 { font-family: var(--display); font-weight: 800; font-stretch: 78%; font-size: clamp(34px, 6vw, 60px); line-height: 1; margin: 10px 0 16px; text-wrap: balance; letter-spacing: -.01em; }
+.byline { font-family: var(--display); font-size: 15px; color: var(--muted); }
+.byline strong { color: var(--fg); }
+.content { max-width: 68ch; margin: 0 auto; }
+.content > p:first-child { font-size: 20px; line-height: 1.5; border-left: 4px solid var(--flame); padding-left: 16px; }
+.content h2 { font-family: var(--display); font-weight: 750; font-stretch: 88%; font-size: 28px; line-height: 1.15; margin: 44px 0 10px; text-wrap: balance; }
+.content h3 { font-family: var(--display); font-weight: 700; font-size: 19px; margin: 26px 0 6px; color: var(--ink); }
+.content ul { padding-left: 22px; }
+.content li { margin-bottom: 6px; }
+.content li::marker { color: var(--flame); }
+.content a { overflow-wrap: anywhere; }
+.chart { margin: 28px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 18px 18px 12px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart figcaption { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 8px; }
+.share { max-width: 68ch; margin: 44px auto 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 18px; }
+.btn { font-family: var(--display); font-weight: 700; font-size: 15px; padding: 9px 14px; border-radius: 4px; border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.toast { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+footer { border-top: 1px solid var(--line); background: var(--paper); }
+footer .wrap { padding-block: 22px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-family: var(--display); font-size: 14px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Couverture d'article */
+.cover { width: 100%; aspect-ratio: 16 / 7; object-fit: cover; border-radius: 4px; display: block; max-width: 100%; }
+.article .cover { max-width: 68ch; margin: 0 auto 28px; aspect-ratio: 16 / 8; }
+.content figure.photo { margin: 28px 0; }
+.content figure.photo img { width: 100%; height: auto; border-radius: 4px; display: block; }
+.content figure.photo figcaption { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 6px; }
+.content blockquote { margin: 24px 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--ink); font-style: italic; }
+.head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.author-btn { font-family: var(--display); font-weight: 700; font-size: 14px; color: var(--on-ink); background: var(--flame); border: 0; padding: 7px 12px; border-radius: 4px; cursor: pointer; }
+
+/* Espace auteur */
+.admin { padding-block: 28px 72px; display: grid; gap: 22px; }
+.admin h1 { font-family: var(--display); font-weight: 800; font-stretch: 78%; font-size: clamp(32px, 5vw, 48px); line-height: 1; margin: 6px 0 0; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.panel { display: grid; gap: 16px; min-width: 0; }
+.row-list { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.row h3 { font-family: var(--display); font-size: 17px; line-height: 1.25; margin: 0 0 4px; }
+.row .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); } .row .actions { justify-content: flex-start; } }
+.pill { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: .06em; }
+.pill.pub { background: var(--chip); color: var(--ink); }
+.pill.draft { background: var(--flame); color: var(--on-ink); }
+.btn.small { font-size: 13px; padding: 6px 10px; }
+.btn.warn { background: transparent; color: var(--flame); border-color: var(--flame); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.form { display: grid; gap: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 20px; min-width: 0; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label, .field > .lbl { font-family: var(--display); font-weight: 700; font-size: 14px; }
+.hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.form input[type=text], .form input[type=date], .form textarea { width: 100%; font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; }
+.form textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
+.form textarea#f-source { min-height: 420px; font-family: var(--mono); font-size: 14px; }
+.form input:focus, .form textarea:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.checks label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-family: var(--display); font-size: 14px; cursor: pointer; background: var(--bg); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 560px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.figs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 6px 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool { font-family: var(--display); font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+.cover-prev { max-width: 280px; border-radius: 4px; display: block; }
+.preview-box { border: 1px dashed var(--line); border-radius: 6px; padding: 16px 20px; background: var(--bg); min-width: 0; }
+.sticky-actions { position: sticky; bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); border-top: 1px solid var(--line); padding: 12px 0 4px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.msg { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.msg.err { color: var(--flame); }
+.guide { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 20px 22px; max-width: 76ch; }
+.guide h2 { font-family: var(--display); font-size: 22px; margin: 18px 0 6px; }
+.guide h2:first-child { margin-top: 0; }
+.guide ol, .guide ul { padding-left: 22px; }
+.guide code, .syntax code { font-family: var(--mono); font-size: 13px; background: var(--chip); padding: 1px 5px; border-radius: 3px; }
+.syntax { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 16px; font-size: 15px; }
+.global-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); font-family: var(--display); font-size: 15px; padding: 10px 16px; border-radius: 4px; z-index: 50; max-width: calc(100% - 32px); }
+/* Contenu importé : images, tableaux, zoom */
+.content img { max-width: 100%; height: auto; }
+.zoomable { cursor: zoom-in; }
+.content svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 22px 0; border: 1px solid var(--line); border-radius: 6px; }
+.content table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+.content th, .content td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.content th { font-family: var(--display); background: var(--chip); color: var(--fg); }
+.content tr:last-child td { border-bottom: 0; }
+.zoom { position: fixed; inset: 0; z-index: 60; background: rgba(5, 12, 22, .92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.zoom img { max-width: 100%; max-height: 82vh; object-fit: contain; background: #FFFFFF; border-radius: 4px; }
+.zoom p { color: #E6ECF2; font-family: var(--mono); font-size: 13px; margin: 0; text-align: center; }
+.zoom .btn { align-self: flex-end; background: #FFFFFF; color: #001B4B; border-color: #FFFFFF; }
+.need { background: var(--chip); border-radius: 6px; padding: 12px 14px; font-size: 15px; }
+.tool.imp { background: var(--paper); border-color: var(--ink); color: var(--ink); }
+.zoom[hidden], .global-toast[hidden], [hidden] { display: none !important; }
+</style>
+<div id="iti-root"></div>
+<script type="application/json" id="iti-data">{"logo":"data:image/jpeg;base64,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","rubriques":["Scientifique","Entrepreneuriat","Technique","Énergies","Outils techniques","Tutoriels"],"aparaitre":[{"titre":"Les difficultés de l'entrepreneuriat au Tchad dans les métiers techniques","statut":"Étude en cours"}],"articles":[{"id":"a-emploi-tchad","slug":"emploi-tchad-2025-2026","titre":"Emploi au Tchad : ce que disent 1 262 offres publiées en ligne","rubriques":["Scientifique","Entrepreneuriat"],"auteur":"Ing. OUINOU NGASSALA Romain","date":"2026-10-11","resume":"Nous avons analysé les offres d'emploi publiées en ligne au Tchad entre janvier 2025 et septembre 2026 : qui recrute, pour quels profils, où, et ce que cela implique pour la formation.","chiffres":[["1 262","annonces"],["84 %","ONG, ONU, coopération"],["16 %","métiers techniques"],["37 %","à N'Djamena"]],"cover":"","images":{},"source":"","contenu":"\u003cp>\u003cstrong>En vingt et un mois, de janvier 2025 à septembre 2026, 1 262 offres d'emploi concernant le Tchad ont été relayées en ligne. Plus de quatre sur cinq venaient d'ONG, d'agences de l'ONU ou de la coopération. Les métiers techniques n'en représentent qu'une sur six.\u003c/strong>\u003c/p>\n\n\u003cp>Quand on parle d'emploi des jeunes au Tchad, les chiffres manquent presque toujours. On cite le chômage, on évoque les diplômés sans travail, mais on sait rarement qui recrute, pour quels postes et où.\u003c/p>\n\n\u003cp>Une partie de la réponse se trouve dans les annonces publiées sur Internet. Elles ne disent pas tout du marché, loin de là. Mais elles laissent une trace datée, que l'on peut compter et classer. C'est l'exercice que nous avons mené sur les offres relayées par le site lesopportunites.com, complétées par quelques annonces parues dans la presse.\u003c/p>\n\n\u003ch2>Un marché visible tenu par l'humanitaire\u003c/h2>\n\n\u003cp>Sur les 1 262 annonces, 1 060 émanent d'organisations humanitaires ou de développement : ONG internationales (783), ONG nationales (107), agences de l'ONU (84), coopération bilatérale (86). Les entreprises privées, directement ou via des cabinets, n'en publient que 160. Les projets de l'État, 35.\u003c/p>\n\n\u003cp>Les plus gros publieurs sont tous dans ce premier groupe. Catholic Relief Services arrive en tête avec 83 annonces, devant World Vision (77), la GIZ (68), le Conseil norvégien pour les réfugiés (48) et African Parks (46), qui gère notamment le parc de Zakouma.\u003c/p>\n\n\u003cp>Cette domination s'explique. Le Tchad accueille depuis 2023 un afflux massif de réfugiés soudanais à l'Est, et les organisations qui y interviennent recrutent beaucoup, vite, et publient systématiquement leurs offres en ligne. Une PME de N'Djamena, elle, recrute plutôt par le réseau, l'affichage ou la radio. Ce qui est visible en ligne n'est donc pas le reflet fidèle de l'économie : c'est le reflet de ceux qui publient.\u003c/p>\n\n\u003ch2>Comptables, logisticiens, spécialistes du suivi : les profils qui recrutent\u003c/h2>\n\n\u003cp>Le métier le plus demandé n'est ni ingénieur ni médecin. C'est comptable.\u003c/p>\n\n\u003cfigure class=\"chart\" data-chart=\"metiers\">\u003c/figure>\n\n\u003cp>Ces cinq métiers – comptable, logisticien, spécialiste du suivi-évaluation, chef de projet, assistant administratif ou RH – totalisent 478 annonces, soit 38 % du total. Ils ont un point commun : ils font tourner un projet. Il faut quelqu'un pour tenir les comptes, acheter et acheminer le matériel, mesurer les résultats pour le bailleur, coordonner l'équipe. Un programme humanitaire à Adré ou à Farchana a besoin de ces fonctions avant tout le reste.\u003c/p>\n\n\u003cp>Le niveau demandé est plutôt élevé. Les postes de cadre ou de spécialiste représentent 36 % des annonces, ceux d'encadrement 29 %. Les emplois d'exécution (gardiens, agents d'entretien, manutentionnaires) ne dépassent pas 3 %. Ces emplois existent, mais ils se pourvoient sans doute le plus souvent sans passer par une annonce en ligne.\u003c/p>\n\n\u003ch2>Les métiers techniques, minoritaires dans les annonces\u003c/h2>\n\n\u003cp>Sur les 1 262 annonces, 202 concernent un métier technique ou scientifique, soit 16 %. Moins de dix par mois en moyenne.\u003c/p>\n\n\u003cp>Le génie civil arrive en tête (34 annonces), en bonne partie lié aux chantiers humanitaires (abris, points d'eau, latrines). Suivent l'informatique et les réseaux (30), l'environnement et la biodiversité (28), l'agriculture technique et l'élevage (22), la statistique (19) et la mécanique automobile (18). En bas du classement, l'électricité compte 3 annonces, les télécommunications 4 et le pétrole une seule.\u003c/p>\n\n\u003cp>Ce dernier chiffre peut sembler étrange dans un pays producteur de brut. Il tient sans doute au canal : les compagnies pétrolières et leurs sous-traitants ont leurs propres circuits de recrutement, et passent probablement peu par les sites d'annonces généralistes. Ce point mériterait d'être vérifié auprès d'eux.\u003c/p>\n\n\u003cp>Autre constat : en proportion, ce sont les entreprises qui recrutent le plus de techniciens. Le technique pèse 28 % de leurs annonces, contre 13 % chez les ONG internationales. Mais comme ces dernières publient cinq fois plus, elles restent le premier recruteur de techniciens en nombre : 99 des 202 annonces techniques, soit près d'une sur deux.\u003c/p>\n\n\u003cp>Enfin, la courbe ne monte pas. De janvier à septembre, le nombre d'annonces techniques est resté stable (85 en 2025, 87 en 2026), alors que l'ensemble des offres progressait de 12 %.\u003c/p>\n\n\u003ch2>N'Djamena et l'Est, le reste du pays en retrait\u003c/h2>\n\n\u003cp>La capitale concentre 466 annonces, soit 37 % du total. L'Est en compte 314 (25 %), réparties entre Adré (93 annonces citant la ville), Abéché (60), Farchana (54), Goz-Beïda (53) et Iriba (51). Ce sont les villes où se concentre la réponse à la crise soudanaise.\u003c/p>\n\n\u003cp>Ailleurs, les offres se font rares. Le Sud, pourtant très peuplé, n'en totalise que 86, dont 28 à Moundou. La zone du Lac, du Kanem et du Barh-el-Gazel en compte 84, surtout autour de Bol et Baga Sola. Le Centre en a 44. Le Nord, 18 en vingt et un mois.\u003c/p>\n\n\u003cp>Pour un jeune diplômé de Sarh ou de Pala, le constat est simple : l'emploi publié se trouve à N'Djamena ou à l'Est. Rester dans sa province, c'est presque toujours renoncer aux offres visibles en ligne.\u003c/p>\n\n\u003ch2>L'État, premier recruteur hors des sites d'annonces\u003c/h2>\n\n\u003cp>Un chiffre suffit à relativiser tout ce qui précède. La loi de finances 2026 prévoit 2 800 recrutements exceptionnels dans la fonction publique. C'est plus que toutes les annonces relevées en ligne sur vingt et un mois.\u003c/p>\n\n\u003cp>Le détail est parlant. On y trouve 800 maîtres assistants, 400 instituteurs sortis des écoles normales, 300 diplômés de l'INJS, 500 agents des eaux et forêts, 200 agents d'élevage, 100 développeurs informatiques et 500 professionnels de santé, des infirmiers aux techniciens de maintenance biomédicale. À côté, le ministère de l'Éducation nationale a lancé en novembre 2025 un test pour recruter 3 100 enseignants communautaires de niveau 1.\u003c/p>\n\n\u003cp>Ces recrutements ne passent pas par les sites d'annonces, mais par des listes, des concours et des décisions administratives. Ils dessinent pourtant une demande très différente de celle des ONG : enseignement, santé, environnement, numérique.\u003c/p>\n\n\u003cp>L'Office national pour la promotion de l'emploi (ONAPE) cherche, lui, à mieux encadrer le marché. Depuis 2025, ses circulaires imposent une carte de demandeur d'emploi et une autorisation préalable avant la diffusion des offres. Si ces règles sont appliquées, l'ONAPE devrait disposer à terme d'une vue beaucoup plus complète que celle présentée ici. Ces données ne sont pas publiées pour l'instant.\u003c/p>\n\n\u003ch2>Ce que cela dit de la formation\u003c/h2>\n\n\u003cp>Les annonces ne permettent pas, à elles seules, de juger l'adéquation entre formation et emploi. Il faudrait connaître le nombre de diplômés par filière, et ces chiffres ne sont pas publiés. En septembre 2025, une conférence-débat à l'ENSTP sur le chômage des jeunes ingénieurs faisait d'ailleurs ce constat : aucune statistique fiable n'existe sur leur insertion.\u003c/p>\n\n\u003cp>Trois leçons se dégagent malgré tout.\u003c/p>\n\n\u003cp>La première : un diplôme technique ne suffit pas. Le marché visible demande surtout des compétences de gestion, de suivi et de redevabilité envers les bailleurs. Un ingénieur en génie civil qui sait aussi construire un cadre logique, tenir un budget de projet et produire un rapport de suivi a, au vu de ces annonces, davantage de portes ouvertes.\u003c/p>\n\n\u003cp>La deuxième : les compétences d'appui sont transversales. Comptabilité de projet, logistique, gestion de données : elles servent dans toutes les organisations, quel que soit leur secteur. Elles gagneraient à figurer dans les cursus techniques, sous forme de modules courts.\u003c/p>\n\n\u003cp>La troisième : la demande publique annoncée pour 2026 vise des filières précises (santé, enseignement, eaux et forêts, développement informatique). Les établissements qui forment à ces métiers ont là une indication concrète des besoins.\u003c/p>\n\n\u003cp>Ces données ont été construites à partir des annonces publiées, et non d'entretiens. Elles ne disent pas tout du marché. Elles montrent pourtant assez clairement ce que cherchent les recruteurs et où se situent les manques.\u003c/p>\n\n\u003cp>À notre sens, la compétence numérique est aujourd'hui ce qui fait la différence. Maîtriser Excel, les outils spécialisés de son métier et la gestion appliquée n'est plus un plus : c'est devenu une attente de base. Avant de choisir une filière ou une orientation, il vaut donc la peine de regarder ces chiffres pour comprendre comment se présente le marché.\u003c/p>\n\n\u003ch2>Nos recommandations\u003c/h2>\n\n\u003ch3>Aux décideurs publics\u003c/h3>\n\u003cul>\n  \u003cli>Rendre publiques, même sous forme agrégée, les offres enregistrées par l'ONAPE depuis l'entrée en vigueur de l'autorisation préalable. Sans ces données, l'orientation des jeunes se fait à l'aveugle.\u003c/li>\n  \u003cli>Rapprocher les recrutements publics des besoins de formation, en publiant à l'avance les cibles par métier, comme l'a fait la loi de finances 2026.\u003c/li>\n  \u003cli>Soutenir la création d'activité hors de N'Djamena et de l'Est, où les offres publiées sont très rares.\u003c/li>\n\u003c/ul>\n\n\u003ch3>Aux chefs d'établissement\u003c/h3>\n\u003cul>\n  \u003cli>Intégrer aux filières techniques des modules courts de gestion de projet, de suivi-évaluation et d'outils numériques (Excel, logiciels métier).\u003c/li>\n  \u003cli>Suivre l'insertion des diplômés, ne serait-ce qu'avec une enquête simple six mois et un an après la sortie.\u003c/li>\n  \u003cli>Nouer des partenariats de stage avec les ONG et les entreprises qui recrutent, à N'Djamena comme à l'Est.\u003c/li>\n\u003c/ul>\n\n\u003ch3>Aux étudiants\u003c/h3>\n\u003cul>\n  \u003cli>Choisir sa filière en regardant la demande réelle, pas seulement la réputation d'un diplôme.\u003c/li>\n  \u003cli>Construire ses compétences numériques pendant le cursus, sans attendre la fin des études.\u003c/li>\n  \u003cli>Chercher tôt un stage : c'est souvent la première porte d'entrée dans les organisations qui recrutent.\u003c/li>\n\u003c/ul>\n\n\u003ch3>Aux diplômés sans emploi\u003c/h3>\n\u003cul>\n  \u003cli>Suivre des formations courtes qui rendent compétitifs : comptabilité de projet, logistique, suivi-évaluation, Excel. Si vous en avez encore la possibilité, c'est le meilleur investissement à court terme.\u003c/li>\n  \u003cli>S'inscrire à l'ONAPE, désormais demandé aux demandeurs d'emploi.\u003c/li>\n  \u003cli>Ne pas se limiter à un seul site d'annonces ni à une seule ville.\u003c/li>\n\u003c/ul>\n\n\u003cp>\u003cstrong>Et l'entrepreneuriat ?\u003c/strong> Il mérite la même réflexion. Nous menons actuellement une étude sur les difficultés de l'entrepreneuriat au Tchad, en particulier dans les métiers techniques. Ses résultats seront publiés prochainement. D'ici là, prenez le temps de bien évaluer votre projet avant de vous lancer.\u003c/p>\n\n\u003ch2>Comment ces chiffres ont été obtenus\u003c/h2>\n\n\u003cp>Les annonces ont été relevées sur le flux public du site lesopportunites.com pour le Tchad (rubriques « avis de recrutement » et « stages »), du 1\u003csup>er\u003c/sup> janvier 2025 au 30 septembre 2026. Consultation le 11 octobre 2026.\u003c/p>\n\n\u003cp>Sur 1 295 entrées, 33 ont été écartées : doublons, postes hors du Tchad, appels d'offres. Chaque annonce retenue a été classée par domaine, métier, employeur et localité à partir de son intitulé. Le nombre de postes (au moins 1 797) vient du titre quand il est indiqué ; sinon, une annonce au singulier compte pour un poste.\u003c/p>\n\n\u003cp>\u003cstrong>Ce que ces chiffres ne mesurent pas.\u003c/strong> Le recrutement public, l'emploi informel et les embauches par réseau. Les offres publiées sur d'autres sites : un test sur UNjobnet montre qu'une seule de ses 19 offres ouvertes début octobre 2026 figurait dans le corpus. Les embauches effectives, enfin : une annonce n'est pas un recrutement.\u003c/p>\n\n\u003cp>Le classement est automatique et a été relu sur échantillon. Des erreurs ponctuelles restent possibles. La base complète, avec le lien de chaque annonce, est disponible sur demande.\u003c/p>\n\n\u003ch2>Sources\u003c/h2>\n\u003cul>\n  \u003cli>\u003ca href=\"https://www.lesopportunites.com/pays/tchad/feed/\" target=\"_blank\" rel=\"noopener\">lesopportunites.com – flux des offres au Tchad\u003c/a>\u003c/li>\n  \u003cli>\u003ca href=\"https://www.unjobnet.org/fr/emplois/tchad\" target=\"_blank\" rel=\"noopener\">UNjobnet – offres au Tchad\u003c/a>\u003c/li>\n  \u003cli>\u003ca href=\"https://www.alwihdainfo.com/Tchad-voici-la-liste-des-recrutements-exceptionnels-d-agents-de-l-Etat-pour-l-exercice-budgetaire-2026_a147095.html\" target=\"_blank\" rel=\"noopener\">Alwihda Info – liste des recrutements exceptionnels d'agents de l'État pour 2026\u003c/a>\u003c/li>\n  \u003cli>\u003ca href=\"https://www.alwihdainfo.com/tchad-l-onape-renforce-le-controle-des-embauches-et-des-demandes-d-emploi-a145077/\" target=\"_blank\" rel=\"noopener\">Alwihda Info – l'ONAPE renforce le contrôle des embauches et des demandes d'emploi\u003c/a>\u003c/li>\n  \u003cli>\u003ca href=\"https://tchadinfos.com/2025/09/14/enstp-une-conference-debat-sur-les-solutions-au-chomage-des-jeunes-ingenieurs/\" target=\"_blank\" rel=\"noopener\">Tchadinfos – ENSTP : conférence-débat sur le chômage des jeunes ingénieurs (14/09/2025)\u003c/a>\u003c/li>\n  \u003cli>\u003ca href=\"https://tchadinfos.com/?p=364468\" target=\"_blank\" rel=\"noopener\">Tchadinfos – un test lancé pour recruter 3 100 enseignants communautaires de niveau 1 (14/11/2025)\u003c/a>\u003c/li>\n\u003c/ul>"}]}</script>
+<script id="iti-app">
+(function () {
+"use strict";
+const STATE = JSON.parse(document.getElementById("iti-data").textContent);
+const STYLE_SRC = document.getElementById("iti-style").textContent;
+const APP_SRC = document.getElementById("iti-app").textContent;
+const SKEL_HEAD = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>';
+const LINKS = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">';
+const AUTEUR_DEFAUT = "Ing. OUINOU NGASSALA Romain";
+const SC = "scr" + "ipt";
+
+function buildDoc(state) {
+  const s = Object.assign({}, state); delete s._soon;
+  const json = JSON.stringify(s).replace(/</g, "\\u003c");
+  return SKEL_HEAD + "\n<title>Publications ITI</title>\n" + LINKS +
+    '\n<style id="iti-style">' + STYLE_SRC + "</style>\n" +
+    '<div id="iti-root"></div>\n' +
+    '<' + SC + ' type="application/json" id="iti-data">' + json + '</' + SC + '>\n' +
+    '<' + SC + ' id="iti-app">' + APP_SRC + '</' + SC + '>\n</body></html>';
+}
+
+/* ---------- outils ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtDate = d => { try { return new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return d; } };
+const readTime = html => Math.max(1, Math.round(String(html).replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length / 220));
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const slugify = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "article";
+const newId = () => "a-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }, del(k) { try { sessionStorage.removeItem(k); } catch (e) {} } };
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+let toastTimer;
+function toast(msg) {
+  const t = $("g-toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4200);
+}
+
+/* ---------- texte simple vers HTML ---------- */
+function inline(s) {
+  s = esc(s);
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[\s(])_(.+?)_(?=[\s.,;:!?)]|$)/g, "$1<em>$2</em>");
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md2html(src, images) {
+  src = String(src || "").replace(/\r/g, "");
+  images = images || {};
+  if (src.trim().startsWith("<")) return src.replace(/iti-img:([\w-]+)/g, (m, k) => images[k] || "");
+  return src.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => {
+    let m;
+    if ((m = b.match(/^\[image:([\w-]+)(?:\|([^\]]*))?\]$/))) {
+      const u = images[m[1]];
+      return u ? '<figure class="photo"><img src="' + u + '" alt="' + esc(m[2] || "") + '">' + (m[2] ? "<figcaption>" + esc(m[2]) + "</figcaption>" : "") + "</figure>" : "";
+    }
+    if ((m = b.match(/^\[graphique:(\w+)\]$/))) return '<figure class="chart" data-chart="' + m[1] + '"></figure>';
+    const lines = b.split("\n");
+    if (lines.length > 1 && lines.every(l => /^\s*\|.*\|\s*$/.test(l))) {
+      const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const body = lines.filter(l => !/^\s*\|[\s:|-]+\|\s*$/.test(l));
+      return '<div class="table-wrap"><table><thead><tr>' + cells(body[0]).map(c => "<th>" + inline(c) + "</th>").join("") + "</tr></thead><tbody>" +
+        body.slice(1).map(r => "<tr>" + cells(r).map(c => "<td>" + inline(c) + "</td>").join("") + "</tr>").join("") + "</tbody></table></div>";
+    }
+    if (lines.every(l => /^\s*[-•]\s+/.test(l))) return "<ul>" + lines.map(l => "<li>" + inline(l.replace(/^\s*[-•]\s+/, "")) + "</li>").join("") + "</ul>";
+    if (lines.every(l => /^\s*\d+[.)]\s+/.test(l))) return "<ol>" + lines.map(l => "<li>" + inline(l.replace(/^\s*\d+[.)]\s+/, "")) + "</li>").join("") + "</ol>";
+    if (lines.every(l => /^>\s?/.test(l))) return "<blockquote><p>" + lines.map(l => inline(l.replace(/^>\s?/, ""))).join("<br>") + "</p></blockquote>";
+    if (/^###\s+/.test(lines[0])) return "<h3>" + inline(lines[0].replace(/^###\s+/, "")) + "</h3>" + (lines.length > 1 ? "<p>" + lines.slice(1).map(inline).join("<br>") + "</p>" : "");
+    if (/^##\s+/.test(lines[0])) return "<h2>" + inline(lines[0].replace(/^##\s+/, "")) + "</h2>" + (lines.length > 1 ? "<p>" + lines.slice(1).map(inline).join("<br>") + "</p>" : "");
+    return "<p>" + lines.map(inline).join("<br>") + "</p>";
+  }).join("\n");
+}
+
+/* ---------- graphiques intégrés ---------- */
+const CHARTS = {
+  metiers: {
+    titre: "Cinq métiers de gestion de projet dominent les annonces", total: 1262,
+    rows: [["Comptable / finances", 116, 1], ["Logistique / achats", 112, 1], ["Suivi-évaluation (MEAL)", 101, 1], ["Chef / chargé de projet", 75, 1], ["Administration / RH", 74, 1], ["Stagiaires (tous domaines)", 56, 0], ["Protection / VBG", 41, 0], ["Informatique / données", 37, 0], ["Nutrition / santé publique", 36, 0], ["Chauffeurs", 36, 0], ["Agronomie / élevage", 29, 0], ["Animateurs communautaires", 28, 0]],
+    source: "Source : lesopportunites.com (flux Tchad), 1 262 annonces, janvier 2025 – septembre 2026. Métier lu dans l'intitulé."
+  }
+};
+function chartSVG(key) {
+  const c = CHARTS[key]; if (!c) return "";
+  const rowH = 30, y0 = 54, labelW = 210, barX = labelW + 10, barW = 400, H = y0 + c.rows.length * rowH + 6;
+  const max = Math.max.apply(null, c.rows.map(r => r[1]));
+  const gest = c.rows.filter(r => r[2]).reduce((s, r) => s + r[1], 0);
+  const bars = c.rows.map((r, i) => {
+    const y = y0 + i * rowH, w = r[1] / max * barW;
+    return '<text x="' + labelW + '" y="' + (y + 15) + '" text-anchor="end" fill="var(--fg)" font-size="13">' + esc(r[0]) + '</text>' +
+      '<rect x="' + barX + '" y="' + y + '" width="' + w.toFixed(1) + '" height="' + (rowH - 10) + '" rx="2" fill="' + (r[2] ? "var(--flame)" : "var(--bar-muted)") + '"><title>' + esc(r[0]) + " : " + r[1] + " annonces</title></rect>" +
+      '<text x="' + (barX + w + 6).toFixed(1) + '" y="' + (y + 15) + '" fill="var(--fg)" font-size="13" font-family="IBM Plex Mono, monospace">' + r[1] + "</text>";
+  }).join("");
+  return '<svg viewBox="0 0 680 ' + H + '" role="img" aria-label="' + esc(c.titre) + '"><text x="0" y="18" fill="var(--fg)" font-size="17" font-weight="700" font-family="Archivo, Arial, sans-serif">' + esc(c.titre) + '</text><text x="0" y="38" fill="var(--muted)" font-size="13">Ensemble : ' + gest + " annonces sur " + c.total.toLocaleString("fr-FR") + ", soit " + Math.round(gest / c.total * 100) + " %</text>" + bars + "</svg><figcaption>" + esc(c.source) + "</figcaption>";
+}
+function hydrate(box) {
+  box.querySelectorAll("a[href^='http']").forEach(l => { l.target = "_blank"; l.rel = "noopener"; });
+  box.querySelectorAll("[data-chart]").forEach(f => { f.innerHTML = chartSVG(f.dataset.chart); });
+  box.querySelectorAll("img").forEach(im => { im.classList.add("zoomable"); im.title = "Toucher pour agrandir"; im.addEventListener("click", () => openZoom(im.src, im.alt)); });
+  box.querySelectorAll("table").forEach(t => { if (!t.parentElement.classList.contains("table-wrap")) { const w = document.createElement("div"); w.className = "table-wrap"; t.replaceWith(w); w.appendChild(t); } });
+}
+function openZoom(src, alt) {
+  const z = $("zoom"); $("zoom-img").src = src; $("zoom-img").alt = alt || ""; $("zoom-cap").textContent = alt || ""; z.hidden = false; $("zoom-close").focus();
+}
+
+/* ---------- squelette de la page ---------- */
+$("iti-root").innerHTML =
+  '<header class="masthead"><div class="wrap">' +
+    '<a class="brand" href="#" id="home-link" aria-label="Accueil des publications ITI"><img class="brand-logo" alt="ITI – Incubateur Technologique de l\'Innovation" src="' + STATE.logo + '"><span class="brand-text">Douala · Formation, ingénierie, innovation</span></a>' +
+    '<div class="head-actions"><button class="author-btn" id="author-btn" type="button" hidden>Espace auteur</button><a class="site-link" href="https://incubateurtech.tech" target="_blank" rel="noopener">incubateurtech.tech ↗</a></div>' +
+  "</div></header>" +
+  '<main>' +
+    '<div id="view-list">' +
+      '<section class="intro wrap"><div class="kicker">Publications</div><h1>Études, analyses et tutoriels d\'ITI</h1><p>Emploi, entrepreneuriat, métiers techniques, énergies et outils : ce que nous observons sur le terrain en Afrique centrale, chiffres et sources à l\'appui.</p></section>' +
+      '<nav class="rubriques" aria-label="Rubriques"><div class="wrap" id="chips"></div></nav>' +
+      '<div class="wrap list"><div class="feed" id="feed"></div><aside class="side"><section><h3>À paraître</h3><div id="soon"></div></section><section><h3>Nos rubriques</h3><ul id="rub-list"></ul></section></aside></div>' +
+    "</div>" +
+    '<article id="view-article" class="article wrap" hidden>' +
+      '<button class="back" id="back" type="button">← Toutes les publications</button>' +
+      '<header><div class="meta" id="a-meta"></div><h1 id="a-title"></h1><div class="byline" id="a-byline"></div></header>' +
+      '<div id="a-cover"></div><div class="content" id="a-content"></div>' +
+      '<div class="share"><button class="btn" id="copy" type="button">Copier le lien de l\'article</button><span class="toast" id="toast" aria-live="polite"></span></div>' +
+    "</article>" +
+    '<section id="view-admin" class="admin wrap" hidden></section>' +
+  "</main>" +
+  '<footer><div class="wrap"><span>© ' + new Date().getFullYear() + " ITI – Incubateur Technologique de l'Innovation, Douala</span><span>Contact : incubateurtech.tech</span></div></footer>" +
+  '<div class="global-toast" id="g-toast" role="status" hidden></div>' +
+  '<div class="zoom" id="zoom" hidden role="dialog" aria-label="Image agrandie"><button class="btn small" id="zoom-close" type="button">Fermer ✕</button><img id="zoom-img" alt=""><p id="zoom-cap"></p></div>';
+$("zoom").addEventListener("click", e => { if (e.target.id !== "zoom-img") $("zoom").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("zoom").hidden = true; });
+
+const RUB_DESC = { "Scientifique": "études et données", "Entrepreneuriat": "créer et faire durer", "Technique": "métiers et filières", "Énergies": "électricité, solaire", "Outils techniques": "logiciels, méthodes", "Tutoriels": "pas à pas" };
+
+/* ---------- vue publique ---------- */
+let current = ls.get("iti-rubrique") || "Toutes";
+if (current !== "Toutes" && !STATE.rubriques.includes(current)) current = "Toutes";
+const sorted = () => STATE.articles.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+function renderSide() {
+  $("soon").innerHTML = STATE.aparaitre.length ? STATE.aparaitre.map(x => '<p class="soon">' + esc(x.titre) + '</p><span class="status">' + esc(x.statut || "En préparation") + "</span>").join('<div style="height:12px"></div>') : '<p>Rien d\'annoncé pour le moment.</p>';
+  $("rub-list").innerHTML = STATE.rubriques.map(r => "<li>" + esc(r) + (RUB_DESC[r] ? " : " + esc(RUB_DESC[r]) : "") + "</li>").join("");
+}
+function renderChips() {
+  const all = ["Toutes"].concat(STATE.rubriques);
+  $("chips").innerHTML = all.map(r => {
+    const n = r === "Toutes" ? STATE.articles.length : STATE.articles.filter(a => (a.rubriques || []).includes(r)).length;
+    return '<button class="chip" type="button" data-r="' + esc(r) + '" aria-pressed="' + (r === current) + '">' + esc(r) + '<span class="n">' + n + "</span></button>";
+  }).join("");
+  $("chips").querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { current = b.dataset.r; ls.set("iti-rubrique", current); renderChips(); renderFeed(); }));
+}
+function renderFeed() {
+  const list = sorted().filter(a => current === "Toutes" || (a.rubriques || []).includes(current));
+  if (!list.length) { $("feed").innerHTML = '<div class="empty"><strong>Pas encore de publication en « ' + esc(current) + ' ».</strong><br>Les prochains articles de cette rubrique apparaîtront ici.</div>'; return; }
+  $("feed").innerHTML = list.map((a, i) =>
+    '<a class="card' + (i === 0 ? " lead" : "") + '" href="#' + esc(a.slug) + '">' +
+    (a.cover && i === 0 ? '<img class="cover" src="' + a.cover + '" alt="">' : "") +
+    '<div class="meta"><span class="tag">' + (a.rubriques || []).map(esc).join(" · ") + "</span><span>" + fmtDate(a.date) + "</span><span>" + readTime(a.contenu) + " min de lecture</span></div>" +
+    "<h2>" + esc(a.titre) + "</h2><p>" + esc(a.resume) + "</p>" +
+    (i === 0 && a.chiffres && a.chiffres.length ? '<div class="figures">' + a.chiffres.map(c => "<div><b>" + esc(c[0]) + "</b>" + esc(c[1]) + "</div>").join("") + "</div>" : "") +
+    '<span class="readmore">Lire l\'article →</span></a>').join("");
+}
+function show(view) { ["view-list", "view-article", "view-admin"].forEach(v => { $(v).hidden = v !== view; }); window.scrollTo(0, 0); }
+function showArticle(a) {
+  $("a-meta").innerHTML = '<span class="tag">' + (a.rubriques || []).map(esc).join(" · ") + "</span><span>" + readTime(a.contenu) + " min de lecture</span>";
+  $("a-title").textContent = a.titre;
+  $("a-byline").innerHTML = "Par <strong>" + esc(a.auteur) + "</strong> · ITI · " + fmtDate(a.date);
+  $("a-cover").innerHTML = a.cover ? '<img class="cover" src="' + a.cover + '" alt="">' : "";
+  $("a-content").innerHTML = a.contenu; hydrate($("a-content"));
+  $("toast").textContent = "";
+  document.title = a.titre + " · ITI"; show("view-article");
+}
+function showList() { document.title = "Publications ITI"; show("view-list"); }
+function route() {
+  const h = location.hash.slice(1);
+  if (h === "auteur" && CAN) { renderAdmin(); document.title = "Espace auteur · ITI"; show("view-admin"); return; }
+  const a = STATE.articles.find(x => x.slug === h);
+  a ? showArticle(a) : showList();
+}
+const goHome = () => { history.pushState(null, "", location.pathname + location.search); route(); };
+$("back").addEventListener("click", goHome);
+$("home-link").addEventListener("click", e => { e.preventDefault(); goHome(); });
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(location.href); $("toast").textContent = "Lien copié."; } catch (e) { $("toast").textContent = location.href; }
+});
+$("author-btn").addEventListener("click", () => { location.hash = "auteur"; });
+window.addEventListener("hashchange", route);
+
+/* ---------- espace auteur ---------- */
+let CAN = false, ART = null, DB = null, DRAFTS = [], TAB = "articles", EDIT = null, CONFIRM = null, BUSY = false;
+
+function blankEdit() { return { id: newId(), slug: "", titre: "", rubriques: [], auteur: AUTEUR_DEFAUT, date: today(), resume: "", chiffres: [], cover: "", images: {}, source: "", contenu: "" }; }
+function fromArticle(a) {
+  const e = JSON.parse(JSON.stringify(a));
+  e.images = e.images || {}; e.chiffres = e.chiffres || [];
+  if (!e.source) e.source = e.contenu || "";
+  return e;
+}
+
+function renderAdmin() {
+  const v = $("view-admin");
+  const tabs = [["articles", "Mes articles"], ["editeur", EDIT ? "Éditeur" : "Nouvel article"], ["reglages", "À paraître"], ["guide", "Mode d'emploi"]];
+  v.innerHTML = '<div><div class="kicker">Espace auteur · visible seulement par vous</div><h1>Préparer et publier</h1></div>' +
+    '<div class="tabs">' + tabs.map(t => '<button class="chip" type="button" data-tab="' + t[0] + '" aria-pressed="' + (TAB === t[0]) + '">' + t[1] + "</button>").join("") + "</div>" +
+    '<div class="panel" id="panel"></div>';
+  v.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.tab === "editeur" && !EDIT) EDIT = blankEdit();
+    if (TAB === "editeur") readForm();
+    TAB = b.dataset.tab; CONFIRM = null; renderAdmin();
+  }));
+  if (TAB === "articles") panelArticles();
+  else if (TAB === "editeur") panelEditor();
+  else if (TAB === "reglages") panelSettings();
+  else panelGuide();
+}
+
+function panelArticles() {
+  const p = $("panel");
+  const drafts = DRAFTS.slice().sort((a, b) => String(b.maj || "").localeCompare(String(a.maj || "")));
+  const pubs = sorted();
+  p.innerHTML =
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="new-art" type="button">+ Nouvel article</button></div>' +
+    '<h2 class="kicker" style="margin:8px 0 0">Brouillons (' + drafts.length + ")</h2>" +
+    '<div class="row-list">' + (drafts.length ? drafts.map(d => row(d, "draft")).join("") : '<div class="empty">' + (DB ? "Aucun brouillon. Un brouillon enregistré ici reste privé jusqu'à sa publication." : "Les brouillons ne sont pas disponibles dans cette vue.") + "</div>") + "</div>" +
+    '<h2 class="kicker" style="margin:8px 0 0">Publiés (' + pubs.length + ")</h2>" +
+    '<div class="row-list">' + pubs.map(a => row(a, "pub")).join("") + "</div>";
+  $("new-art").addEventListener("click", () => { EDIT = blankEdit(); TAB = "editeur"; renderAdmin(); });
+  p.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => act(b.dataset.act, b.dataset.id)));
+}
+function row(a, kind) {
+  const key = kind + ":" + a.id;
+  const confirming = CONFIRM === key;
+  const actions = kind === "draft"
+    ? '<button class="btn small" data-act="edit-draft" data-id="' + esc(a.id) + '" type="button">Continuer</button><button class="btn small warn" data-act="del-draft" data-id="' + esc(a.id) + '" type="button">' + (confirming ? "Confirmer la suppression" : "Supprimer") + "</button>"
+    : '<a class="btn small ghost" href="#' + esc(a.slug) + '">Voir</a><button class="btn small" data-act="edit-pub" data-id="' + esc(a.id) + '" type="button">Modifier</button><button class="btn small warn" data-act="unpub" data-id="' + esc(a.id) + '" type="button">' + (confirming ? "Confirmer le retrait" : "Retirer") + "</button>";
+  return '<div class="row"><div><div class="meta"><span class="pill ' + (kind === "draft" ? "draft" : "pub") + '">' + (kind === "draft" ? "Brouillon" : "Publié") + "</span><span>" + esc((a.rubriques || []).join(" · ")) + "</span><span>" + (kind === "draft" && a.maj ? "modifié le " + fmtDate(a.maj.slice(0, 10)) : fmtDate(a.date)) + "</span></div><h3>" + esc(a.titre || "Sans titre") + '</h3></div><div class="actions">' + actions + "</div></div>";
+}
+async function act(what, id) {
+  if (what === "edit-draft") { const d = DRAFTS.find(x => x.id === id); if (d) { toast("Ouverture du brouillon…"); EDIT = await loadDraft(d); TAB = "editeur"; renderAdmin(); } return; }
+  if (what === "edit-pub") { const a = STATE.articles.find(x => x.id === id); if (a) { EDIT = fromArticle(a); TAB = "editeur"; renderAdmin(); } return; }
+  const key = (what === "del-draft" ? "draft:" : "pub:") + id;
+  if (CONFIRM !== key) { CONFIRM = key; renderAdmin(); return; }
+  CONFIRM = null;
+  if (what === "del-draft") {
+    try { await deleteDraft(id); toast("Brouillon supprimé."); } catch (e) { toast("Suppression impossible : " + (e && e.code || "erreur") + "."); }
+    return;
+  }
+  if (what === "unpub") {
+    const a = STATE.articles.find(x => x.id === id); if (!a) return;
+    if (DB) { try { await saveDraftObj(Object.assign({}, a, { maj: new Date().toISOString() })); } catch (e) {} }
+    const next = Object.assign({}, STATE, { articles: STATE.articles.filter(x => x.id !== id) });
+    await publishState(next, "Article retiré de la page. Il reste dans vos brouillons.");
+  }
+}
+
+function panelEditor() {
+  const e = EDIT || (EDIT = blankEdit());
+  const p = $("panel");
+  const figs = [0, 1, 2, 3].map(i => '<input type="text" id="f-fv' + i + '" placeholder="Chiffre (ex. 84 %)" value="' + esc((e.chiffres[i] || [])[0] || "") + '"><input type="text" id="f-fl' + i + '" placeholder="Ce qu\'il mesure" value="' + esc((e.chiffres[i] || [])[1] || "") + '">').join("");
+  const isPub = STATE.articles.some(a => a.id === e.id);
+  p.innerHTML = '<form class="form" id="ed-form" novalidate>' +
+    '<div class="field"><label for="f-titre">Titre</label><input type="text" id="f-titre" value="' + esc(e.titre) + '" placeholder="Un titre clair, avec si possible un chiffre ou un lieu"></div>' +
+    '<div class="field"><span class="lbl">Rubriques</span><div class="checks">' + STATE.rubriques.map((r, i) => '<label><input type="checkbox" id="f-r' + i + '" value="' + esc(r) + '"' + (e.rubriques.includes(r) ? " checked" : "") + "> " + esc(r) + "</label>").join("") + "</div></div>" +
+    '<div class="two"><div class="field"><label for="f-auteur">Auteur</label><input type="text" id="f-auteur" value="' + esc(e.auteur) + '"></div><div class="field"><label for="f-date">Date de publication</label><input type="date" id="f-date" value="' + esc(e.date) + '"></div></div>' +
+    '<div class="field"><label for="f-resume">Résumé (2 ou 3 phrases, affiché sur la page d\'accueil)</label><textarea id="f-resume" style="min-height:90px">' + esc(e.resume) + "</textarea></div>" +
+    '<div class="field"><span class="lbl">Image de couverture (facultatif)</span><input type="file" id="f-cover" accept="image/*"><div id="cover-prev">' + (e.cover ? '<img class="cover-prev" src="' + e.cover + '" alt=""><button class="tool" type="button" id="cover-del" style="margin-top:6px">Retirer l\'image</button>' : "") + "</div></div>" +
+    '<div class="field"><span class="lbl">Chiffres clés (facultatif, 4 au plus)</span><div class="figs">' + figs + "</div></div>" +
+    '<div class="field"><label for="f-source">Texte de l\'article</label>' +
+      '<div class="toolbar"><button class="tool" type="button" data-ins="h2">Intertitre</button><button class="tool" type="button" data-ins="h3">Sous-titre</button><button class="tool" type="button" data-ins="ul">Liste</button><button class="tool" type="button" data-ins="b">Gras</button><button class="tool" type="button" data-ins="a">Lien</button><button class="tool" type="button" data-ins="q">Citation</button><button class="tool" type="button" data-ins="t">Tableau</button><label class="tool" for="f-img" style="display:inline-flex;align-items:center">Images dans le texte</label><input type="file" id="f-img" accept="image/*" multiple hidden><button class="tool" type="button" id="prev-btn">Aperçu</button></div>' +
+      '<div class="toolbar"><label class="tool imp" for="f-docx">Importer un document Word (.docx)</label><input type="file" id="f-docx" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden><label class="tool imp" for="f-html">Importer une page HTML</label><input type="file" id="f-html" accept=".html,.htm,text/html" hidden></div>' +
+      '<div id="need-imgs" class="need" hidden></div>' +
+      '<textarea id="f-source" placeholder="Écrivez ici. Une ligne vide sépare deux paragraphes.\n\n## Un intertitre\n\nUn paragraphe avec un mot en **gras** et un [lien](https://exemple.com).\n\n- un point\n- un autre point">' + esc(e.source) + "</textarea>" +
+      '<span class="hint">Une ligne vide = nouveau paragraphe · ## Intertitre · ### Sous-titre · - liste · **gras** · [texte](https://lien)</span></div>' +
+    '<div class="preview-box content" id="preview" hidden></div>' +
+    '<div class="sticky-actions"><button class="btn ghost" type="button" id="save-draft">Enregistrer le brouillon</button><button class="btn" type="button" id="publish">' + (isPub ? "Mettre à jour l'article publié" : "Publier sur la page") + '</button><button class="btn small ghost" type="button" id="close-ed">Fermer</button><span class="msg" id="ed-msg" aria-live="polite"></span></div>' +
+    "</form>";
+  p.querySelectorAll("[data-ins]").forEach(b => b.addEventListener("click", () => insert(b.dataset.ins)));
+  $("f-img").addEventListener("change", async ev => {
+    const files = Array.from(ev.target.files || []); if (!files.length) return;
+    readForm(); let txt = "", ok = 0;
+    const html = EDIT.source.trim().startsWith("<");
+    for (const f of files) {
+      try {
+        const k = addImage(await compress(f, 1600, 0.82));
+        const cap = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ");
+        txt += html ? '\n<figure class="photo"><img src="iti-img:' + k + '" alt="' + esc(cap) + '"><figcaption>' + esc(cap) + "</figcaption></figure>\n" : "\n\n[image:" + k + "|" + cap + "]\n\n";
+        ok++;
+      } catch (err) {}
+    }
+    insertText(txt);
+    msg(ok ? ok + " image(s) ajoutée(s). Le texte après | est la légende : modifiez-le." : "Images illisibles. Essayez des fichiers JPG ou PNG.", !ok);
+    ev.target.value = "";
+  });
+  $("f-docx").addEventListener("change", async ev => { const f = ev.target.files[0]; ev.target.value = ""; if (f) importDocx(f); });
+  $("f-html").addEventListener("change", async ev => { const f = ev.target.files[0]; ev.target.value = ""; if (f) importHtmlFile(f); });
+  $("f-cover").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { readForm(); EDIT.cover = await compress(f, 1400, 0.74); panelEditor(); msg("Couverture ajoutée."); } catch (err) { msg("Image illisible. Essayez un fichier JPG ou PNG.", true); }
+  });
+  if ($("cover-del")) $("cover-del").addEventListener("click", () => { readForm(); EDIT.cover = ""; panelEditor(); });
+  $("prev-btn").addEventListener("click", () => {
+    readForm(); const pv = $("preview");
+    pv.hidden = !pv.hidden;
+    if (!pv.hidden) { pv.innerHTML = md2html(EDIT.source, EDIT.images) || "<p>Rien à afficher.</p>"; hydrate(pv); pv.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  });
+  $("save-draft").addEventListener("click", saveDraft);
+  $("publish").addEventListener("click", publishEdit);
+  $("close-ed").addEventListener("click", () => { readForm(); TAB = "articles"; renderAdmin(); });
+  if (!DB) { $("save-draft").disabled = true; $("save-draft").title = "Brouillons indisponibles dans cette vue"; }
+}
+function msg(t, err) { const m = $("ed-msg"); if (m) { m.textContent = t; m.className = "msg" + (err ? " err" : ""); } }
+function insertText(txt) {
+  const ta = $("f-source"); const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + txt + ta.value.slice(e); ta.focus();
+  ta.selectionStart = ta.selectionEnd = s + txt.length;
+}
+function insert(kind) {
+  const ta = $("f-source"); const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  const map = { h2: "\n\n## " + (sel || "Intertitre") + "\n\n", h3: "\n\n### " + (sel || "Sous-titre") + "\n\n", ul: "\n\n- " + (sel || "premier point") + "\n- deuxième point\n\n", b: "**" + (sel || "texte en gras") + "**", a: "[" + (sel || "texte du lien") + "](https://)", q: "\n\n> " + (sel || "citation") + "\n\n", t: "\n\n| Paramètre | Valeur | Unité |\n|---|---|---|\n| Puissance nominale | 1,5 | kW |\n| Vitesse du vent | 8 | m/s |\n\n" };
+  insertText(map[kind]);
+}
+function addImage(dataUrl) {
+  const k = "img" + Object.keys(EDIT.images).length + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 4);
+  EDIT.images[k] = dataUrl; return k;
+}
+async function compress(file, max, q) {
+  const isUrl = typeof file === "string";
+  const url = isUrl ? file : URL.createObjectURL(file); const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  const s = Math.min(1, max / img.naturalWidth); const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+  if (!isUrl) URL.revokeObjectURL(url); return c.toDataURL("image/jpeg", q);
+}
+
+/* ---------- import de documents ---------- */
+let PENDING_IMPORT = null;
+function sanitize(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const root = doc.body;
+  let lost = 0;
+  root.querySelectorAll("canvas").forEach(c => { lost++; c.remove(); });
+  root.querySelectorAll("script,style,link,meta,iframe,object,embed,noscript,form,input,button,select,textarea,nav,header > nav").forEach(el => el.remove());
+  root.querySelectorAll("*").forEach(el => {
+    Array.from(el.attributes).forEach(a => {
+      const n = a.name.toLowerCase();
+      if (n.startsWith("on")) el.removeAttribute(a.name);
+      else if (n === "style" && !el.closest("svg")) el.removeAttribute(a.name);
+      else if ((n === "href" || n === "src" || n === "xlink:href") && /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
+      else if (n === "class" && !el.closest("svg")) el.removeAttribute(a.name);
+      else if (n === "id" && !el.closest("svg")) el.removeAttribute(a.name);
+    });
+  });
+  root.querySelectorAll("h1").forEach(h => { const h2 = doc.createElement("h2"); h2.innerHTML = h.innerHTML; h.replaceWith(h2); });
+  return { root, lost };
+}
+async function finishImport(root, lost, label) {
+  const imgs = Array.from(root.querySelectorAll("img"));
+  const missing = [];
+  for (const im of imgs) {
+    const src = im.getAttribute("src") || "";
+    if (/^data:image\/(png|jpe?g|gif|webp|bmp)/i.test(src)) {
+      try { im.setAttribute("src", "iti-img:" + addImage(await compress(src, 1600, 0.82))); } catch (e) { im.remove(); }
+    } else if (/^data:image\/svg/i.test(src) || /^https?:/i.test(src)) {
+      if (/^data:/i.test(src)) im.setAttribute("src", "iti-img:" + addImage(src));
+    } else if (src) {
+      const name = decodeURIComponent(src.split(/[\/\\]/).pop().split("?")[0]);
+      im.setAttribute("data-need", name); missing.push(name);
+    } else im.remove();
+  }
+  imgs.forEach(im => { if (!im.closest("figure") && im.parentElement && im.isConnected) { im.setAttribute("alt", im.getAttribute("alt") || ""); } });
+  const html = root.innerHTML.replace(/\n{3,}/g, "\n\n").trim();
+  $("f-source").value = html;
+  if (!$("f-titre").value.trim()) { const t = root.querySelector("h2"); }
+  readForm();
+  let note = label === "Page HTML" ? "Page HTML importée." : "Document Word importé.";
+  if (lost) note += " " + lost + " graphique(s) dessiné(s) par script n'ont pas pu être repris : exportez-les en image (PNG) et ajoutez-les avec « Images dans le texte ».";
+  if (missing.length) {
+    PENDING_IMPORT = missing;
+    const box = $("need-imgs"); box.hidden = false;
+    box.innerHTML = "<strong>" + missing.length + " image(s) de ce document sont des fichiers séparés.</strong> Sélectionnez-les ici (elles sont reconnues par leur nom : " + missing.slice(0, 6).map(esc).join(", ") + (missing.length > 6 ? "…" : "") + ').<br><label class="tool imp" for="f-need" style="display:inline-flex;margin-top:8px">Choisir les images</label><input type="file" id="f-need" accept="image/*" multiple hidden>';
+    $("f-need").addEventListener("change", async ev => {
+      const files = Array.from(ev.target.files || []); let done = 0;
+      readForm(); let src = EDIT.source;
+      for (const f of files) {
+        const re = new RegExp('data-need="' + f.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '"', "g");
+        if (!re.test(src)) continue;
+        try {
+          const k = addImage(await compress(f, 1600, 0.82));
+          src = src.replace(new RegExp('src="[^"]*"([^>]*?)data-need="' + f.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '"', "g"), 'src="iti-img:' + k + '"$1')
+                   .replace(new RegExp('data-need="' + f.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '"([^>]*?)src="[^"]*"', "g"), '$1src="iti-img:' + k + '"');
+          done++;
+        } catch (e) {}
+      }
+      $("f-source").value = src; readForm();
+      const left = (src.match(/data-need="/g) || []).length;
+      box.innerHTML = done + " image(s) reliée(s)." + (left ? " Il en manque encore " + left + " : choisissez-les à nouveau ou retirez-les du texte." : " Toutes les images sont en place.");
+    });
+  }
+  msg(note, !!lost);
+}
+async function importHtmlFile(file) {
+  readForm(); msg("Import en cours…");
+  try {
+    const text = await file.text();
+    const t = new DOMParser().parseFromString(text, "text/html");
+    const title = (t.querySelector("h1") || t.querySelector("title") || {}).textContent;
+    if (title && !$("f-titre").value.trim()) $("f-titre").value = title.trim();
+    const { root, lost } = sanitize(text);
+    const h1 = root.querySelector("h2"); if (h1 && title && h1.textContent.trim() === title.trim()) h1.remove();
+    await finishImport(root, lost, "Page HTML");
+  } catch (e) { msg("Ce fichier HTML n'a pas pu être lu.", true); }
+}
+let mammothLoading = null;
+function loadMammoth() {
+  if (window.mammoth) return Promise.resolve(window.mammoth);
+  if (!mammothLoading) mammothLoading = new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js";
+    s.onload = () => window.mammoth ? res(window.mammoth) : rej(); s.onerror = rej; document.head.appendChild(s);
+  });
+  return mammothLoading;
+}
+async function importDocx(file) {
+  readForm(); msg("Lecture du document Word…");
+  try {
+    const mammoth = await loadMammoth();
+    const r = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() }, {
+      convertImage: mammoth.images.imgElement(img => img.read("base64").then(b => ({ src: "data:" + img.contentType + ";base64," + b })))
+    });
+    const { root, lost } = sanitize("<body>" + r.value + "</body>");
+    const first = root.querySelector("h2");
+    if (first && !$("f-titre").value.trim()) { $("f-titre").value = first.textContent.trim(); first.remove(); }
+    const odd = Array.from(root.querySelectorAll("img")).filter(i => /^data:image\/(x-emf|x-wmf|emf|wmf)/i.test(i.getAttribute("src") || "")).length;
+    root.querySelectorAll("img").forEach(i => { if (/^data:image\/(x-emf|x-wmf|emf|wmf)/i.test(i.getAttribute("src") || "")) i.remove(); });
+    await finishImport(root, lost + odd, "Document Word");
+  } catch (e) { msg("Le document Word n'a pas pu être lu. Vérifiez qu'il s'agit bien d'un fichier .docx.", true); }
+}
+function readForm() {
+  if (!EDIT || !$("f-titre")) return;
+  EDIT.titre = $("f-titre").value.trim();
+  EDIT.rubriques = STATE.rubriques.filter((r, i) => $("f-r" + i) && $("f-r" + i).checked);
+  EDIT.auteur = $("f-auteur").value.trim() || AUTEUR_DEFAUT;
+  EDIT.date = $("f-date").value || today();
+  EDIT.resume = $("f-resume").value.trim();
+  EDIT.source = $("f-source").value;
+  EDIT.chiffres = [0, 1, 2, 3].map(i => [$("f-fv" + i).value.trim(), $("f-fl" + i).value.trim()]).filter(c => c[0]);
+  const used = EDIT.source;
+  Object.keys(EDIT.images).forEach(k => { if (used.indexOf(k) < 0) delete EDIT.images[k]; });
+}
+async function saveDraftObj(obj) {
+  const body = JSON.parse(JSON.stringify(obj)); body.maj = new Date().toISOString();
+  const imgs = Object.assign({}, body.images || {});
+  if (body.cover && body.cover.startsWith("data:")) { imgs.couv = body.cover; body.cover = "@couv"; }
+  body.images = Object.keys(imgs);
+  if (JSON.stringify(body).length > 250000) throw { code: "too_large" };
+  for (const k of body.images) {
+    if (imgs[k].length > 255000) imgs[k] = await compress(imgs[k], 1200, 0.7);
+    if (imgs[k].length > 255000) throw { code: "too_large" };
+    await DB.doc("images/" + body.id + "__" + k).set({ brouillon: body.id, data: imgs[k] });
+  }
+  await DB.doc("brouillons/" + body.id).set(body);
+}
+async function loadDraft(d) {
+  const e = fromArticle(d);
+  const keys = Array.isArray(d.images) ? d.images : null;
+  e.images = keys ? {} : (d.images || {});
+  if (keys) for (const k of keys) {
+    try { const s = await DB.doc("images/" + d.id + "__" + k).get(); if (s.exists) { if (k === "couv") e.cover = s.data().data; else e.images[k] = s.data().data; } } catch (err) {}
+  }
+  if (e.cover === "@couv") e.cover = "";
+  return e;
+}
+async function deleteDraft(id) {
+  const d = DRAFTS.find(x => x.id === id);
+  if (d && Array.isArray(d.images)) for (const k of d.images) { try { await DB.doc("images/" + id + "__" + k).delete(); } catch (e) {} }
+  await DB.doc("brouillons/" + id).delete();
+}
+async function saveDraft() {
+  readForm(); if (!DB) return;
+  if (!EDIT.titre) { msg("Ajoutez un titre avant d'enregistrer.", true); return; }
+  msg("Enregistrement…");
+  try { await saveDraftObj(EDIT); msg("Brouillon enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "."); }
+  catch (e) { msg(e && e.code === "too_large" ? "Brouillon trop lourd : le texte dépasse la taille permise. Publiez directement, ou coupez l'article en deux." : "Enregistrement impossible pour le moment. Votre texte reste dans l'éditeur.", true); }
+}
+async function publishEdit() {
+  readForm(); const e = EDIT;
+  if (!e.titre) { msg("Ajoutez un titre.", true); return; }
+  if (!e.rubriques.length) { msg("Cochez au moins une rubrique.", true); return; }
+  if (!e.source.trim()) { msg("Le texte de l'article est vide.", true); return; }
+  if (!e.resume) e.resume = String(md2html(e.source, {})).replace(/<\/(p|h2|h3|li|blockquote)>/g, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().slice(0, 220) + "…";
+  const others = STATE.articles.filter(a => a.id !== e.id);
+  let slug = e.slug || slugify(e.titre), n = 2; const base = slug;
+  while (others.some(a => a.slug === slug) || slug === "auteur") slug = base + "-" + n++;
+  const art = { id: e.id, slug: slug, titre: e.titre, rubriques: e.rubriques, auteur: e.auteur, date: e.date, resume: e.resume, chiffres: e.chiffres, cover: e.cover || "", images: e.images, source: e.source, contenu: md2html(e.source, e.images) };
+  const next = Object.assign({}, STATE, { articles: [art].concat(others) });
+  ss.set("iti-pending", JSON.stringify(e));
+  if (DB && DRAFTS.some(d => d.id === e.id)) { try { await deleteDraft(e.id); } catch (err) {} }
+  await publishState(next, "Article publié. Il est en ligne sur la page.", "#" + slug);
+}
+async function publishState(next, okMsg, hash) {
+  if (BUSY) return; BUSY = true;
+  if (!ART) { toast("La publication n'est pas disponible dans cette vue."); BUSY = false; return; }
+  const btn = $("publish"); if (btn) { btn.disabled = true; btn.textContent = "Publication…"; }
+  ss.set("iti-flash", okMsg); if (hash) ss.set("iti-goto", hash);
+  try {
+    await ART.publish(buildDoc(next));
+    ss.del("iti-pending");
+  } catch (e) {
+    ss.del("iti-flash"); ss.del("iti-goto"); BUSY = false;
+    const code = e && e.code;
+    if (code === "conflict") { toast("La page a changé entre-temps. Elle se recharge ; votre texte sera rouvert."); return; }
+    ss.del("iti-pending");
+    if (btn) { btn.disabled = false; btn.textContent = "Publier sur la page"; }
+    const m = code === "too_large" ? "Page trop lourde : réduisez la taille ou le nombre des images." : code === "not_writer" || code === "not_granted" ? "Vous n'avez pas les droits de publication dans cette vue." : code === "rate_limited" ? "Trop de publications rapprochées. Réessayez dans une minute." : "La publication a échoué. Votre texte est toujours là, réessayez.";
+    msg(m, true); toast(m);
+  }
+}
+
+function panelSettings() {
+  const p = $("panel");
+  p.innerHTML = '<div class="form"><p class="hint" style="margin:0">Ces annonces apparaissent dans l\'encart « À paraître » de la page.</p>' +
+    '<div class="row-list" id="soon-list">' + STATE.aparaitre.map((x, i) => '<div class="row"><div><h3>' + esc(x.titre) + '</h3><span class="status">' + esc(x.statut) + '</span></div><div class="actions"><button class="btn small warn" type="button" data-rm="' + i + '">Retirer</button></div></div>').join("") + "</div>" +
+    '<div class="two"><div class="field"><label for="s-titre">Titre annoncé</label><input type="text" id="s-titre"></div><div class="field"><label for="s-statut">État</label><input type="text" id="s-statut" value="En préparation"></div></div>' +
+    '<div class="sticky-actions"><button class="btn ghost" type="button" id="s-add">Ajouter à la liste</button><button class="btn" type="button" id="publish">Publier les changements</button><span class="msg" id="ed-msg"></span></div></div>';
+  const draft = STATE._soon || (STATE._soon = STATE.aparaitre.slice());
+  const redraw = () => {
+    $("soon-list").innerHTML = draft.map((x, i) => '<div class="row"><div><h3>' + esc(x.titre) + '</h3><span class="status">' + esc(x.statut) + '</span></div><div class="actions"><button class="btn small warn" type="button" data-rm="' + i + '">Retirer</button></div></div>').join("") || '<div class="empty">Aucune annonce.</div>';
+    $("soon-list").querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { draft.splice(+b.dataset.rm, 1); redraw(); }));
+  };
+  redraw();
+  $("s-add").addEventListener("click", () => { const t = $("s-titre").value.trim(); if (!t) return; draft.push({ titre: t, statut: $("s-statut").value.trim() || "En préparation" }); $("s-titre").value = ""; redraw(); });
+  $("publish").addEventListener("click", () => { const next = Object.assign({}, STATE, { aparaitre: draft.slice() }); delete next._soon; publishState(next, "Encart « À paraître » mis à jour."); });
+}
+
+function panelGuide() {
+  $("panel").innerHTML = '<div class="guide">' +
+    "<h2>Publier un nouvel article</h2><ol>" +
+    "<li>Ouvrez cette page depuis votre compte Claude (ordinateur ou téléphone), puis touchez <strong>Espace auteur</strong> en haut à droite.</li>" +
+    "<li>Choisissez <strong>Nouvel article</strong>. Donnez un titre, cochez une ou plusieurs rubriques, écrivez un résumé de deux ou trois phrases.</li>" +
+    "<li>Collez ou tapez votre texte. Une ligne vide sépare deux paragraphes. Les boutons au-dessus du texte ajoutent intertitres, listes, gras, liens et images.</li>" +
+    "<li>Touchez <strong>Aperçu</strong> pour vérifier la mise en page.</li>" +
+    "<li><strong>Enregistrer le brouillon</strong> garde l'article à l'abri, visible par vous seul. Vous le retrouvez dans <strong>Mes articles</strong>, sur n'importe quel appareil.</li>" +
+    "<li><strong>Publier sur la page</strong> le met en ligne. La page se recharge et l'article apparaît en tête, avec sa propre adresse à partager.</li></ol>" +
+    "<h2>Corriger ou retirer un article</h2><ul><li>Dans <strong>Mes articles</strong>, <strong>Modifier</strong> rouvre l'article ; publiez à nouveau pour enregistrer la correction.</li><li><strong>Retirer</strong> l'enlève de la page publique et le range dans vos brouillons.</li></ul>" +
+    "<h2>Importer un document complet</h2><ul><li><strong>Importer un document Word (.docx)</strong> reprend le texte, les titres, les tableaux et les images du document. Le premier titre devient le titre de l\'article.</li><li><strong>Importer une page HTML</strong> reprend le texte, les tableaux, les images et les graphiques en SVG. Si la page utilise des images en fichiers séparés, la page vous demande de les choisir : elles sont reconnues par leur nom.</li><li>Les graphiques dessinés par un script (Chart.js, Excel exporté en HTML…) ne peuvent pas être repris : exportez-les en image PNG et ajoutez-les avec <strong>Images dans le texte</strong>. Faites de même pour les vues et mises en plan SolidWorks, et pour les formules longues.</li><li>Après import, le texte s\'affiche en HTML dans l\'éditeur. Vous pouvez le corriger directement, puis vérifier avec <strong>Aperçu</strong>.</li><li>Les lecteurs peuvent toucher une image pour l\'agrandir : vos plans et schémas restent lisibles sur téléphone.</li></ul>" +
+    "<h2>Mise en forme du texte</h2><div class=\"syntax\">" +
+    "<span><code>## Titre</code></span><span>Intertitre de section</span>" +
+    "<span><code>### Titre</code></span><span>Sous-titre</span>" +
+    "<span><code>- point</code></span><span>Liste à puces (une ligne par point)</span>" +
+    "<span><code>1. étape</code></span><span>Liste numérotée</span>" +
+    "<span><code>**mot**</code></span><span>Texte en gras</span>" +
+    "<span><code>[texte](https://…)</code></span><span>Lien vers une source</span>" +
+    "<span><code>&gt; phrase</code></span><span>Citation</span>" +
+    "<span><code>| A | B |</code></span><span>Tableau (bouton « Tableau » pour un modèle)</span>" +
+    "<span><code>[image:…|légende]</code></span><span>Image insérée par le bouton « Images dans le texte »</span></div>" +
+    "<h2>Bon à savoir</h2><ul><li>Seules les personnes qui peuvent modifier la page voient l'Espace auteur. Les lecteurs ne voient que les articles publiés.</li><li>Les images sont réduites automatiquement (1 600 pixels de large au plus), ce qui garde les plans lisibles. Au-delà d\'une dizaine d\'images par article, la page devient lourde à charger sur mobile.</li><li>Vous pouvez aussi demander à Claude d'ajouter un article pour vous : il le placera dans vos brouillons ou le publiera directement.</li></ul>" +
+    "</div>";
+}
+
+/* ---------- démarrage ---------- */
+renderChips(); renderFeed(); renderSide(); route();
+const flash = ss.get("iti-flash"); if (flash) { ss.del("iti-flash"); ss.del("iti-pending"); setTimeout(() => toast(flash), 300); }
+const go = ss.get("iti-goto"); if (go) { ss.del("iti-goto"); if (location.hash !== go) { location.hash = go; } }
+
+(async function init() {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  const user = await window.claude.use("user");
+  CAN = user ? await user.canEdit() : false;
+  if (!CAN) return;
+  ART = await window.claude.use("artifact");
+  DB = await window.claude.use("db");
+  $("author-btn").hidden = false;
+  if (DB) {
+    DB.collection("brouillons").onSnapshot(snap => {
+      DRAFTS = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      if (!$("view-admin").hidden && TAB === "articles") renderAdmin();
+    }, () => { DB = null; });
+  }
+  const pending = ss.get("iti-pending");
+  if (pending) { ss.del("iti-pending"); try { EDIT = JSON.parse(pending); TAB = "editeur"; location.hash = "auteur"; toast("Votre texte a été rouvert : vérifiez-le puis publiez à nouveau."); } catch (e) {} }
+  if (location.hash === "#auteur") route();
+})();
+})();
+</script>
+</body>
+</html>
