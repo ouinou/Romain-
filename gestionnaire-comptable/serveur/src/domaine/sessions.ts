@@ -25,7 +25,12 @@ export async function creerSession(c: Client, cfg: Config, utilisateurId: string
  * Valide une session et rafraîchit sa dernière activité.
  * Révoque immédiatement une session expirée (inactivité, durée maximale) ou dont le compte n'est plus autorisé.
  */
-export async function validerSession(c: Client, cfg: Config, jeton: string): Promise<SessionValide | { refus: string }> {
+/**
+ * `automatique` : requête émise par l'interface sans action de l'utilisateur (rafraîchissement d'un écran en direct,
+ * notifications). Elle est servie mais ne compte pas comme une activité : la session se ferme quand même après
+ * la période d'inactivité.
+ */
+export async function validerSession(c: Client, cfg: Config, jeton: string, automatique = false): Promise<SessionValide | { refus: string }> {
   const { rows: [s] } = await c.query(
     `SELECT s.id, s.revoked_at, s.user_id,
             (now() - s.last_seen_at) > make_interval(mins => $2) AS inactive,
@@ -46,7 +51,7 @@ export async function validerSession(c: Client, cfg: Config, jeton: string): Pro
     await c.query("UPDATE user_sessions SET revoked_at = now(), revoked_reason = $2 WHERE id = $1", [s.id, raison]);
     return { refus: raison === "inactivite" ? "Session fermée après une période d'inactivité. Reconnectez-vous." : "Session expirée. Reconnectez-vous." };
   }
-  await c.query("UPDATE user_sessions SET last_seen_at = now() WHERE id = $1", [s.id]);
+  if (!automatique) await c.query("UPDATE user_sessions SET last_seen_at = now() WHERE id = $1", [s.id]);
   const { permissions, mfaRequis } = await chargerPermissions(c, s.user_id);
   return {
     sessionId: s.id,

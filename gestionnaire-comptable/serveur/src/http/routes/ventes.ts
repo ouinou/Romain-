@@ -6,9 +6,11 @@ import { MONTANT_MAX, versEntier } from "../../domaine/comptabilite/montants.js"
 import { avecReglesBase } from "../../domaine/comptabilite/erreurs.js";
 import { montantLigne, montantTva, quantiteEnMilliemes } from "../../domaine/ventes/calculs.js";
 import { genererFacturePdf } from "../../domaine/ventes/pdf.js";
+import { codeVerification, verifierSignature } from "../../domaine/ventes/signature.js";
+import { profilDe } from "./entreprise.js";
 import { COMPTE_CLIENTS, COMPTE_SERVICES_VENDUS, COMPTE_TVA_FACTUREE, COMPTE_VENTES_MARCHANDISES } from "../../domaine/tresorerie/categories.js";
 import { compteUtilisable } from "./tresorerie.js";
-import { pagination, proteger, type Dependances } from "../contexte.js";
+import { pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
 import { ErreurHttp, nonTrouve } from "../erreurs.js";
 
 const TYPES: Record<string, string> = { goods: "Vente de marchandises", services: "Prestation de services", mixed: "Vente et prestation" };
@@ -35,7 +37,7 @@ async function chargerFacture(c: Client, id: string) {
   return {
     id: f.id, numero: f.number, date: f.date, type: f.kind, typeLibelle: TYPES[f.kind],
     client: { id: f.customer_id, nom: f.customer_name, niu: f.customer_niu, adresse: f.customer_address, telephone: f.customer_phone },
-    vendeur: f.seller, devise: f.currency, tauxTvaPdm: f.tax_rate_bp,
+    vendeur: { ...f.seller, logoUrl: f.seller?.logoId ? `/api/entreprise/logos/${f.seller.logoId}` : null }, devise: f.currency, tauxTvaPdm: f.tax_rate_bp,
     lignes: lignes.map((l) => ({ ordre: l.line_no, designation: l.description, quantite: Number(l.quantite), prixUnitaire: versEntier(l.unit_price), montant: versEntier(l.amount), nature: l.account_number === COMPTE_SERVICES_VENDUS ? "service" : "marchandise" })),
     totalHt: versEntier(f.total_ht), totalTva: versEntier(f.total_tax), totalTtc: ttc, paye, reste: ttc - paye,
     statutPaiement: paye >= ttc ? "payee" : paye > 0 ? "partielle" : "impayee",
@@ -44,6 +46,13 @@ async function chargerFacture(c: Client, id: string) {
     ecriture: f.ecriture ? { id: f.ecriture.id, statut: f.ecriture.statut === "validated" ? "validee" : "brouillard", numero: f.ecriture.numero } : null,
     auteur: f.auteur, creeLe: f.created_at,
   };
+}
+
+/** Ajoute le code de vérification signé (contenu du QR imprimé sur la facture). */
+async function avecCode<T extends { numero: string; date: string; totalTtc: number; devise: string }>(ctx: Ctx, deps: Dependances, f: T) {
+  const { rows: [e] } = await ctx.c.query("SELECT company_code FROM companies WHERE id = $1", [ctx.entrepriseId]);
+  return { ...f, codeVerification: await codeVerification(ctx.c, deps.cfg.cleChiffrement,
+    { codeEntreprise: e.company_code, numero: f.numero, date: f.date, totalTtc: f.totalTtc, devise: f.devise }) };
 }
 
 const quantiteTexte = (q: number) => q.toLocaleString("fr-FR", { maximumFractionDigits: 3 }).replace(/[  ]/g, " ");
@@ -99,13 +108,13 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     const where = "WHERE " + f.join(" AND ");
     const { rows: [t] } = await ctx.c.query(`SELECT count(*)::int AS total, coalesce(sum(i.total_ttc), 0) AS ttc, coalesce(sum(i.total_ttc - ${paye}), 0) AS reste FROM invoices i ${where}`, v);
     const { rows } = await ctx.c.query(
-      `SELECT i.id, i.number, i.invoice_date::text AS date, i.kind, i.customer_name, i.total_ht, i.total_tax, i.total_ttc, i.payment_mode, ${paye} AS paye, u.full_name AS auteur
+      `SELECT i.id, i.number, i.invoice_date::text AS date, i.kind, i.customer_name, i.total_ht, i.total_tax, i.total_ttc, i.payment_mode, i.created_at, ${paye} AS paye, u.full_name AS auteur
          FROM invoices i JOIN app_users u ON u.id = i.created_by ${where} ORDER BY i.invoice_year DESC, i.sequence_no DESC LIMIT ${taille} OFFSET ${offset}`, v);
     return {
       elements: rows.map((r) => {
         const ttc = versEntier(r.total_ttc), p = versEntier(r.paye);
         return { id: r.id, numero: r.number, date: r.date, type: r.kind, client: r.customer_name, totalHt: versEntier(r.total_ht), totalTva: versEntier(r.total_tax),
-          totalTtc: ttc, paye: p, reste: ttc - p, statutPaiement: p >= ttc ? "payee" : p > 0 ? "partielle" : "impayee", paiement: r.payment_mode === "immediate" ? "comptant" : "credit", auteur: r.auteur };
+          totalTtc: ttc, paye: p, reste: ttc - p, statutPaiement: p >= ttc ? "payee" : p > 0 ? "partielle" : "impayee", paiement: r.payment_mode === "immediate" ? "comptant" : "credit", auteur: r.auteur, creeLe: r.created_at };
       }),
       total: t.total, totalTtc: versEntier(t.ttc), totalReste: versEntier(t.reste), page, taille,
     };
@@ -116,7 +125,30 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     if (!UUID.test(id)) throw nonTrouve("Facture");
     const f = await chargerFacture(ctx.c, id);
     if (!f) throw nonTrouve("Facture");
-    return f;
+    return avecCode(ctx, deps, f);
+  }));
+
+  // Vérification d'une facture à partir du contenu de son code QR (scanné ou saisi).
+  // Authentique = signature valide ET facture présente dans la base avec la même date et le même montant.
+  app.post("/api/ventes/verification", proteger(deps, { permission: "sales.read" }, async (req, ctx) => {
+    const d = z.object({ contenu: z.string().trim().min(1, "Scannez ou collez le code de la facture.").max(400) }).parse(req.body);
+    const { rows: [e] } = await ctx.c.query("SELECT company_code FROM companies WHERE id = $1", [ctx.entrepriseId]);
+    const s = await verifierSignature(ctx.c, deps.cfg.cleChiffrement, e.company_code, d.contenu);
+    let reponse: Record<string, unknown>;
+    if (!s.authentique) reponse = { authentique: false, raison: s.raison };
+    else {
+      const { rows: [i] } = await ctx.c.query("SELECT id, invoice_date::text AS date, total_ttc, currency FROM invoices WHERE number = $1", [s.numero]);
+      if (!i) reponse = { authentique: false, raison: `Signature valide, mais la facture ${s.numero} est absente de la base : vérifiez que vous êtes dans la bonne entreprise et que la base n'a pas été restaurée à une date antérieure.` };
+      else if (i.date !== s.donnees!.date || versEntier(i.total_ttc) !== s.donnees!.totalTtc || i.currency !== s.donnees!.devise)
+        reponse = { authentique: false, raison: `La facture ${s.numero} existe, mais sa date ou son montant ne correspondent pas au code.` };
+      else {
+        const f = (await chargerFacture(ctx.c, i.id))!;
+        reponse = { authentique: true, facture: { id: f.id, numero: f.numero, date: f.date, client: f.client.nom, totalTtc: f.totalTtc, devise: f.devise, statutPaiement: f.statutPaiement, auteur: f.auteur, creeLe: f.creeLe } };
+      }
+    }
+    await ctx.journaliser({ type: "sales", action: "invoice_verify", resultat: reponse.authentique ? "success" : "failure",
+      details: { numero: s.authentique ? s.numero : null, raison: reponse.authentique ? null : reponse.raison } });
+    return reponse;
   }));
 
   // Émission d'une facture (vente ou prestation), avec encaissement immédiat facultatif.
@@ -160,8 +192,11 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
       const { rows: [c] } = await ctx.c.query("INSERT INTO customers (name, niu, phone, address) VALUES ($1,$2,$3,$4) RETURNING id", [client.nom, client.niu, client.telephone, client.adresse]);
       client.id = c.id;
     }
-    const { rows: [e] } = await ctx.c.query("SELECT legal_name, niu, rccm, address, phone FROM companies WHERE id = $1", [ctx.entrepriseId]);
-    const vendeur = { raisonSociale: e.legal_name, niu: e.niu, rccm: e.rccm, adresse: e.address, telephone: e.phone };
+    const { rows: [e] } = await ctx.c.query("SELECT legal_name, niu, rccm, address, phone, settings FROM companies WHERE id = $1", [ctx.entrepriseId]);
+    // Identité du vendeur figée à l'émission : une réimpression garde l'en-tête, le logo et les couleurs du jour de la facture.
+    const p = profilDe(e.settings);
+    const vendeur = { raisonSociale: e.legal_name, niu: e.niu, rccm: e.rccm, adresse: e.address, telephone: e.phone,
+      email: p.email, regimeFiscal: p.regimeFiscal, patente: p.patente, logoId: p.logoId, couleurs: p.couleurs };   // logoUrl est recalculé à la lecture
     const comptes = {
       marchandise: await compteParNumero(ctx.c, COMPTE_VENTES_MARCHANDISES), service: await compteParNumero(ctx.c, COMPTE_SERVICES_VENDUS),
       clients: await compteParNumero(ctx.c, COMPTE_CLIENTS), tva: totalTva ? await compteParNumero(ctx.c, COMPTE_TVA_FACTUREE) : null,
@@ -204,7 +239,7 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     await ctx.journaliser({ type: "sales", action: "invoice_issue", objetType: "invoice", objetId: inv.id,
       apres: { numero: inv.number, client: client.nom, totalHt, totalTva, totalTtc, paiement: d.paiement.mode, caisse: tresorerie?.name ?? null },
       details: { ecritureVente, mouvement } });
-    return chargerFacture(ctx.c, inv.id);
+    return avecCode(ctx, deps, (await chargerFacture(ctx.c, inv.id))!);
   }));
 
   // PDF de la facture : même contenu à chaque génération (données figées). Chaque génération est tracée.
@@ -214,7 +249,9 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     const f = await chargerFacture(ctx.c, id);
     if (!f) throw nonTrouve("Facture");
     const fiscal = await parametresFiscaux(ctx.c, ctx.entrepriseId);
-    const pdf = await genererFacturePdf({
+    const { codeVerification: code } = await avecCode(ctx, deps, f);
+    const logo = f.vendeur.logoId ? (await ctx.c.query("SELECT data FROM company_logos WHERE id = $1", [f.vendeur.logoId])).rows[0]?.data as Buffer | undefined : undefined;
+    const pdf = await genererFacturePdf({ codeVerification: code, logo,
       numero: f.numero, date: f.date, type: f.typeLibelle, vendeur: f.vendeur, client: f.client,
       lignes: f.lignes.map((l) => ({ designation: l.designation, quantite: quantiteTexte(l.quantite), prixUnitaire: l.prixUnitaire, montant: l.montant })),
       totalHt: f.totalHt, tauxTvaPdm: f.tauxTvaPdm, totalTva: f.totalTva, totalTtc: f.totalTtc, devise: f.devise === "XAF" ? "FCFA" : f.devise,

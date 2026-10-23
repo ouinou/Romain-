@@ -7,6 +7,8 @@ import { montantEnLettres } from "../../lettres";
 import { OperationModale } from "../tresorerie/OperationModale";
 import { comptesTresorerie, type CompteTresorerie } from "../tresorerie/commun";
 import { BadgePaiement, tauxTexte, type Facture } from "./commun";
+import { QrCode } from "../../composants/QrCode";
+import { assombrirPour, contraste, COULEURS_DEFAUT } from "../../theme";
 
 /** Impression directe : le PDF est chargé dans un cadre invisible de la même origine, puis la boîte d'impression s'ouvre. */
 function imprimerPdf(url: string, surErreur: () => void) {
@@ -78,19 +80,28 @@ export function FicheFacture({ id }: { id: string }) {
 /** Aperçu à l'écran, fidèle au contenu du PDF. */
 export function ApercuFacture({ f }: { f: Facture }) {
   const devise = f.devise === "XAF" ? "FCFA" : f.devise;
+  const v = f.vendeur;
+  // Couleurs figées sur la facture (celles de l'entreprise le jour de l'émission), comme sur le PDF.
+  const c = v.couleurs ?? COULEURS_DEFAUT;
+  const titre = assombrirPour(c.principale, "#ffffff", 4.5), numero = assombrirPour(c.accent, "#ffffff", 4.5);
+  const surEntete = contraste(c.principale, "#ffffff") >= contraste(c.principale, "#17263b") ? "#ffffff" : "#17263b";
   return (
-    <article className="panneau apercu-facture" aria-label={`Aperçu de la facture ${f.numero}`} style={{ borderTop: "6px solid var(--cyan)", display: "grid", gap: 16 }}>
+    <article className="panneau apercu-facture" aria-label={`Aperçu de la facture ${f.numero}`}
+      style={{ borderTop: `6px solid ${c.accent}`, display: "grid", gap: 16, ["--entete-facture" as string]: c.principale, ["--texte-entete-facture" as string]: surEntete }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0 }}>
-          <b style={{ fontSize: 16 }}>{f.vendeur.raisonSociale}</b>
-          <div className="discret" style={{ fontSize: 12, display: "grid" }}>
-            {f.vendeur.adresse && <span>{f.vendeur.adresse}</span>}{f.vendeur.telephone && <span>Tél. : {f.vendeur.telephone}</span>}
-            {f.vendeur.niu && <span>NIU : {f.vendeur.niu}</span>}{f.vendeur.rccm && <span>RCCM : {f.vendeur.rccm}</span>}
+        <div style={{ minWidth: 0, display: "flex", gap: 12, alignItems: "flex-start" }}>
+          {v.logoUrl && <img src={v.logoUrl} alt="" style={{ width: 72, height: 72, objectFit: "contain", flexShrink: 0 }} />}
+          <div style={{ minWidth: 0 }}>
+            <b style={{ fontSize: 16, color: titre }}>{v.raisonSociale}</b>
+            <div className="discret" style={{ fontSize: 12, display: "grid" }}>
+              {[v.adresse, v.telephone && `Tél. : ${v.telephone}`, v.email, v.niu && `NIU : ${v.niu}`, v.rccm && `RCCM : ${v.rccm}`,
+                v.regimeFiscal && `Régime fiscal : ${v.regimeFiscal}`, v.patente && `Patente : ${v.patente}`].filter(Boolean).map((l) => <span key={String(l)}>{l}</span>)}
+            </div>
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--marine)" }}>FACTURE</div>
-          <div style={{ fontWeight: 800, color: "var(--lien)" }}>N° {f.numero}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: titre }}>FACTURE</div>
+          <div style={{ fontWeight: 800, color: numero }}>N° {f.numero}</div>
           <div className="discret" style={{ fontSize: 12 }}>Date : {dateFr(f.date)}<br />{f.typeLibelle}</div>
         </div>
       </div>
@@ -102,7 +113,7 @@ export function ApercuFacture({ f }: { f: Facture }) {
         </div>
       </div>
       <div className="tableau-conteneur">
-        <table>
+        <table className="table-facture">
           <thead><tr><th>Désignation</th><th className="montant">Quantité</th><th className="montant">Prix unitaire</th><th className="montant">Montant ({devise})</th></tr></thead>
           <tbody>{f.lignes.map((l) => (
             <tr key={l.ordre}><td>{l.designation}</td><td className="montant">{l.quantite.toLocaleString("fr-FR", { maximumFractionDigits: 3 })}</td>
@@ -115,6 +126,11 @@ export function ApercuFacture({ f }: { f: Facture }) {
           </tfoot>
         </table>
       </div>
+      {f.codeVerification && (
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ width: 96, flexShrink: 0 }}><QrCode texte={f.codeVerification} titre={`Code de vérification de la facture ${f.numero}`} /></div>
+          <span className="aide">Code de vérification : scannez-le dans Gestionnaire Comptable (« Vérifier une facture ») pour contrôler l'authenticité de ce document.</span>
+        </div>)}
       <p style={{ margin: 0 }}>Arrêtée la présente facture à la somme de : <b>{montantEnLettres(f.totalTtc)}</b>.</p>
       <p className="discret" style={{ margin: 0 }}>Règlement : {f.paiement === "comptant" ? `comptant${f.tresorerie ? ` (${f.tresorerie})` : ""}` : f.reste <= 0 ? "réglée" : "à crédit"}{f.note ? ` · Observation : ${f.note}` : ""}</p>
     </article>

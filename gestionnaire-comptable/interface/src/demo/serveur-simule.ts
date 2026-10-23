@@ -60,7 +60,10 @@ const utilisateurs: Util[] = [
   util("Rachel Ewane", "rachel.ewane@demo.cm", "hr_manager", "invited", null),
   util("Auditeur externe", "audit@demo.cm", "auditor", "disabled", 60 * 24 * 12),
 ];
-const entreprise = { id: id(), code: CODE, raisonSociale: "ITI Démonstration SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: null as string | null, parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };
+const entreprise = { id: id(), code: CODE, raisonSociale: "ITI Démonstration SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)" as string | null,
+  email: "contact@demo.cm" as string | null, regimeFiscal: "Régime du réel (à vérifier)" as string | null, patente: "PAT-DEMO-0000 (fictif)" as string | null,
+  couleurs: { principale: "#101d35", accent: "#ff6a00" }, logoId: null as string | null, logoUrl: null as string | null,
+  parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };
 const journal: Evt[] = [];
 const notifications: { id: string; type: "info" | "warning" | "security"; titre: string; texte: string; date: string; lus: Set<string>; pour: string | null; permission: string | null }[] = [];
 
@@ -262,11 +265,24 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
 
   if (mod === "entreprise") {
     if (a1 === "code-maitre") { exiger("company.admin", true); tracer({ type: "security", action: "master_code_regenerate" }); entreprise.codeMaitre = { actif: true, creeLe: new Date().toISOString(), bloque: false }; return { codeMaitre: "GCM-DEMO-FICT-IF00-0000-0000-0000" }; }
+    if (a1 === "apparence") { exiger(null); return { raisonSociale: entreprise.raisonSociale, couleurs: entreprise.couleurs, logoId: entreprise.logoId, logoUrl: entreprise.logoUrl }; }
+    if (a1 === "logo") {
+      exiger("company.update");
+      if (m === "DELETE") { entreprise.logoId = null; entreprise.logoUrl = null; tracer({ type: "company", action: "logo_remove" }); return { ok: true }; }
+      const b64 = String(c.image ?? "").replace(/^data:image\/[a-z]+;base64,/, "");
+      if (!/^iVBORw0KGgo|^\/9j\//.test(b64)) throw new E(400, "logo_format", "Format refusé : envoyez une image PNG ou JPEG.");
+      if (b64.length * 0.75 > 512 * 1024) throw new E(400, "logo_trop_lourd", "Le logo dépasse 512 Kio.");
+      // Démonstration : le logo reste dans la page (adresse data:), le vrai serveur le conserve en base.
+      entreprise.logoId = id(); entreprise.logoUrl = `data:image/${b64.startsWith("/9j/") ? "jpeg" : "png"};base64,${b64}`;
+      tracer({ type: "company", action: "logo_change" }); return { logoId: entreprise.logoId };
+    }
     if (m === "GET") { exiger("company.read"); return entreprise; }
     exiger("company.update");
+    if (c.couleurs && !(/^#[0-9a-f]{6}$/i.test(c.couleurs.principale) && /^#[0-9a-f]{6}$/i.test(c.couleurs.accent))) throw new E(400, "donnees_invalides", "Couleur au format #RRGGBB.");
     if (c.parametres) { exiger("company.admin", true); entreprise.parametres = { ...entreprise.parametres, ...c.parametres }; tracer({ type: "security", action: "security_settings_change", apres: entreprise.parametres }); return entreprise; }
     const avant = { ...entreprise };
-    Object.assign(entreprise, { raisonSociale: c.raisonSociale ?? entreprise.raisonSociale, rccm: c.rccm ?? null, niu: c.niu ?? null, adresse: c.adresse ?? null, telephone: c.telephone ?? null });
+    for (const k of ["raisonSociale", "rccm", "niu", "adresse", "telephone", "email", "regimeFiscal", "patente", "couleurs"] as const)
+      if (k in c) (entreprise as Record<string, unknown>)[k] = k === "raisonSociale" ? c[k] || entreprise.raisonSociale : c[k] ?? null;
     tracer({ type: "company", action: "update", avant: { raisonSociale: avant.raisonSociale }, apres: { raisonSociale: entreprise.raisonSociale } });
     return entreprise;
   }
@@ -286,7 +302,8 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
     exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
     erreur: (s: number, code: string, message: string) => new E(s, code, message),
     utilisateurs: () => utilisateurs.map((u) => ({ id: u.id, nom: u.nom, actif: u.statut === "active", permissions: permsDe(u) })),
-    entreprise: () => ({ raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone, devise: entreprise.devise }),
+    entreprise: () => ({ raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone, devise: entreprise.devise,
+      email: entreprise.email, regimeFiscal: entreprise.regimeFiscal, patente: entreprise.patente, couleurs: { ...entreprise.couleurs }, logoId: entreprise.logoId, logoUrl: entreprise.logoUrl, code: entreprise.code }),
   });
   throw new E(404, "introuvable", "Adresse inconnue.");
 }

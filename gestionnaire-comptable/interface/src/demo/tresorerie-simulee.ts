@@ -16,7 +16,8 @@ interface Outils {
   page: <T>(l: T[], q: Q) => { elements: T[]; total: number; page: number; taille: number };
   erreur: (s: number, code: string, message: string) => unknown;
   utilisateurs: () => { id: string; nom: string; actif: boolean; permissions: Set<string> }[];
-  entreprise: () => { raisonSociale: string; niu: string | null; rccm: string | null; adresse: string | null; telephone: string | null; devise: string };
+  entreprise: () => { raisonSociale: string; niu: string | null; rccm: string | null; adresse: string | null; telephone: string | null; devise: string;
+    email: string | null; regimeFiscal: string | null; patente: string | null; couleurs: { principale: string; accent: string }; logoId: string | null; logoUrl: string | null; code: string };
 }
 
 interface CompteT { id: string; type: "cash" | "bank" | "mobile"; nom: string; banque: string | null; referenceBancaire: string | null; actif: boolean; numero: string; journal: string; caissiers: string[] }
@@ -61,6 +62,23 @@ let seqMvt = 0, seqFac = 0;
 
 const solde = (id: string) => mouvements.filter((m) => m.compteId === id).reduce((s, m) => s + (m.sens === "entree" ? m.montant : -m.montant), 0);
 const paye = (f: Fac) => mouvements.filter((m) => m.factureId === f.id).reduce((s, m) => s + (m.sens === "entree" ? m.montant : -m.montant), 0);
+/**
+ * Code de vérification de DÉMONSTRATION : même format que le vrai, mais « signé » par une simple empreinte
+ * (FNV-1a), sans aucune valeur cryptographique. Le vrai serveur signe en Ed25519 (domaine/ventes/signature.ts).
+ */
+function empreinteDemo(m: string) {
+  let out = "";
+  for (let tour = 0; out.length < 86; tour++) {
+    let h = 0x811c9dc5 ^ tour;
+    for (let i = 0; i < m.length; i++) { h ^= m.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    out += h.toString(36).padStart(7, "0");
+  }
+  return out.slice(0, 86).replace(/[^A-Za-z0-9]/g, "A");
+}
+const codeDemo = (code: string, f: { numero: string; date: string; totalTtc: number; devise: string }) => {
+  const m = ["GC1", code, f.numero, f.date, String(f.totalTtc), f.devise].join(";");
+  return `${m};${empreinteDemo(m)}`;
+};
 const tva = (ht: number, pdm: number) => Number((BigInt(ht) * BigInt(pdm) + 5000n) / 10000n);
 
 export function initialiserTresorerie(ids: Record<string, string>) {
@@ -114,7 +132,7 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       lignes: f.lignes, totalHt: f.totalHt, totalTva: f.totalTva, totalTtc: f.totalTtc, paye: p, reste: f.totalTtc - p,
       statutPaiement: p >= f.totalTtc ? "payee" : p > 0 ? "partielle" : "impayee", paiement: f.paiement, tresorerie: f.tresorerie, note: f.note,
       reglements: mouvements.filter((x) => x.factureId === f.id).map((x) => ({ id: x.id, date: x.date, montant: (x.sens === "entree" ? 1 : -1) * x.montant, reference: x.reference, compte: comptesT.find((t) => t.id === x.compteId)!.nom, nature: x.nature })),
-      ecriture: etatEcriture(f.ecritureId), auteur: o.nomDe(f.auteur), creeLe: f.creeLe };
+      ecriture: etatEcriture(f.ecritureId), auteur: o.nomDe(f.auteur), creeLe: f.creeLe, codeVerification: codeDemo(o.entreprise().code, f) };
   };
   const montantOk = (v: unknown) => { if (!Number.isInteger(v) || (v as number) <= 0) throw o.erreur(400, "donnees_invalides", "Montant entier positif attendu (FCFA)."); return v as number; };
 
@@ -140,6 +158,24 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       const r = (q.get("recherche") ?? "").toLowerCase();
       return clients.filter((x) => !r || [x.nom, x.telephone, x.niu].some((v) => v?.toLowerCase().includes(r))).sort((x, y) => x.nom.localeCompare(y.nom))
         .map((x) => ({ ...x, factures: factures.filter((f) => f.client.id === x.id).length }));
+    }
+    if (r1 === "verification") {
+      o.exiger("sales.read");
+      const p = String(c.contenu ?? "").trim().split(";");
+      if (!c.contenu || !String(c.contenu).trim()) throw o.erreur(400, "donnees_invalides", "Scannez ou collez le code de la facture.");
+      const code = o.entreprise().code;
+      let rep: Record<string, unknown>;
+      if (p.length !== 7 || p[0] !== "GC1") rep = { authentique: false, raison: "Ce code n'est pas un code de facture Gestionnaire Comptable." };
+      else if (p[1] !== code) rep = { authentique: false, raison: `Cette facture a été émise par une autre entreprise (code ${p[1]}). Elle ne peut être vérifiée que par celle-ci.` };
+      else if (empreinteDemo(p.slice(0, 6).join(";")) !== p[6]) rep = { authentique: false, raison: "Signature invalide : le numéro, la date ou le montant ont été modifiés, ou le code est un faux." };
+      else {
+        const f = factures.find((x) => x.numero === p[2]);
+        rep = !f ? { authentique: false, raison: `Signature valide, mais la facture ${p[2]} est absente de la base.` }
+          : f.date !== p[3] || String(f.totalTtc) !== p[4] ? { authentique: false, raison: `La facture ${p[2]} existe, mais sa date ou son montant ne correspondent pas au code.` }
+          : { authentique: true, facture: { id: f.id, numero: f.numero, date: f.date, client: f.client.nom, totalTtc: f.totalTtc, devise: f.devise, statutPaiement: vueFacture(f).statutPaiement, auteur: o.nomDe(f.auteur), creeLe: f.creeLe } };
+      }
+      o.tracer({ type: "sales", action: "invoice_verify", resultat: rep.authentique ? "success" : "failure" });
+      return rep;
     }
     if (r1 === "factures" && !r2 && m === "POST") {
       o.exiger("sales.create");
@@ -190,7 +226,7 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
         && (st !== "payee" || paye(f) >= f.totalTtc) && (st !== "impayee" || paye(f) < f.totalTtc)).sort((x, y) => y.numero.localeCompare(x.numero));
       const pg = o.page(l, q);
       return { ...pg, elements: pg.elements.map((f) => { const v = vueFacture(f); return { id: v.id, numero: v.numero, date: v.date, type: v.type, client: v.client.nom, totalHt: v.totalHt, totalTva: v.totalTva,
-        totalTtc: v.totalTtc, paye: v.paye, reste: v.reste, statutPaiement: v.statutPaiement, paiement: v.paiement, auteur: v.auteur }; }),
+        totalTtc: v.totalTtc, paye: v.paye, reste: v.reste, statutPaiement: v.statutPaiement, paiement: v.paiement, auteur: v.auteur, creeLe: v.creeLe }; }),
         totalTtc: l.reduce((s, f) => s + f.totalTtc, 0), totalReste: l.reduce((s, f) => s + f.totalTtc - paye(f), 0) };
     }
   }

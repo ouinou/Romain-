@@ -8,15 +8,17 @@ export class ApiErreur extends Error {
   }
 }
 
-type Transport = (methode: string, url: string, corps?: unknown) => Promise<Response>;
+type Transport = (methode: string, url: string, corps?: unknown, automatique?: boolean) => Promise<Response>;
 
-const transportReseau: Transport = (methode, url, corps) =>
+const transportReseau: Transport = (methode, url, corps, automatique) =>
   fetch(url, {
     method: methode,
     credentials: "same-origin",
     headers: {
       ...(corps !== undefined ? { "content-type": "application/json" } : {}),
       ...(methode !== "GET" ? { "x-gc-requete": "1" } : {}),
+      // Rafraîchissement sans action de l'utilisateur : ne prolonge pas la session (voir validerSession côté serveur).
+      ...(automatique ? { "x-gc-automatique": "1" } : {}),
     },
     body: corps !== undefined ? JSON.stringify(corps) : undefined,
   });
@@ -37,10 +39,10 @@ async function lire(r: Response) {
   return type.includes("application/json") ? r.json() : r.text();
 }
 
-export async function appel<T = any>(methode: string, url: string, corps?: unknown, essai = 0): Promise<T> {
+export async function appel<T = any>(methode: string, url: string, corps?: unknown, essai = 0, automatique = false): Promise<T> {
   let r: Response;
   try {
-    r = await transport(methode, url, corps);
+    r = await transport(methode, url, corps, automatique);
   } catch {
     throw new ApiErreur(0, "reseau", "Le serveur ne répond pas. Vérifiez que le poste est bien connecté au réseau de l'entreprise.");
   }
@@ -59,6 +61,8 @@ export async function appel<T = any>(methode: string, url: string, corps?: unkno
 
 export const api = {
   get: <T = any>(url: string) => appel<T>("GET", url),
+  /** Lecture déclenchée par une minuterie, pas par l'utilisateur. */
+  getAuto: <T = any>(url: string) => appel<T>("GET", url, undefined, 0, true),
   post: <T = any>(url: string, corps: unknown = {}) => appel<T>("POST", url, corps),
   put: <T = any>(url: string, corps: unknown) => appel<T>("PUT", url, corps),
   patch: <T = any>(url: string, corps: unknown) => appel<T>("PATCH", url, corps),

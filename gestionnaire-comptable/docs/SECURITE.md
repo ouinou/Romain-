@@ -47,11 +47,25 @@ Ce document dit ce que le logiciel protège réellement, et où sont les limites
 | Consultation du journal | Administrateur, auditeur, DG | Lecture et export (tracés). |
 | Administration technique | Personne qui détient le compte Windows et `postgres` | Installation, mises à jour, sauvegardes, restaurations. Ne devrait pas avoir de compte dans le logiciel. |
 
+## Authenticité des factures (code QR)
+
+Chaque facture porte un code QR qui contient son numéro, sa date, son montant TTC et une signature Ed25519 propre à l'entreprise. La clé privée est créée à la première facture, chiffrée avec `GC_CLE_CHIFFREMENT` et jamais modifiée (une nouvelle clé rendrait invérifiables les factures déjà imprimées). La vérification (menu *Vérifier une facture*) contrôle la signature **et** la présence de la facture, identique, dans la base.
+
+Limites : la vérification se fait dans le logiciel, donc par une personne connectée de l'entreprise ; un client extérieur ne peut pas vérifier seul. Si `GC_CLE_CHIFFREMENT` est perdue, les nouvelles factures ne peuvent plus être signées : elle fait partie de ce qui doit être sauvegardé hors du serveur.
+
+## Logo
+
+PNG ou JPEG uniquement, 512 Kio au plus, type vérifié sur les premiers octets du fichier. Le SVG est refusé, car il peut contenir du script. Les versions successives sont conservées en ajout seul.
+
 ## Sauvegardes
 
 Sauvegarde complète avec `pg_dump`, faite par un rôle en lecture seule, puis chiffrée en AES-256-GCM et accompagnée de son empreinte SHA-256. La restauration vérifie l'empreinte, le chiffrement authentifié rejette tout fichier modifié, et elle refuse d'écrire dans une base non vide.
 
 La clé `GC_CLE_SAUVEGARDE` doit être conservée hors du serveur. Si elle est perdue, les sauvegardes sont illisibles. Si elle est volée en même temps qu'une sauvegarde, les données sont exposées.
+
+## Correction apportée (v0.1, étape 10)
+
+Les rafraîchissements automatiques (cloche de notifications, écran des ventes en direct) prolongeaient la session : un poste resté ouvert ne se déconnectait jamais. Ils sont désormais marqués et ne comptent plus comme une activité (test `profil-facture.test.ts`).
 
 ## Ce qui n'est pas encore en place
 

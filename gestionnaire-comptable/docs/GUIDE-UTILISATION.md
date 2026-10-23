@@ -55,7 +55,11 @@ Menu **Journal d'audit** :
 
 Personne ne peut modifier ou supprimer un événement depuis le logiciel.
 
-## 6. Entreprise et code maître
+## 6. Entreprise : profil, logo, couleurs et code maître
+
+Menu **Entreprise** (administrateur). Renseignez la raison sociale, le NIU, le RCCM, le régime fiscal, le numéro de patente, l'adresse, le téléphone et l'e-mail : tout ce qui est rempli est imprimé dans l'en-tête des factures.
+
+**Logo et couleurs** : *Ajouter un logo* (PNG ou JPEG, de préférence carré ; il est réduit automatiquement). Choisissez une couleur principale (barre latérale, en-têtes des tableaux de facture) et une couleur d'accent (boutons, liens, bandeau des factures). L'écran change en direct ; *Enregistrer les couleurs* les applique à tous les utilisateurs. Si une teinte est trop claire pour un texte, le logiciel l'assombrit légèrement là où c'est nécessaire. Les factures déjà émises gardent le logo et les couleurs du jour de leur émission.
 
 Menu **Entreprise** : raison sociale, RCCM, NIU, adresse et téléphone. Les réglages de sécurité (double authentification obligatoire, délai d'inactivité) demandent une confirmation.
 
@@ -86,6 +90,10 @@ Menu **Ventes et trésorerie**. C'est ici que s'enregistrent les opérations de 
 - **Caissier** : il ne voit et n'utilise que la caisse qui lui est attribuée (par le DAF, *Caissiers* sur la carte de la caisse). Une caisse ne peut pas passer en négatif.
 
 **Côté comptabilité** : chaque vente et chaque mouvement produit une écriture en brouillard. Dans *Écritures*, filtrez *Origine : Ventes et trésorerie*, cochez les brouillards et cliquez sur *Valider la sélection*. Ces écritures ne se modifient pas à la main : on corrige l'opération d'origine.
+
+**Ventes en direct** : la liste des factures du jour, toutes caisses confondues, avec le chiffre d'affaires, l'encaissé et le crédit. Elle se met à jour seule toutes les 5 secondes ; une nouvelle facture apparaît surlignée.
+
+**Vérifier une facture** : scannez le code QR imprimé sur une facture, avec la caméra du poste (en HTTPS), avec une douchette USB (cliquer dans le champ puis scanner) ou en collant le code. Le résultat dit si la facture est authentique, et sinon pourquoi (montant modifié, faux code, autre entreprise).
 
 **Paramètres fiscaux** (*Exercices et paramètres*) : TVA applicable ou non, taux, mentions imprimées sur les factures. Le taux de la démonstration (19,25 %) est à vérifier dans la loi de finances en vigueur.
 

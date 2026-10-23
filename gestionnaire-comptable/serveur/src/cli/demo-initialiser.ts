@@ -80,6 +80,9 @@ await executer(async () => {
       await genererEcriture(c, { journalId: ids.cash.journal, date: `${an}-01-03`, piece: m.reference, libelle: "Fonds de caisse initial", auteur: ousmane,
         source: { type: "treasury_movement", id: m.id }, lignes: [{ compteId: ids.cash.compte, debit: 100000, credit: 0 }, { compteId: capital.id, debit: 0, credit: 100000 }] });
       // TVA de démonstration : 19,25 % (taux À VÉRIFIER dans la loi de finances en vigueur avant tout usage réel).
+      // Profil fictif complet (en-tête des factures). Logo et couleurs : à choisir par l'entreprise dans « Entreprise ».
+      await c.query(`UPDATE companies SET phone = '+237 600 00 00 00 (fictif)',
+        settings = jsonb_set(settings, '{profil}', '{"email": "contact@demo.cm", "regimeFiscal": "Régime du réel (à vérifier)", "patente": "PAT-DEMO-0000 (fictif)"}') WHERE id = $1`, [e.entrepriseId]);
       await c.query(`UPDATE companies SET settings = jsonb_set(settings, '{fiscal}', '{"tvaApplicable": true, "tauxTvaPdm": 1925, "mentionsFacture": "Document de démonstration : données fictives, taux de TVA à vérifier."}') WHERE id = $1`, [e.entrepriseId]);
     });
     console.log("Entreprise de démonstration créée (données fictives).");

@@ -14,6 +14,7 @@
   --marine: #101d35;
   --marine-2: #192d4b;
   --marine-3: #233752;
+  --marine-fin: #0b1425;
   --bleu: #c24e00;          /* action principale (texte blanc : 4,8:1) */
   --bleu-fonce: #a84300;
   --cyan: #ff6a00;          /* orange vif : accents, focus, repères */
@@ -109,7 +110,7 @@ h1, h2, h3 { text-wrap: balance; }
 
 /* Structure de l'application */
 .app { min-height: 100vh; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
-.laterale { background: linear-gradient(180deg, var(--marine), #0b1425); color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; }
+.laterale { background: linear-gradient(180deg, var(--marine), var(--marine-fin)); color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; }
 .laterale .marque { padding: 0 6px 18px; border-bottom: 1px solid #2b4155; margin-bottom: 8px; }
 .laterale .marque h1 { font-size: 13px; }
 .laterale .marque p { color: #9eb3c7; }
@@ -253,3 +254,31 @@ tfoot tr.net-a-payer th { color: var(--texte); font-size: 16px; font-weight: 900
   .apercu-facture, .apercu-facture * { visibility: visible; }
   .apercu-facture { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
 }
+
+/* Logo de l'entreprise dans la barre latérale : fond blanc arrondi, pour qu'un logo sombre reste visible. */
+.logo-entreprise { width: 48px; height: 48px; flex-shrink: 0; object-fit: contain; background: #fff; border-radius: 10px; padding: 4px; }
+.marque h1.nom-entreprise { font-size: 15px; letter-spacing: 0; line-height: 1.25; overflow-wrap: anywhere; }
+.cadre-logo { width: 96px; height: 96px; border: 1px dashed var(--ligne); border-radius: 12px; display: grid; place-items: center; background: #fff; overflow: hidden; }
+.cadre-logo img { max-width: 88px; max-height: 88px; object-fit: contain; }
+.apercu-couleurs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.apercu-couleurs span { padding: 7px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+.direct { align-self: center; font-size: 13px; font-weight: 700; color: var(--vert); background: var(--vert-fond); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+.direct::before { content: "●"; margin-right: 6px; animation: clignote 2s infinite; }
+.direct-coupe { color: var(--orange); background: var(--orange-fond); }
+@keyframes clignote { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .direct::before { animation: none; } }
+tr.ligne-nouvelle td { background: var(--orange-doux); transition: background 1s; }
+.verdict { display: grid; gap: 10px; border-radius: 12px; padding: 16px; border: 1px solid; }
+.verdict-ok { background: var(--vert-fond); border-color: #9fd6c3; }
+.verdict-ko { background: var(--rouge-fond); border-color: #ecb4b4; }
+.verdict-titre { font-size: 19px; font-weight: 900; }
+.verdict-ok .verdict-titre { color: var(--vert); }
+.verdict-ko .verdict-titre { color: var(--rouge); }
+.verdict-details { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+.verdict-details dt { color: var(--discret); }
+.verdict-details dd { margin: 0; }
+.cadre-camera { display: grid; gap: 6px; }
+.cadre-camera video { width: 100%; max-height: 320px; background: #000; border-radius: 10px; object-fit: cover; }
+.table-facture thead th { background: var(--entete-facture, var(--entete)); color: var(--texte-entete-facture, var(--discret)); }
+.apercu-facture .qr { width: 96px; height: 96px; padding: 2px; border: 0; }
+@media print { .apercu-facture { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

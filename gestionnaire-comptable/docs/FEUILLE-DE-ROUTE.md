@@ -48,6 +48,15 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] 65 tests côté serveur, parcours navigateur de 22 étapes, test de la démonstration hors serveur
 - [x] Police Lato intégrée à l'application (fonctionne sans Internet)
 
+## Fait (v0.1, étape 10 : profil, factures signées, ventes en direct)
+
+- [x] Profil d'entreprise : régime fiscal, patente, e-mail, logo, couleurs appliquées à l'interface
+- [x] Facture PDF avec logo, en-tête complet et code QR signé (Ed25519)
+- [x] Écran « Vérifier une facture » (caméra, douchette, saisie)
+- [x] Écran « Ventes en direct » pour la direction et les caisses
+- [x] Correction : les rafraîchissements automatiques ne prolongent plus la session
+- [x] 72 tests serveur, parcours navigateur de 25 étapes
+
 ## À faire ensuite
 
 **Ventes et trésorerie (suite).** Avoirs (correction d'une facture émise), rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.

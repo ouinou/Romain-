@@ -128,6 +128,27 @@ try {
   await p.getByLabel("Raison sociale").waitFor();
   await capture(p, "entreprise");
   etape("page entreprise");
+  // Profil : régime fiscal, patente, e-mail ; logo (image fictive dessinée pour le test) ; couleurs de l'entreprise.
+  await p.getByLabel("Régime fiscal").fill("Régime du réel");
+  await p.getByLabel("N° de patente").fill("PAT-2026-DEMO");
+  await p.getByLabel("Adresse e-mail").fill("contact@iti-demo.cm");
+  await p.getByRole("button", { name: "Enregistrer", exact: true }).first().click();
+  await p.getByText(/Informations enregistrées/).waitFor();
+  const dessin = await nouvellePage(200, 200);
+  await dessin.setContent(`<div id="l" style="width:160px;height:160px;border-radius:24px;background:#0b5d3b;color:#f2c200;font:900 64px sans-serif;display:grid;place-items:center">ITI</div>`);
+  const fichierLogo = `${DOSSIER}/logo-test.png`;
+  await dessin.locator("#l").screenshot({ path: fichierLogo });
+  await dessin.context().close();
+  await p.getByLabel("Fichier du logo (PNG ou JPEG)").setInputFiles(fichierLogo);
+  await p.getByText(/Logo enregistré/).waitFor();
+  await p.locator(".laterale img.logo-entreprise").waitFor();
+  await p.getByLabel("Couleur principale").fill("#0b5d3b");
+  await p.getByLabel("Couleur d'accent").fill("#f2c200");
+  await p.getByRole("button", { name: "Enregistrer les couleurs" }).click();
+  await p.getByText("Couleurs enregistrées.").waitFor();
+  assert.notEqual(await p.evaluate(() => document.documentElement.style.getPropertyValue("--marine")), "", "couleurs appliquées à l'interface");
+  await capture(p, "entreprise-profil");
+  etape("profil : régime fiscal, patente, logo et couleurs de l'entreprise appliqués à l'écran");
 
   // --- Téléphone
   const m = await nouvellePage(390, 844);
@@ -249,6 +270,9 @@ try {
   await v.getByText("Caisse principale").first().waitFor();
   assert.equal(await v.getByText("Banque fictive").count(), 0, "la caissière ne voit que sa caisse");
   etape("caissière : seulement sa caisse (fonds initial 100 000)");
+  // Le DAF suit les ventes en direct pendant que la caissière vend.
+  await menu(f, "Ventes en direct").click();
+  await f.getByText(/En direct · mis à jour/).waitFor();
   await menu(v, "Nouvelle vente").click();
   await v.getByLabel("Client").fill("Établissements Fictifs Mbarga");
   await v.getByLabel("Désignation de la ligne 1").fill("Cartouche d'encre");
@@ -263,7 +287,23 @@ try {
   await v.getByRole("button", { name: /Émettre la facture/ }).click();
   await v.getByRole("heading", { name: new RegExp(`Facture FAC-${new Date().getFullYear()}-00001`) }).waitFor();
   await v.getByText("Soixante-cinq mille cinq cent quatre-vingt-huit francs CFA").waitFor();
+  await v.locator(".apercu-facture img").waitFor();
+  await v.locator(".apercu-facture svg.qr").waitFor();
+  await v.getByText("Patente : PAT-2026-DEMO").waitFor();
   await capture(v, "vente-facture");
+  await f.locator("tbody").getByText(new RegExp(`FAC-${new Date().getFullYear()}-00001`)).waitFor({ timeout: 12_000 });
+  await capture(f, "ventes-direct");
+  etape("DAF : la facture apparaît d'elle-même dans « Ventes en direct »");
+  const codeQr = await v.evaluate(async () => (await (await fetch("/api" + location.hash.slice(1).split("?")[0])).json()).codeVerification);
+  await menu(f, "Vérifier une facture").click();
+  await f.getByLabel("Code de la facture").fill(codeQr);
+  await f.getByRole("button", { name: "Vérifier", exact: true }).click();
+  await f.getByText("✓ Facture authentique").waitFor();
+  await capture(f, "verification-ok");
+  await f.getByLabel("Code de la facture").fill(codeQr.replace(";65588;", ";95588;"));
+  await f.getByRole("button", { name: "Vérifier", exact: true }).click();
+  await f.getByText("✗ Facture non reconnue").waitFor();
+  etape("DAF : code QR vérifié authentique ; montant falsifié détecté");
   const pdf = await v.evaluate(async () => { const r = await fetch(location.hash.replace("#", "/api").replace("/ventes/", "/ventes/").split("?")[0] + "/pdf"); return [r.status, r.headers.get("content-type")]; });
   assert.deepEqual(pdf, [200, "application/pdf"]);
   await v.getByRole("button", { name: /Imprimer la facture/ }).click();

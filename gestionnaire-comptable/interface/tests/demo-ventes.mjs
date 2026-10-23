@@ -37,6 +37,10 @@ try {
   await page.getByText("Soixante-cinq mille cinq cent quatre-vingt-huit francs CFA").waitFor();
   await page.screenshot({ path: `${DOSSIER}/demo-facture.png` });
   etape("caissière : vente comptant, facture n° 1, 65 588 FCFA en lettres");
+  await page.locator(".apercu-facture svg.qr").waitFor();
+  await menu("Ventes en direct").click();
+  await page.locator("tbody").getByText(new RegExp(`FAC-${new Date().getFullYear()}-00001`)).waitFor();
+  etape("facture avec code QR ; visible dans « Ventes en direct »");
   await menu("Caisses et banques").click();
   await page.getByRole("button", { name: "− Dépense" }).click();
   await page.getByLabel("Catégorie").selectOption({ label: "Fournitures et petits achats" });

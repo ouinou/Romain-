@@ -66,7 +66,10 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | Méthode | Route | Permission | Remarques |
 |---|---|---|---|
 | GET | `/api/entreprise` | company.read | |
-| PATCH | `/api/entreprise` | company.update (+ company.admin et confirmation pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, parametres?: { mfaObligatoire, inactiviteJours } }`. |
+| PATCH | `/api/entreprise` | company.update (+ company.admin et confirmation pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, email?, regimeFiscal?, patente?, couleurs?: { principale, accent } (#RRGGBB), parametres?: { mfaObligatoire, inactiviteJours } }`. |
+| GET | `/api/entreprise/apparence` | connecté | Nom, couleurs et logo, pour afficher l'interface aux couleurs de l'entreprise. |
+| POST / DELETE | `/api/entreprise/logo` | company.update | `{ image }` PNG ou JPEG en base64, 512 Kio au plus (type contrôlé sur les octets, SVG refusé). Chaque logo est conservé : les factures déjà émises gardent le leur. |
+| GET | `/api/entreprise/logos/:id` | connecté | Image du logo (mise en cache). |
 | POST | `/api/entreprise/code-maitre` | company.admin + confirmation | Génère un nouveau code maître, affiché une seule fois ; l'ancien cesse d'être valable. |
 | GET | `/api/notifications` | connecté | Avec le nombre de notifications non lues. |
 | POST | `/api/notifications/:id/lecture` | connecté | |
@@ -126,4 +129,9 @@ Lecture : `treasury.read` (tous les comptes) ou `cash.read` (seulement les caiss
 | GET | `/factures` | sales.read | Filtres `recherche`, `statut` (payee, impayee), `du`, `au` ; totaux TTC et reste dû. |
 | GET | `/factures/:id` | sales.read | Facture figée : vendeur, client, lignes, totaux, règlements, écriture. |
 | POST | `/factures` | sales.create | `{ date, client: { id? \| nom, niu?, telephone?, adresse?, enregistrer? }, lignes: [{ designation, quantite, prixUnitaire, nature: marchandise\|service }], paiement: { mode: comptant, compteTresorerieId } \| { mode: credit }, note? }`. Numéro `FAC-AAAA-NNNNN` continu. Écriture de vente VT en brouillard ; si comptant, encaissement et écriture de règlement. |
+| POST | `/verification` | sales.read | `{ contenu }` : texte du code QR. Réponse `{ authentique, raison? , facture? }`. Tracée. |
 | GET | `/factures/:id/pdf` | sales.read | PDF A4 avec montant en lettres. Chaque génération est tracée. Affichable dans un cadre de la même origine (impression directe). |
+
+Chaque facture renvoyée par `GET /factures/:id` porte `codeVerification` : `GC1;<code entreprise>;<numéro>;<date>;<TTC>;<devise>;<signature Ed25519>`, imprimé en QR sur le PDF.
+
+**En-tête `x-gc-automatique: 1`** : à envoyer sur les lectures déclenchées par une minuterie (notifications, ventes en direct). La requête est servie, mais elle ne compte pas comme une activité : la session se ferme quand même après la période d'inactivité.

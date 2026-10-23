@@ -30,6 +30,9 @@ import { Ventes } from "./pages/ventes/Ventes";
 import { NouvelleVente } from "./pages/ventes/NouvelleVente";
 import { FicheFacture } from "./pages/ventes/FicheFacture";
 import { Clients } from "./pages/ventes/Clients";
+import { JournalDirect } from "./pages/ventes/JournalDirect";
+import { VerifierFacture } from "./pages/ventes/VerifierFacture";
+import { appliquerCouleurs, chargerApparence, EVENEMENT_APPARENCE, type Apparence } from "./theme";
 
 interface EntreeNav { chemin: string; libelle: string; icone: string; permission?: string | string[] }
 const NAV: { titre: string; entrees: EntreeNav[] }[] = [
@@ -37,6 +40,8 @@ const NAV: { titre: string; entrees: EntreeNav[] }[] = [
   { titre: "Ventes et trésorerie", entrees: [
     { chemin: "/ventes/nouvelle", libelle: "Nouvelle vente", icone: "＋", permission: "sales.create" },
     { chemin: "/ventes", libelle: "Ventes et factures", icone: "▧", permission: "sales.read" },
+    { chemin: "/ventes/direct", libelle: "Ventes en direct", icone: "◉", permission: "sales.read" },
+    { chemin: "/ventes/verifier", libelle: "Vérifier une facture", icone: "✓", permission: "sales.read" },
     { chemin: "/tresorerie", libelle: "Caisses et banques", icone: "◫", permission: ["treasury.read", "cash.read"] },
     { chemin: "/tresorerie/mouvements", libelle: "Mouvements", icone: "⇄", permission: ["treasury.read", "cash.read"] },
     { chemin: "/ventes/clients", libelle: "Clients", icone: "♙", permission: "sales.read" },
@@ -116,6 +121,14 @@ function Coquille() {
   const [menu, setMenu] = useState(false);
   const { moi, a, deconnecter } = useSession();
   useEffect(() => setMenu(false), [route]);
+  // Couleurs et logo de l'entreprise ; rechargés quand l'administrateur modifie le profil, retirés à la déconnexion.
+  const [apparence, setApparence] = useState<Apparence | null>(null);
+  useEffect(() => {
+    const maj = () => { chargerApparence().then(setApparence); };
+    maj();
+    window.addEventListener(EVENEMENT_APPARENCE, maj);
+    return () => { window.removeEventListener(EVENEMENT_APPARENCE, maj); appliquerCouleurs(null); };
+  }, []);
 
   const [section, id] = route.split("/").filter(Boolean);
   let page: JSX.Element, titre: string;
@@ -135,6 +148,8 @@ function Coquille() {
     case "ventes": {
       const [, sous, fid] = route.split("/").filter(Boolean);
       if (sous === "nouvelle") { titre = "Nouvelle vente"; page = a("sales.create") ? <NouvelleVente /> : interdit; }
+      else if (sous === "direct") { titre = "Ventes en direct"; page = a("sales.read") ? <JournalDirect /> : interdit; }
+      else if (sous === "verifier") { titre = "Vérifier une facture"; page = a("sales.read") ? <VerifierFacture /> : interdit; }
       else if (sous === "clients") { titre = "Clients"; page = a("sales.read") ? <Clients /> : interdit; }
       else if (sous === "factures" && fid) { titre = "Facture"; page = a("sales.read") ? <FicheFacture id={fid} /> : interdit; }
       else { titre = "Ventes et factures"; page = a("sales.read") ? <Ventes /> : interdit; }
@@ -164,8 +179,11 @@ function Coquille() {
     <div className={"app" + (menu ? " menu-ouvert" : "")}>
       <aside className="laterale" aria-label="Navigation principale">
         <div className="marque">
-          <div className="logo" aria-hidden="true">GC</div>
-          <div><h1>GESTIONNAIRE<br />COMPTABLE</h1><p>{moi.entreprise.raisonSociale}</p></div>
+          {apparence?.logoUrl
+            ? <><img className="logo-entreprise" src={apparence.logoUrl} alt={`Logo de ${moi.entreprise.raisonSociale}`} />
+                <div><h1 className="nom-entreprise">{moi.entreprise.raisonSociale}</h1><p>Gestionnaire Comptable</p></div></>
+            : <><div className="logo" aria-hidden="true">GC</div>
+                <div><h1>GESTIONNAIRE<br />COMPTABLE</h1><p>{moi.entreprise.raisonSociale}</p></div></>}
         </div>
         <nav className="nav">
           {NAV.map((g) => {
@@ -209,8 +227,8 @@ function Notifications() {
   const [ouvert, setOuvert] = useState(false);
   const [liste, setListe] = useState<{ elements: Notification[]; nonLues: number } | null>(null);
   const toast = useToast();
-  const charger = useCallback(() => api.get("/api/notifications?taille=20").then(setListe).catch(() => {}), []);
-  useEffect(() => { charger(); const t = setInterval(charger, 60_000); return () => clearInterval(t); }, [charger]);
+  const charger = useCallback((auto = false) => (auto ? api.getAuto("/api/notifications?taille=20") : api.get("/api/notifications?taille=20")).then(setListe).catch(() => {}), []);
+  useEffect(() => { charger(); const t = setInterval(() => charger(true), 60_000); return () => clearInterval(t); }, [charger]);
   const lire = async (n: Notification) => {
     if (n.lue) return;
     try { await api.post(`/api/notifications/${n.id}/lecture`); charger(); } catch { toast("Impossible de marquer la notification comme lue.", true); }

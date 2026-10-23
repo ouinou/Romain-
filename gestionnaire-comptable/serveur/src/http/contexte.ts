@@ -59,7 +59,7 @@ export function proteger<T>(deps: Dependances, opts: Options, traitement: Traite
     let ctxAudit: Pick<Evenement, "acteurId" | "sessionId" | "ip"> = { ip };
     try {
       const sortie = await transaction(deps.pool, ck.entrepriseId, async (c) => {
-        const v = await validerSession(c, deps.cfg, ck.jeton);
+        const v = await validerSession(c, deps.cfg, ck.jeton, req.headers["x-gc-automatique"] === "1");
         if ("refus" in v) return { erreur: new ErreurHttp(401, "session_invalide", v.refus) };
         ctxAudit = { acteurId: v.utilisateur.id, sessionId: v.sessionId, ip };
         if (v.mfaAConfigurer && !opts.avantMfa)
