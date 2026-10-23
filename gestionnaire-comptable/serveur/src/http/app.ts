@@ -15,6 +15,7 @@ import { routesEcritures } from "./routes/comptabilite-ecritures.js";
 import { routesEtatsComptables } from "./routes/comptabilite-etats.js";
 import { routesTresorerie } from "./routes/tresorerie.js";
 import { routesVentes } from "./routes/ventes.js";
+import { routesInstallation } from "./routes/installation.js";
 
 export function construireApp(deps: Dependances, options: FastifyServerOptions = {}, dossierInterface?: string) {
   const app = Fastify({ bodyLimit: 1_048_576, trustProxy: false, ...options });
@@ -70,6 +71,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   routesEtatsComptables(app, deps);
   routesTresorerie(app, deps);
   routesVentes(app, deps);
+  routesInstallation(app, deps);
   if (dossierInterface) servirInterface(app, dossierInterface);
   return app;
 }

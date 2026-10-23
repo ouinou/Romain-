@@ -1,0 +1,166 @@
+; GESTIONNAIRE COMPTABLE : setup Windows « tout inclus » (serveur, interface, Node.js, PostgreSQL privé).
+; Construit par installateur/construire.sh :  makensis -DVERSION=… -DETAPE=… -DSORTIE=… gestionnaire-comptable.nsi
+Unicode true
+SetCompressor /SOLID lzma
+SetCompressorDictSize 64
+!include "MUI2.nsh"
+!include "x64.nsh"
+!include "LogicLib.nsh"
+!include "WinVer.nsh"
+!include "FileFunc.nsh"
+
+!define NOM "Gestionnaire Comptable"
+!define CLE_DESINSTALL "Software\Microsoft\Windows\CurrentVersion\Uninstall\GestionnaireComptable"
+!define SERVICE_APP "GestionnaireComptable-Serveur"
+!define SERVICE_PG "GestionnaireComptable-Base"
+
+Name "${NOM} ${VERSION}"
+OutFile "${SORTIE}\GestionnaireComptable-Setup-${VERSION}.exe"
+InstallDir "$PROGRAMFILES64\GestionnaireComptable"
+RequestExecutionLevel admin
+ShowInstDetails show
+ShowUninstDetails show
+BrandingText "${NOM} ${VERSION}"
+VIProductVersion "${VERSION}.0"
+VIAddVersionKey /LANG=1036 "ProductName" "${NOM}"
+VIAddVersionKey /LANG=1036 "FileDescription" "Installation de ${NOM}"
+VIAddVersionKey /LANG=1036 "FileVersion" "${VERSION}"
+VIAddVersionKey /LANG=1036 "LegalCopyright" "Voir LICENCES.txt"
+
+Var DONNEES
+Var ADRESSE
+
+!define MUI_ABORTWARNING
+!define MUI_WELCOMEPAGE_TITLE "Installation de ${NOM}"
+!define MUI_WELCOMEPAGE_TEXT "Ce programme installe ${NOM} sur ce poste, qui deviendra le serveur de l'entreprise :$\r$\n$\r$\n  • le logiciel et son interface web ;$\r$\n  • une base de données PostgreSQL privée ;$\r$\n  • les services Windows, le certificat HTTPS et les sauvegardes du soir.$\r$\n$\r$\nLes autres postes n'installent rien : ils utilisent un navigateur.$\r$\n$\r$\nChoisissez un poste allumé pendant les heures de travail, avec une adresse IP fixe sur le réseau local."
+!define MUI_FINISHPAGE_TITLE "${NOM} est installé"
+!define MUI_FINISHPAGE_TEXT "Le serveur fonctionne. À la première ouverture, créez votre entreprise et son administrateur : cet écran n'apparaît que sur ce poste.$\r$\n$\r$\nPour les autres postes : voir « Brancher un autre poste » dans le menu Démarrer."
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_TEXT "Ouvrir ${NOM} maintenant"
+!define MUI_FINISHPAGE_RUN_FUNCTION OuvrirLogiciel
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "${ETAPE}\LICENCES.txt"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "French"
+
+Function .onInit
+  ${IfNot} ${RunningX64}
+    MessageBox MB_ICONSTOP "${NOM} demande une version 64 bits de Windows."
+    Abort
+  ${EndIf}
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_ICONSTOP "${NOM} demande Windows 10, Windows 11 ou Windows Server 2016 (ou plus récent)."
+    Abort
+  ${EndIf}
+  SetRegView 64
+  SetShellVarContext all
+  StrCpy $DONNEES "$APPDATA\GestionnaireComptable"
+  ; Mise à jour : on reprend le dossier de la première installation.
+  ReadRegStr $0 HKLM "${CLE_DESINSTALL}" "InstallLocation"
+  ${If} $0 != ""
+    StrCpy $INSTDIR $0
+  ${EndIf}
+FunctionEnd
+
+Function OuvrirLogiciel
+  ExecShell "open" "$ADRESSE"
+FunctionEnd
+
+Section "Gestionnaire Comptable" SecPrincipale
+  SectionIn RO
+  SetShellVarContext all
+  SetRegView 64
+
+  ; Mise à jour : arrêter les services pour pouvoir remplacer les fichiers en cours d'utilisation.
+  DetailPrint "Arrêt des services (s'ils existent déjà)…"
+  nsExec::ExecToLog 'sc.exe stop ${SERVICE_APP}'
+  Sleep 3000
+  nsExec::ExecToLog 'sc.exe stop ${SERVICE_PG}'
+  Sleep 4000
+
+  DetailPrint "Composants Microsoft Visual C++ (nécessaires à PostgreSQL)…"
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR"
+  File "${ETAPE}\runtime\vc_redist.x64.exe"
+  ExecWait '"$PLUGINSDIR\vc_redist.x64.exe" /install /quiet /norestart' $0
+  ; 0 = installé, 1638 = version plus récente déjà présente, 3010 = redémarrage conseillé.
+  ${If} $0 != 0
+  ${AndIf} $0 != 1638
+  ${AndIf} $0 != 3010
+    MessageBox MB_ICONSTOP "L'installation des composants Visual C++ a échoué (code $0)."
+    Abort
+  ${EndIf}
+
+  DetailPrint "Copie des fichiers…"
+  SetOutPath "$INSTDIR"
+  File "${ETAPE}\LICENCES.txt"
+  File /r "${ETAPE}\serveur"
+  File /r "${ETAPE}\interface"
+  File /r "${ETAPE}\outils"
+  File /r "${ETAPE}\docs"
+  SetOutPath "$INSTDIR\runtime"
+  File /r "${ETAPE}\runtime\node"
+  File /r "${ETAPE}\runtime\pgsql"
+  File "${ETAPE}\runtime\WinSW-x64.exe"
+
+  DetailPrint "Configuration (base de données, certificat, services, sauvegardes)…"
+  CreateDirectory "$DONNEES\journaux"
+  nsExec::ExecToLog '"$INSTDIR\runtime\node\node.exe" "$INSTDIR\outils\configurer.mjs" --app "$INSTDIR" --donnees "$DONNEES"'
+  Pop $0
+  ${If} $0 != 0
+    MessageBox MB_ICONSTOP "La configuration a échoué (code $0).$\r$\nDétails : $DONNEES\journaux\installation.log$\r$\n$\r$\nAucune donnée n'a été supprimée. Corrigez le problème indiqué puis relancez le setup."
+    Abort
+  ${EndIf}
+
+  ; Adresse du logiciel (le port est choisi pendant la configuration).
+  FileOpen $1 "$DONNEES\adresse.txt" r
+  FileRead $1 $ADRESSE
+  FileClose $1
+  StrCpy $ADRESSE $ADRESSE -1
+  WriteINIStr "$INSTDIR\${NOM}.url" "InternetShortcut" "URL" "$ADRESSE"
+
+  CreateDirectory "$SMPROGRAMS\${NOM}"
+  CreateShortCut "$SMPROGRAMS\${NOM}\${NOM}.lnk" "$INSTDIR\${NOM}.url"
+  CreateShortCut "$DESKTOP\${NOM}.lnk" "$INSTDIR\${NOM}.url"
+  CreateShortCut "$SMPROGRAMS\${NOM}\Brancher un autre poste.lnk" "$INSTDIR\docs\INSTALLATION-SETUP.txt"
+  CreateShortCut "$SMPROGRAMS\${NOM}\Dossier des sauvegardes.lnk" "$DONNEES\sauvegardes"
+  CreateShortCut "$SMPROGRAMS\${NOM}\Certificat pour les autres postes.lnk" "$DONNEES\certificats"
+  CreateShortCut "$SMPROGRAMS\${NOM}\Guide d'utilisation.lnk" "$INSTDIR\docs\GUIDE-UTILISATION.txt"
+  CreateShortCut "$SMPROGRAMS\${NOM}\Désinstaller.lnk" "$INSTDIR\Desinstaller.exe"
+
+  WriteUninstaller "$INSTDIR\Desinstaller.exe"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "DisplayName" "${NOM}"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "DisplayVersion" "${VERSION}"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "Publisher" "${NOM}"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "UninstallString" '"$INSTDIR\Desinstaller.exe"'
+  WriteRegDWORD HKLM "${CLE_DESINSTALL}" "NoModify" 1
+  WriteRegDWORD HKLM "${CLE_DESINSTALL}" "NoRepair" 1
+  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+  WriteRegDWORD HKLM "${CLE_DESINSTALL}" "EstimatedSize" $0
+SectionEnd
+
+Function un.onInit
+  SetRegView 64
+  SetShellVarContext all
+  StrCpy $DONNEES "$APPDATA\GestionnaireComptable"
+FunctionEnd
+
+Section "Uninstall"
+  SetShellVarContext all
+  SetRegView 64
+  StrCpy $1 ""
+  MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "Supprimer aussi les DONNÉES de l'entreprise (base comptable, sauvegardes, configuration) ?$\r$\n$\r$\nRépondez NON pour les conserver (recommandé) : une réinstallation les retrouvera.$\r$\nRépondez OUI seulement si une sauvegarde a été copiée ailleurs." IDNO garder
+    MessageBox MB_YESNO|MB_ICONSTOP|MB_DEFBUTTON2 "Confirmez : la base comptable et les sauvegardes de ce poste seront DÉFINITIVEMENT effacées." IDNO garder
+    StrCpy $1 "--supprimer-donnees"
+  garder:
+  nsExec::ExecToLog '"$INSTDIR\runtime\node\node.exe" "$INSTDIR\outils\configurer.mjs" --app "$INSTDIR" --donnees "$DONNEES" --desinstaller $1'
+  Delete "$DESKTOP\${NOM}.lnk"
+  RMDir /r "$SMPROGRAMS\${NOM}"
+  RMDir /r "$INSTDIR"
+  DeleteRegKey HKLM "${CLE_DESINSTALL}"
+SectionEnd

@@ -250,8 +250,9 @@ tr.ligne-ouverture td { color: var(--discret); font-style: italic; }
 td.num { white-space: nowrap; }
 tfoot tr.net-a-payer th { color: var(--texte); font-size: 16px; font-weight: 900; text-transform: none; letter-spacing: 0; }
 @media print {
-  body * { visibility: hidden; }
-  .apercu-facture, .apercu-facture * { visibility: visible; }
+  /* Page d'une facture : on n'imprime que la facture. */
+  body:has(.apercu-facture) * { visibility: hidden; }
+  body:has(.apercu-facture) .apercu-facture, body:has(.apercu-facture) .apercu-facture * { visibility: visible; }
   .apercu-facture { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
 }
 
@@ -282,3 +283,9 @@ tr.ligne-nouvelle td { background: var(--orange-doux); transition: background 1s
 .table-facture thead th { background: var(--entete-facture, var(--entete)); color: var(--texte-entete-facture, var(--discret)); }
 .apercu-facture .qr { width: 96px; height: 96px; padding: 2px; border: 0; }
 @media print { .apercu-facture { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+@media print {
+  /* Première installation : les deux codes, sur fond blanc, sans les boutons. */
+  .ecran-accueil { background: #fff; min-height: 0; display: block; padding: 0; }
+  .boite-accueil { box-shadow: none; width: 100% !important; }
+  .boite-accueil .actions-form, .boite-accueil .case, .boite-accueil .btn { display: none; }
+}

@@ -8,7 +8,11 @@ import { ErreurHttp } from "./erreurs.js";
 
 export const COOKIE_SESSION = "gc_session";
 
-export interface Dependances { pool: Pool; cfg: Config }
+export interface Dependances {
+  pool: Pool; cfg: Config;
+  /** Connexion propriétaire (gc_owner), seulement pour l'assistant de première installation. Absente : assistant désactivé. */
+  poolProprietaire?: Pool;
+}
 
 /** Contexte d'une requête authentifiée, toujours limitée à l'entreprise de la session. */
 export interface Ctx {

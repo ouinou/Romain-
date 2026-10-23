@@ -55,7 +55,10 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Écran « Vérifier une facture » (caméra, douchette, saisie)
 - [x] Écran « Ventes en direct » pour la direction et les caisses
 - [x] Correction : les rafraîchissements automatiques ne prolongent plus la session
-- [x] 72 tests serveur, parcours navigateur de 25 étapes
+- [x] 74 tests serveur, parcours navigateur de 25 étapes
+- [x] Setup Windows tout inclus (NSIS) : Node.js, PostgreSQL privé, services, HTTPS par autorité locale, pare-feu, sauvegardes planifiées ; assistant de première installation
+- [ ] Setup à éprouver sur un vrai Windows 10/11 et Windows Server (construit et vérifié sous Linux seulement)
+- [ ] Signature numérique du setup (certificat de signature de code à acquérir)
 
 ## À faire ensuite
 

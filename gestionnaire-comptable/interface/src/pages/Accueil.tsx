@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, ApiErreur } from "../api";
 import { Champ, SecretUnique, messageErreur } from "../composants/ui";
 
@@ -23,6 +23,11 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
   const [info, setInfo] = useState<string | null>(message ?? null);
   const [envoi, setEnvoi] = useState(false);
   const [jetonRecupere, setJetonRecupere] = useState<{ jeton: string; expireLe: string } | null>(null);
+
+  // Première installation : formulaire de création de l'entreprise (seulement sur le serveur, tant qu'il n'y en a aucune).
+  const [installation, setInstallation] = useState(false);
+  useEffect(() => { api.get<{ disponible: boolean }>("/api/installation").then((r) => setInstallation(r.disponible)).catch(() => {}); }, []);
+  if (installation) return <PremiereInstallation onFin={(codeEnt, jetonInv) => { setInstallation(false); setCode(codeEnt); memoriserCode(codeEnt); setJeton(jetonInv); setMode("invitation"); setInfo("Choisissez maintenant le mot de passe de l'administrateur."); }} />;
 
   const changer = (m: Mode) => { setMode(m); setErreur(null); setInfo(null); setMdp(""); setMdp2(""); setDemandeMfa(false); setCodeMfa(""); };
 
@@ -108,6 +113,65 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
           {mode !== "recuperation" && <button className="btn-lien" onClick={() => changer("recuperation")}>Administrateur bloqué : utiliser le code maître</button>}
         </div>
         <p className="pied-accueil">Mot de passe oublié ? Demandez un code de réinitialisation à votre administrateur.</p>
+      </div>
+    </main>
+  );
+}
+
+function PremiereInstallation({ onFin }: { onFin: (code: string, jeton: string) => void }) {
+  const [f, setF] = useState({ code: "", raisonSociale: "", adminNom: "", adminEmail: "", niu: "", rccm: "" });
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [res, setRes] = useState<{ code: string; codeMaitre: string; invitation: string; adminEmail: string } | null>(null);
+  const [note, setNote] = useState(false);
+  const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: k === "code" ? v.toUpperCase().replace(/[^A-Z0-9-]/g, "") : v });
+  const creer = async (e: React.FormEvent) => {
+    e.preventDefault(); setErreur(null); setEnvoi(true);
+    try { setRes(await api.post("/api/installation/entreprise", { ...f, niu: f.niu || undefined, rccm: f.rccm || undefined })); }
+    catch (err) { setErreur(messageErreur(err)); }
+    finally { setEnvoi(false); }
+  };
+  return (
+    <main className="ecran-accueil">
+      <div className="boite-accueil" style={{ width: "min(560px, 100%)" }}>
+        <div className="marque">
+          <div className="logo" aria-hidden="true">GC</div>
+          <div><h1>GESTIONNAIRE COMPTABLE</h1><p>Première installation</p></div>
+        </div>
+        {!res ? (
+          <form onSubmit={creer} style={{ display: "grid", gap: 12 }}>
+            <div><h2>Créer votre entreprise</h2>
+              <p className="discret" style={{ margin: "6px 0 0" }}>Le logiciel est installé. Indiquez l'entreprise et la personne qui l'administrera. Cet écran n'apparaît que sur ce serveur, une seule fois.</p></div>
+            <Champ label="Raison sociale" valeur={f.raisonSociale} onChange={set("raisonSociale")} requis autoFocus />
+            <Champ label="Code entreprise" valeur={f.code} onChange={set("code")} requis placeholder="Ex. GC-MONENTREPRISE" aide="Saisi par chaque utilisateur à la connexion. 4 à 32 lettres, chiffres ou tirets." />
+            <div className="grille-champs">
+              <Champ label="NIU (facultatif)" valeur={f.niu} onChange={set("niu")} />
+              <Champ label="RCCM (facultatif)" valeur={f.rccm} onChange={set("rccm")} />
+            </div>
+            <div className="grille-champs">
+              <Champ label="Nom de l'administrateur" valeur={f.adminNom} onChange={set("adminNom")} requis />
+              <Champ label="E-mail de l'administrateur" type="email" valeur={f.adminEmail} onChange={set("adminEmail")} requis />
+            </div>
+            {erreur && <div className="alerte alerte-erreur" role="alert">{erreur}</div>}
+            <button className="btn btn-principal btn-plein" disabled={envoi}>{envoi ? "Création…" : "Créer l'entreprise"}</button>
+          </form>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div><h2>Entreprise {res.code} créée</h2>
+              <p className="discret" style={{ margin: "6px 0 0" }}>Deux codes s'affichent <b>une seule fois</b>. Imprimez cette page ou recopiez-les avant de continuer.</p></div>
+            <div className="impression-secrets" style={{ display: "grid", gap: 12 }}>
+              <div><b>1. Code maître de l'entreprise</b>
+                <SecretUnique valeur={res.codeMaitre} explication={<>À remettre <b>sous enveloppe scellée au dirigeant</b>, rangée dans un coffre. Il sert uniquement si l'administrateur perd l'accès. Il ne doit pas rester chez l'administrateur informatique.</>} /></div>
+              <div><b>2. Code d'invitation de l'administrateur ({res.adminEmail})</b>
+                <SecretUnique valeur={res.invitation} explication="Il permet de choisir le mot de passe de l'administrateur. Valable 72 heures." /></div>
+            </div>
+            <label className="case"><input type="checkbox" checked={note} onChange={(e) => setNote(e.target.checked)} /><span>J'ai imprimé ou recopié les deux codes.</span></label>
+            <div className="actions-form">
+              <button className="btn" onClick={() => window.print()}>Imprimer</button>
+              <button className="btn btn-principal" disabled={!note} onClick={() => onFin(res.code, res.invitation)}>Continuer : mot de passe de l'administrateur →</button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

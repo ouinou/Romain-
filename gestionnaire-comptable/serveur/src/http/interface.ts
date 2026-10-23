@@ -29,6 +29,11 @@ export function servirInterface(app: FastifyInstance, dossier: string) {
   };
   parcourir(dossier);
   const index = fichiers.get("/index.html")!;
+  // Certificat PUBLIC de l'autorité locale (installé par le setup) : à télécharger depuis chaque poste client
+  // pour que le navigateur fasse confiance au HTTPS du serveur. Ce n'est pas un secret.
+  const autorite = process.env.GC_TLS_AUTORITE;
+  if (autorite && existsSync(autorite))
+    fichiers.set("/certificat-autorite.crt", { contenu: readFileSync(autorite), type: "application/x-x509-ca-cert", immuable: false });
 
   app.get("/*", async (req, rep) => {
     const chemin = req.url.split("?")[0];
