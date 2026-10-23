@@ -1,5 +1,12 @@
 /* Gestionnaire Comptable : barre latérale bleu marine, contenu sur fond clair, accents bleu et cyan.
    Thème clair unique, choisi pour le confort de lecture des tableaux comptables. */
+/* Police Lato (licence SIL OFL 1.1, voir src/polices/LICENCE-OFL.txt), intégrée à l'application :
+   aucun chargement depuis Internet, le logiciel fonctionne en réseau local. */
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 400; font-display: swap; src: url("./polices/lato-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-style: italic; font-weight: 400; font-display: swap; src: url("./polices/lato-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 500 700; font-display: swap; src: url("./polices/lato-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 800 900; font-display: swap; src: url("./polices/lato-latin-900-normal.woff2") format("woff2"); }
+
 :root {
   /* Palette validée : bleu nuit et orange vif.
      L'orange vif (#ff6a00) sert d'accent sur fond sombre (contraste 5,9 sur le bleu nuit) ;
@@ -29,7 +36,7 @@
   --info-fond: #eef2f8;
   --info-ligne: #d5deea;
   --info-texte: #2a3d5c;
-  --police: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --police: "Lato", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   color-scheme: light;
 }
@@ -239,3 +246,10 @@ tr.ligne-ouverture td { color: var(--discret); font-style: italic; }
 .bloc-compte + .bloc-compte { margin-top: 14px; }
 .bloc-compte h4 { margin: 0; padding: 10px 12px; background: var(--entete); font-size: 13px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .repere-orange { box-shadow: inset 3px 0 0 var(--cyan); }
+td.num { white-space: nowrap; }
+tfoot tr.net-a-payer th { color: var(--texte); font-size: 16px; font-weight: 900; text-transform: none; letter-spacing: 0; }
+@media print {
+  body * { visibility: hidden; }
+  .apercu-facture, .apercu-facture * { visibility: visible; }
+  .apercu-facture { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
+}

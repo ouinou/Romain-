@@ -54,6 +54,7 @@ export function ParametresComptables() {
           </>}
         </section>
       </div>
+      <ParametresFiscaux admin={admin} />
       <section className="panneau">
         <div className="entete-panneau"><div><h3>Comptes protégés</h3><p>Les mouvements des comptes commençant par ces numéros ne sont visibles qu'avec la permission indiquée.</p></div>
           {admin && <div style={{ display: "flex", gap: 8 }}>
@@ -106,5 +107,33 @@ function NouvelExercice({ onFermer, onFin }: { onFermer: () => void; onFin: () =
         <div className="actions-form"><button type="button" className="btn" onClick={onFermer}>Annuler</button><button className="btn btn-principal">Créer</button></div>
       </form>
     </Modale>
+  );
+}
+
+/** TVA et mentions de facture : saisies par l'entreprise d'après les textes en vigueur (aucun taux codé en dur). */
+function ParametresFiscaux({ admin }: { admin: boolean }) {
+  const toast = useToast();
+  const p = useDonnees(() => api.get<{ tvaApplicable: boolean; tauxTvaPdm: number; mentionsFacture: string }>("/api/ventes/parametres").catch(() => null), []);
+  const [f, setF] = useState({ tvaApplicable: false, taux: "", mentions: "" });
+  useEffect(() => { if (p.donnees) setF({ tvaApplicable: p.donnees.tvaApplicable, taux: p.donnees.tauxTvaPdm ? String(p.donnees.tauxTvaPdm / 100).replace(".", ",") : "", mentions: p.donnees.mentionsFacture }); }, [p.donnees]);
+  if (!p.donnees) return null;
+  const enregistrer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const taux = Math.round(Number(f.taux.replace(",", ".")) * 100);
+    try {
+      await api.patch("/api/ventes/parametres", { tvaApplicable: f.tvaApplicable, tauxTvaPdm: f.tvaApplicable ? taux : 0, mentionsFacture: f.mentions });
+      toast("Paramètres de facturation enregistrés."); p.recharger();
+    } catch (err) { if ((err as { code?: string }).code !== "annulee") toast(messageErreur(err), true); }
+  };
+  return (
+    <section className="panneau">
+      <div className="entete-panneau"><div><h3>TVA et facturation</h3><p>Taux à reprendre de la loi de finances en vigueur et à faire confirmer par votre expert-comptable.</p></div></div>
+      <form onSubmit={enregistrer} style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+        <label className="case"><input type="checkbox" checked={f.tvaApplicable} disabled={!admin} onChange={(e) => setF({ ...f, tvaApplicable: e.target.checked })} /> L'entreprise facture la TVA</label>
+        {f.tvaApplicable && <Champ label="Taux de TVA (%)" valeur={f.taux} onChange={(v) => setF({ ...f, taux: v.replace(/[^\d,.]/g, "") })} lectureSeule={!admin} inputMode="numeric" aide="Par exemple 19,25 si c'est le taux en vigueur pour votre activité." />}
+        <Champ label="Mentions imprimées sur les factures (facultatif)" valeur={f.mentions} onChange={(v) => setF({ ...f, mentions: v })} lectureSeule={!admin} aide="Conditions de paiement, coordonnées bancaires, mentions légales…" />
+        {admin && <div><button className="btn btn-principal">Enregistrer</button></div>}
+      </form>
+    </section>
   );
 }

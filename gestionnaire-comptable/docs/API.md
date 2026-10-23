@@ -88,12 +88,42 @@ Montants : entiers en FCFA. Toutes les routes respectent les comptes protégés 
 | POST | `/exercices/:id/cloture` | accounting.admin + confirmation | `{ motif }`. Définitive ; refusée s'il reste des brouillards. |
 | GET / PATCH | `/parametres` | read / admin + confirmation | `{ separationSaisieValidation }`. |
 | PUT | `/comptes-proteges` | accounting.admin + confirmation | `{ groupes: [{ prefixe, libelle, permission }], motif }`. |
-| GET | `/ecritures` | accounting.read | Filtres `exercice`, `journal`, `statut` (brouillard, validee), `du`, `au`, `recherche`. |
+| GET | `/ecritures` | accounting.read | Filtres `exercice`, `journal`, `statut` (brouillard, validee), `origine` (operations, saisie), `du`, `au`, `recherche`. |
 | GET | `/ecritures/:id` | accounting.read | Écriture avec ses lignes, son auteur, son validateur et ses liens d'extourne. |
 | POST | `/ecritures` | accounting.create | `{ journalId, date, piece, datePiece?, libelle, lignes: [{ compteId, libelle?, debit, credit }] }`. Brouillard, éventuellement déséquilibré. |
-| PUT / DELETE | `/ecritures/:id` | accounting.update | Brouillards uniquement. |
+| PUT / DELETE | `/ecritures/:id` | accounting.update | Brouillards saisis à la main uniquement. Une écriture générée par une vente ou un mouvement est refusée (`ecriture_generee`) : on corrige l'opération d'origine. |
+| POST | `/ecritures/validation-groupee` | accounting.approve + confirmation | `{ ids }` (200 au plus). Chaque écriture est validée ou refusée séparément ; réponse `{ validees, refusees, resultats }`. |
 | POST | `/ecritures/:id/validation` | accounting.approve + confirmation | Équilibre, séparation des tâches et numérotation contrôlés par la base. |
 | POST | `/ecritures/:id/extourne` | accounting.cancel + confirmation | `{ date?, motif }`. |
 | GET | `/tableau-de-bord` | accounting.read | Synthèse de l'exercice. |
 | GET | `/grand-livre`, `/balance` | accounting.read | Filtres `exercice`, `du`, `au`, `compte` (début de numéro), `journal`, `brouillons=oui`. |
 | GET | `/grand-livre/export`, `/balance/export` | accounting.export | CSV, tracé dans le journal. |
+
+## Trésorerie (`/api/tresorerie`)
+
+Lecture : `treasury.read` (tous les comptes) ou `cash.read` (seulement les caisses dont on est caissier attitré). Saisie : `treasury.create`, ou `cash.create` sur sa propre caisse. Chaque opération crée une écriture **en brouillard** dans le journal du compte (CA ou BQ), à valider par la comptabilité.
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/comptes` | voir ci-dessus | Soldes, entrées et sorties du jour, caissiers attitrés. |
+| POST | `/comptes` | treasury.admin | `{ type: caisse\|banque\|mobile, nom, banque?, referenceBancaire? }`. Crée le sous-compte 571x ou 521x. |
+| PATCH | `/comptes/:id` | treasury.admin (+ confirmation pour `caissiers`) | `{ nom?, actif?, caissiers? }`. |
+| GET | `/caissiers-possibles` | treasury.admin | Comptes actifs ayant `cash.create`. |
+| GET | `/categories` | lecture | Catégories d'encaissement et de dépense, sans les comptes protégés pour l'utilisateur. |
+| GET | `/mouvements`, `/mouvements/:id` | lecture | Filtres `compte`, `sens`, `du`, `au`, `recherche`, pagination. |
+| POST | `/mouvements` | saisie | `{ compteTresorerieId, sens: entree\|sortie, montant, date, libelle, reference?, categorie? \| compteId?, tva?, factureId? }`. Numéro `MVT-AAAA-NNNNN` si pas de référence. Caisse jamais négative (contrôle en base). |
+| POST | `/transferts` | saisie sur les deux comptes | `{ de, vers, montant, date, libelle, reference? }`. Deux mouvements, une écriture. |
+| POST | `/mouvements/:id/annulation` | treasury.cancel + confirmation | `{ motif, date? }`. Mouvement inverse et écriture inverse ; l'original reste. |
+| GET | `/tableau` | lecture | Totaux, entrées et sorties du jour, écritures générées à valider. |
+
+## Ventes et factures (`/api/ventes`)
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/parametres` | sales.read | `{ tvaApplicable, tauxTvaPdm, mentionsFacture, devise }`. Taux en pour dix mille (1925 = 19,25 %). |
+| PATCH | `/parametres` | accounting.admin + confirmation | Aucun taux n'est codé en dur : il se saisit ici. |
+| GET / POST | `/clients` | sales.read / sales.create | `{ nom, niu?, telephone?, email?, adresse? }`. |
+| GET | `/factures` | sales.read | Filtres `recherche`, `statut` (payee, impayee), `du`, `au` ; totaux TTC et reste dû. |
+| GET | `/factures/:id` | sales.read | Facture figée : vendeur, client, lignes, totaux, règlements, écriture. |
+| POST | `/factures` | sales.create | `{ date, client: { id? \| nom, niu?, telephone?, adresse?, enregistrer? }, lignes: [{ designation, quantite, prixUnitaire, nature: marchandise\|service }], paiement: { mode: comptant, compteTresorerieId } \| { mode: credit }, note? }`. Numéro `FAC-AAAA-NNNNN` continu. Écriture de vente VT en brouillard ; si comptant, encaissement et écriture de règlement. |
+| GET | `/factures/:id/pdf` | sales.read | PDF A4 avec montant en lettres. Chaque génération est tracée. Affichable dans un cadre de la même origine (impression directe). |

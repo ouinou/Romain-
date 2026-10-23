@@ -24,10 +24,23 @@ import { FicheEcriture } from "./pages/comptabilite/FicheEcriture";
 import { GrandLivre } from "./pages/comptabilite/GrandLivre";
 import { Balance } from "./pages/comptabilite/Balance";
 import { ParametresComptables } from "./pages/comptabilite/ParametresComptables";
+import { Tresorerie } from "./pages/tresorerie/Tresorerie";
+import { Mouvements, FicheMouvement } from "./pages/tresorerie/Mouvements";
+import { Ventes } from "./pages/ventes/Ventes";
+import { NouvelleVente } from "./pages/ventes/NouvelleVente";
+import { FicheFacture } from "./pages/ventes/FicheFacture";
+import { Clients } from "./pages/ventes/Clients";
 
-interface EntreeNav { chemin: string; libelle: string; icone: string; permission?: string }
+interface EntreeNav { chemin: string; libelle: string; icone: string; permission?: string | string[] }
 const NAV: { titre: string; entrees: EntreeNav[] }[] = [
   { titre: "Pilotage", entrees: [{ chemin: "/", libelle: "Tableau de bord", icone: "▦" }] },
+  { titre: "Ventes et trésorerie", entrees: [
+    { chemin: "/ventes/nouvelle", libelle: "Nouvelle vente", icone: "＋", permission: "sales.create" },
+    { chemin: "/ventes", libelle: "Ventes et factures", icone: "▧", permission: "sales.read" },
+    { chemin: "/tresorerie", libelle: "Caisses et banques", icone: "◫", permission: ["treasury.read", "cash.read"] },
+    { chemin: "/tresorerie/mouvements", libelle: "Mouvements", icone: "⇄", permission: ["treasury.read", "cash.read"] },
+    { chemin: "/ventes/clients", libelle: "Clients", icone: "♙", permission: "sales.read" },
+  ] },
   { titre: "Comptabilité", entrees: [
     { chemin: "/comptabilite", libelle: "Tableau comptable", icone: "◧", permission: "accounting.read" },
     { chemin: "/comptabilite/ecritures", libelle: "Écritures", icone: "✎", permission: "accounting.read" },
@@ -113,6 +126,20 @@ function Coquille() {
     case "journal": titre = "Journal d'audit"; page = !a("audit.read") ? interdit : <Journal />; break;
     case "entreprise": titre = "Entreprise"; page = !a("company.read") ? interdit : <Entreprise />; break;
     case "mon-compte": titre = "Mon compte"; page = <MonCompte />; break;
+    case "tresorerie": {
+      const [, sous, mid] = route.split("/").filter(Boolean);
+      titre = sous === "mouvements" ? "Mouvements de trésorerie" : "Caisses et banques";
+      page = !(a("treasury.read") || a("cash.read")) ? interdit : sous === "mouvements" ? (mid ? <FicheMouvement id={mid} /> : <Mouvements />) : <Tresorerie />;
+      break;
+    }
+    case "ventes": {
+      const [, sous, fid] = route.split("/").filter(Boolean);
+      if (sous === "nouvelle") { titre = "Nouvelle vente"; page = a("sales.create") ? <NouvelleVente /> : interdit; }
+      else if (sous === "clients") { titre = "Clients"; page = a("sales.read") ? <Clients /> : interdit; }
+      else if (sous === "factures" && fid) { titre = "Facture"; page = a("sales.read") ? <FicheFacture id={fid} /> : interdit; }
+      else { titre = "Ventes et factures"; page = a("sales.read") ? <Ventes /> : interdit; }
+      break;
+    }
     case "comptabilite": {
       const [, , ecritureId, mode] = route.split("/").filter(Boolean);
       const pages: Record<string, [string, JSX.Element]> = {
@@ -142,7 +169,7 @@ function Coquille() {
         </div>
         <nav className="nav">
           {NAV.map((g) => {
-            const entrees = g.entrees.filter((e) => !e.permission || a(e.permission));
+            const entrees = g.entrees.filter((e) => !e.permission || [e.permission].flat().some(a));
             if (!entrees.length) return null;
             return (
               <div key={g.titre}>

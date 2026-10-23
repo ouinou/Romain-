@@ -6,6 +6,7 @@
  */
 import { definirTransport } from "../api";
 import { traiterComptabilite, initialiserComptabilite } from "./comptabilite-simulee";
+import { traiterTresorerie, initialiserTresorerie } from "./tresorerie-simulee";
 
 const MDP_DEMO = "Demonstration-2026!";
 const CODE = "GC-DEMO-2026";
@@ -33,10 +34,11 @@ const roles: Role[] = [
   role("general_manager", "Directeur général", "Vue d'ensemble, rapports de direction et validation selon le circuit défini.", true,
     [...METIER.flatMap((m) => p(m, "read")), ...p("reports", "print", "export"), ...p("accounting", "approve"), ...p("treasury", "approve"), ...p("purchases", "approve"), ...p("audit", "read"), ...p("users", "read"), ...p("company", "read")]),
   role("finance_director", "Directeur financier", "Finances, trésorerie et rapports détaillés ; validation selon délégation.", true,
-    [...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"), ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export"), ...p("payroll", "read", "approve"), ...p("reports", "read", "print", "export")]),
+    [...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"), ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
+     ...p("cash", "read", "approve", "print"), ...p("sales", "read", "create", "print"), ...p("purchases", "read", "approve", "print"), ...p("payroll", "read", "approve"), ...p("reports", "read", "print", "export")]),
   role("accountant", "Comptable", "Écritures et pièces. Banques, paie et résultats globaux sur autorisation explicite.", false,
     [...p("accounting", "read", "create", "update", "submit", "cancel", "print", "export"), ...p("sales", "read"), ...p("purchases", "read")]),
-  role("cashier", "Caissier", "Mouvements de caisse et solde de sa caisse uniquement.", false, p("cash", "read", "create", "submit", "print")),
+  role("cashier", "Caissier", "Mouvements de caisse et solde de sa caisse uniquement.", false, [...p("cash", "read", "create", "submit", "print"), ...p("sales", "read", "create", "print")]),
   role("stock_manager", "Gestionnaire de stocks", "Articles, inventaires et mouvements de stock.", false, [...p("stock", "read", "create", "update", "submit", "print", "export"), ...p("purchases", "read")]),
   role("purchasing_manager", "Responsable des achats", "Demandes d'achat, commandes et fournisseurs.", false, [...p("purchases", "read", "create", "update", "submit", "cancel", "print"), ...p("stock", "read")]),
   role("auditor", "Auditeur", "Lecture seule dans le périmètre de mission, journal compris.", true, [...METIER.flatMap((m) => p(m, "read", "print")), ...p("audit", "read", "export")]),
@@ -280,11 +282,19 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
     exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
     erreur: (s: number, code: string, message: string) => new E(s, code, message),
   });
+  if (mod === "tresorerie" || mod === "ventes") return traiterTresorerie(m, chemin, q, c, {
+    exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
+    erreur: (s: number, code: string, message: string) => new E(s, code, message),
+    utilisateurs: () => utilisateurs.map((u) => ({ id: u.id, nom: u.nom, actif: u.statut === "active", permissions: permsDe(u) })),
+    entreprise: () => ({ raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone, devise: entreprise.devise }),
+  });
   throw new E(404, "introuvable", "Adresse inconnue.");
 }
 
 export function installer() {
-  initialiserComptabilite(Object.fromEntries(utilisateurs.map((u) => [u.email, u.id])));
+  const ids = Object.fromEntries(utilisateurs.map((u) => [u.email, u.id]));
+  initialiserComptabilite(ids);
+  initialiserTresorerie(ids);
   definirTransport(async (methode, url, corps) => {
     await new Promise((r) => setTimeout(r, 120));   // petite latence réaliste
     const u = new URL(url, location.href);

@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     // La démo doit tenir dans un seul fichier : pas de morceau chargé à part.
     rollupOptions: mode === "demo" ? { output: { inlineDynamicImports: true } } : {},
+    // Démo : polices intégrées au fichier unique (base64). Version installée : fichiers séparés, mis en cache.
+    assetsInlineLimit: mode === "demo" ? 200_000 : 4096,
   },
   server: { proxy: { "/api": { target: process.env.GC_API ?? "http://localhost:8443", changeOrigin: false } } },
 }));

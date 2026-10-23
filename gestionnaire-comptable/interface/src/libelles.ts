@@ -5,7 +5,7 @@ export const RESULTATS: Record<string, string> = { success: "Réussi", denied: "
 
 export const TYPES_EVENEMENT: Record<string, string> = {
   auth: "Authentification", users: "Utilisateurs", roles: "Rôles", company: "Entreprise", security: "Sécurité", audit: "Journal", backups: "Sauvegardes",
-  accounting: "Comptabilité",
+  accounting: "Comptabilité", treasury: "Trésorerie", sales: "Ventes",
 };
 
 const ACTIONS: Record<string, string> = {
@@ -32,6 +32,11 @@ const ACTIONS: Record<string, string> = {
   "accounting.journal_update": "Modification d'un journal", "accounting.fiscal_year_create": "Création d'un exercice",
   "accounting.fiscal_year_close": "Clôture d'un exercice", "security.accounting_settings_change": "Paramètres comptables modifiés",
   "security.protected_accounts_change": "Comptes protégés modifiés",
+  "security.fiscal_settings_change": "Paramètres de TVA et de facturation modifiés",
+  "treasury.receipt": "Encaissement", "treasury.expense": "Dépense", "treasury.transfer": "Transfert entre comptes",
+  "treasury.movement_cancel": "Annulation d'un mouvement", "treasury.account_create": "Création d'un compte de trésorerie",
+  "treasury.account_update": "Modification d'un compte de trésorerie",
+  "sales.invoice_issue": "Émission d'une facture", "sales.invoice_pdf": "Impression d'une facture (PDF)", "sales.customer_create": "Création d'un client",
 };
 export const libelleAction = (type: string, action: string, resultat?: string) =>
   (ACTIONS[`${type}.${action}`] ?? `${TYPES_EVENEMENT[type] ?? type} : ${action}`) +

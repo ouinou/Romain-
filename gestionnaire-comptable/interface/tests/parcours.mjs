@@ -240,6 +240,55 @@ try {
   assert.ok(debordCompta <= 0);
   etape("plan comptable");
 
+  // --- Ventes et trésorerie --------------------------------------------------------
+  const v = await nouvellePage();
+  await connexion(v, "amina.mahamat@demo.cm");
+  await v.getByRole("heading", { name: /Bonjour Amina/ }).waitFor();
+  assert.equal(await menu(v, "Tableau comptable").count(), 0, "la caissière n'a pas accès à la comptabilité");
+  await menu(v, "Caisses et banques").click();
+  await v.getByText("Caisse principale").first().waitFor();
+  assert.equal(await v.getByText("Banque fictive").count(), 0, "la caissière ne voit que sa caisse");
+  etape("caissière : seulement sa caisse (fonds initial 100 000)");
+  await menu(v, "Nouvelle vente").click();
+  await v.getByLabel("Client").fill("Établissements Fictifs Mbarga");
+  await v.getByLabel("Désignation de la ligne 1").fill("Cartouche d'encre");
+  await v.getByLabel("Quantité de la ligne 1").fill("3");
+  await v.getByLabel("Prix unitaire de la ligne 1").fill("15000");
+  await v.getByRole("button", { name: "+ Ajouter une ligne" }).click();
+  await v.getByLabel("Désignation de la ligne 2").fill("Installation");
+  await v.getByLabel("Nature de la ligne 2").selectOption("service");
+  await v.getByLabel("Prix unitaire de la ligne 2").fill("10000");
+  await v.getByText("65 588 FCFA").first().waitFor();
+  await capture(v, "vente-saisie");
+  await v.getByRole("button", { name: /Émettre la facture/ }).click();
+  await v.getByRole("heading", { name: new RegExp(`Facture FAC-${new Date().getFullYear()}-00001`) }).waitFor();
+  await v.getByText("Soixante-cinq mille cinq cent quatre-vingt-huit francs CFA").waitFor();
+  await capture(v, "vente-facture");
+  const pdf = await v.evaluate(async () => { const r = await fetch(location.hash.replace("#", "/api").replace("/ventes/", "/ventes/").split("?")[0] + "/pdf"); return [r.status, r.headers.get("content-type")]; });
+  assert.deepEqual(pdf, [200, "application/pdf"]);
+  await v.getByRole("button", { name: /Imprimer la facture/ }).click();
+  await v.locator("#cadre-impression").waitFor({ state: "attached" });
+  etape("caissière : vente comptant, TVA 19,25 %, facture n° 1 en lettres, PDF imprimable");
+  await menu(v, "Caisses et banques").click();
+  await v.getByRole("button", { name: "− Dépense" }).click();
+  await v.getByLabel("Catégorie").selectOption({ label: "Fournitures et petits achats" });
+  await v.getByLabel("Montant").fill("5000");
+  await v.getByLabel("Libellé").fill("Ramettes de papier");
+  await v.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await v.getByText("160 588").first().waitFor();
+  await capture(v, "tresorerie-caisse");
+  etape("caissière : dépense ; solde de caisse 160 588 FCFA");
+
+  // DAF : validation par lots des écritures générées ; la sienne (fonds de caisse) est refusée.
+  await menu(f, "Écritures").click();
+  await f.getByLabel("Origine").selectOption({ label: "Ventes et trésorerie" });
+  await f.getByLabel("État").selectOption({ label: "Brouillards" });
+  await f.getByRole("button", { name: /Tout sélectionner/ }).click();
+  await f.getByRole("button", { name: /Valider la sélection/ }).click();
+  await f.getByRole("dialog").getByRole("button", { name: "Valider" }).click();
+  await f.getByText(/écriture\(s\) validée\(s\), 1 refusée\(s\) : Séparation des tâches/).waitFor();
+  etape("DAF : validation par lots ; son propre fonds de caisse refusé (séparation des tâches)");
+
   // Déconnexion
   await p.getByRole("button", { name: "Déconnexion" }).click();
   await p.getByText("Vous êtes déconnecté.").waitFor();

@@ -17,7 +17,8 @@ interface Outils {
 
 interface Compte { id: string; numero: string; libelle: string; imputable: boolean; actif: boolean; source: string }
 interface Ligne { compteId: string; libelle: string | null; debit: number; credit: number }
-interface Ecr { id: string; statut: "brouillard" | "validee"; numero: number | null; journalId: string; exerciceId: string; date: string; piece: string; libelle: string; auteur: string; creeLe: string; modifieLe: string; validateur: string | null; valideeLe: string | null; extourneDe: string | null; motif: string | null; lignes: Ligne[] }
+interface Origine { type: "facture" | "mouvement"; id: string; reference: string }
+interface Ecr { origine?: Origine | null; id: string; statut: "brouillard" | "validee"; numero: number | null; journalId: string; exerciceId: string; date: string; piece: string; libelle: string; auteur: string; creeLe: string; modifieLe: string; validateur: string | null; valideeLe: string | null; extourneDe: string | null; motif: string | null; lignes: Ligne[] }
 
 let n = 0;
 const uid = () => `demo-${++n}-${Math.random().toString(16).slice(2, 8)}`;
@@ -27,9 +28,9 @@ const REF: [string, string][] = [
   ["2", "Comptes d'actif immobilisé"], ["24", "Matériel, mobilier et actifs biologiques"], ["244", "Matériel et mobilier"], ["245", "Matériel de transport"],
   ["3", "Comptes de stocks"], ["31", "Marchandises"], ["311", "Marchandises A"],
   ["4", "Comptes de tiers"], ["40", "Fournisseurs et comptes rattachés"], ["401", "Fournisseurs, dettes en compte"], ["41", "Clients et comptes rattachés"], ["411", "Clients"], ["42", "Personnel"], ["422", "Personnel, rémunérations dues"], ["44", "État et collectivités publiques"], ["443", "État, TVA facturée"], ["445", "État, TVA récupérable"],
-  ["5", "Comptes de trésorerie"], ["52", "Banques"], ["521", "Banques locales"], ["57", "Caisse"], ["571", "Caisse siège social"],
-  ["6", "Comptes de charges des activités ordinaires"], ["60", "Achats et variations de stocks"], ["601", "Achats de marchandises"], ["605", "Autres achats"], ["62", "Services extérieurs"], ["622", "Locations et charges locatives"], ["628", "Frais de télécommunications"], ["63", "Autres services extérieurs"], ["631", "Frais bancaires"], ["66", "Charges de personnel"], ["661", "Rémunérations directes versées au personnel national"],
-  ["7", "Comptes de produits des activités ordinaires"], ["70", "Ventes"], ["701", "Ventes de marchandises"], ["706", "Services vendus"],
+  ["5", "Comptes de trésorerie"], ["52", "Banques"], ["521", "Banques locales"], ["5211", "Banque fictive"], ["5212", "Mobile money (fictif)"], ["57", "Caisse"], ["571", "Caisse siège social"], ["5711", "Caisse principale"],
+  ["6", "Comptes de charges des activités ordinaires"], ["60", "Achats et variations de stocks"], ["601", "Achats de marchandises"], ["605", "Autres achats"], ["61", "Transports"], ["618", "Autres frais de transport"], ["62", "Services extérieurs"], ["622", "Locations et charges locatives"], ["624", "Entretien, réparations et maintenance"], ["625", "Primes d'assurance"], ["627", "Publicité, publications, relations publiques"], ["628", "Frais de télécommunications"], ["63", "Autres services extérieurs"], ["631", "Frais bancaires"], ["632", "Rémunérations d'intermédiaires et de conseils"], ["64", "Impôts et taxes"], ["641", "Impôts et taxes directs"], ["66", "Charges de personnel"], ["661", "Rémunérations directes versées au personnel national"],
+  ["7", "Comptes de produits des activités ordinaires"], ["70", "Ventes"], ["701", "Ventes de marchandises"], ["706", "Services vendus"], ["707", "Produits accessoires"],
   ["8", "Comptes des autres charges et des autres produits"], ["9", "Comptes des engagements hors bilan et de comptabilité analytique de gestion"],
 ];
 const comptes: Compte[] = REF.map(([numero, libelle]) => ({ id: uid(), numero, libelle, imputable: numero.length >= 3 && numero[0] !== "9", actif: true, source: "reference" }));
@@ -66,6 +67,25 @@ function valider(e: Ecr, par: string) {
   e.numero = Math.max(0, ...ecritures.filter((x) => x.journalId === e.journalId && x.exerciceId === e.exerciceId && x.numero).map((x) => x.numero!)) + 1;
 }
 
+/** Écriture générée par une opération (facture, mouvement) : brouillard, à valider par le comptable. */
+export function genererEcriture(journal: string, date: string, piece: string, libelle: string, auteur: string, origine: Origine, lignes: [string, number, number][]) {
+  const f = exercices.find((x) => x.statut === "ouvert" && date >= x.debut && date <= x.fin);
+  if (!f) throw Object.assign(new Error("exercice"), { code: "exercice_absent", message: "Aucun exercice ouvert ne contient cette date." });
+  const e: Ecr = { id: uid(), statut: "brouillard", numero: null, journalId: J(journal).id, exerciceId: f.id, date, piece, libelle, auteur,
+    creeLe: new Date().toISOString(), modifieLe: new Date().toISOString(), validateur: null, valideeLe: null, extourneDe: null, motif: null, origine,
+    lignes: lignes.filter(([, d, c]) => d || c).map(([c, d, cr]) => ({ compteId: C(c).id, libelle: null, debit: d, credit: cr })) };
+  ecritures.push(e);
+  return e.id;
+}
+export const lignesEcriture = (id: string) => ecritures.find((e) => e.id === id)?.lignes.map((l) => [comptes.find((c) => c.id === l.compteId)!.numero, l.debit, l.credit] as [string, number, number]) ?? [];
+export function etatEcriture(id: string | null) {
+  const e = id ? ecritures.find((x) => x.id === id) : null;
+  return e ? { id: e.id, statut: e.statut, numero: e.numero } : null;
+}
+export const brouillonsGeneres = () => ecritures.filter((e) => e.origine && e.statut === "brouillard").length;
+export const compteNumero = (num: string) => C(num);
+export const comptesProtegesPour = (perms: Set<string>) => (num: string) => groupes.some((g) => num.startsWith(g.prefixe) && !perms.has(g.permission));
+
 export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: Outils): unknown {
   const [, , , r1, r2, r3] = chemin.split("/");   // /api/comptabilite/<r1>/<r2>/<r3>
   const perms = o.permissions();
@@ -85,10 +105,10 @@ export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: 
       extourneDe: orig ? { id: orig.id, numero: orig.numero, journal: journaux.find((x) => x.id === orig.journalId)!.code, motif: e.motif } : null,
       extourneePar: par ? { id: par.id, numero: par.numero } : null,
       lignes: e.lignes.map((l, i) => ({ ordre: i + 1, compteId: l.compteId, compte: compte(l.compteId)!.numero, compteLibelle: compte(l.compteId)!.libelle, libelle: l.libelle, debit: l.debit, credit: l.credit })),
-      totalDebit: t.d, totalCredit: t.c, equilibree: equilibree(e),
+      totalDebit: t.d, totalCredit: t.c, equilibree: equilibree(e), origine: e.origine ?? null,
     };
   };
-  const resume = (e: Ecr) => { const v = vue(e); return { id: v.id, statut: v.statut, numero: v.numero, date: v.date, journal: v.journal.code, piece: v.piece, libelle: v.libelle, auteur: v.auteur.nom, totalDebit: v.totalDebit, totalCredit: v.totalCredit, equilibree: v.equilibree, extourne: !!v.extourneDe, extournee: !!v.extourneePar }; };
+  const resume = (e: Ecr) => { const v = vue(e); return { id: v.id, statut: v.statut, numero: v.numero, date: v.date, journal: v.journal.code, piece: v.piece, libelle: v.libelle, auteur: v.auteur.nom, totalDebit: v.totalDebit, totalCredit: v.totalCredit, equilibree: v.equilibree, extourne: !!v.extourneDe, extournee: !!v.extourneePar, origine: e.origine ? (e.origine.type === "facture" ? "facture" : "tresorerie") : null }; };
   const lireEcriture = () => {
     if (!c.piece || !String(c.piece).trim()) throw o.erreur(400, "donnees_invalides", "Référence de pièce obligatoire.");
     if (!c.libelle || String(c.libelle).trim().length < 2) throw o.erreur(400, "donnees_invalides", "Libellé obligatoire.");
@@ -209,9 +229,22 @@ export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: 
         o.exiger("accounting.read");
         const r = (q.get("recherche") ?? "").toLowerCase();
         const l = ecritures.filter((e) => ecrVisible(e) && (!q.get("exercice") || e.exerciceId === q.get("exercice")) && (!q.get("journal") || e.journalId === q.get("journal"))
-          && (!q.get("statut") || e.statut === q.get("statut")) && (!r || (e.libelle + " " + e.piece).toLowerCase().includes(r)))
+          && (!q.get("statut") || e.statut === q.get("statut")) && (q.get("origine") !== "operations" || !!e.origine) && (q.get("origine") !== "saisie" || !e.origine) && (!r || (e.libelle + " " + e.piece).toLowerCase().includes(r)))
           .sort((a, b) => b.date.localeCompare(a.date) || b.creeLe.localeCompare(a.creeLe)).map(resume);
         return o.page(l, q);
+      }
+      if (r2 === "validation-groupee" && m === "POST") {
+        o.exiger("accounting.approve", true);
+        const resultats = [...new Set(c.ids as string[])].map((idE) => {
+          const x = ecritures.find((y) => y.id === idE);
+          if (!x || !ecrVisible(x)) return { id: idE, ok: false, erreur: "Écriture introuvable." };
+          if (x.statut !== "brouillard") return { id: idE, ok: false, erreur: "Déjà validée." };
+          if (!equilibree(x)) return { id: idE, ok: false, erreur: "Écriture déséquilibrée." };
+          if (separation && x.auteur === o.moi().id) return { id: idE, ok: false, erreur: "Séparation des tâches : une autre personne que l'auteur doit valider cette écriture." };
+          valider(x, o.moi().id); o.tracer({ type: "accounting", action: "entry_validate", objetType: "entry", objetId: x.id, details: { lot: true } });
+          return { id: idE, ok: true, numero: x.numero };
+        });
+        return { validees: resultats.filter((x) => x.ok).length, refusees: resultats.filter((x) => !x.ok).length, resultats };
       }
       const e = ecritures.find((x) => x.id === r2);
       if (!e || !ecrVisible(e)) throw o.erreur(404, "introuvable", "Écriture introuvable.");
@@ -219,11 +252,13 @@ export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: 
       if (!r3 && m === "PUT") {
         o.exiger("accounting.update");
         if (e.statut !== "brouillard") throw o.erreur(409, "ecriture_validee", "Une écriture validée ne se modifie pas. Utilisez une extourne.");
+        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${e.origine.type === "facture" ? "la facture" : "le mouvement"} ${e.origine.reference} : corrigez l'opération d'origine.`);
         Object.assign(e, lireEcriture(), { modifieLe: new Date().toISOString() }); o.tracer({ type: "accounting", action: "entry_update", objetType: "entry", objetId: e.id }); return vue(e);
       }
       if (!r3 && m === "DELETE") {
         o.exiger("accounting.update");
         if (e.statut !== "brouillard") throw o.erreur(409, "ecriture_validee", "Une écriture validée ne se supprime pas. Utilisez une extourne.");
+        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${e.origine.type === "facture" ? "la facture" : "le mouvement"} ${e.origine.reference} : elle ne se supprime pas.`);
         ecritures.splice(ecritures.indexOf(e), 1); o.tracer({ type: "accounting", action: "entry_delete", objetType: "entry", objetId: e.id }); return { ok: true };
       }
       if (r3 === "validation") {

@@ -37,7 +37,21 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] 16 tests d'intégration comptables (47 au total côté serveur) et parcours complet dans le navigateur
 - [x] Palette bleu nuit et orange vif
 
+## Fait (v0.1, étape 9 : ventes, factures PDF et trésorerie)
+
+- [x] Caisses, banques et mobile money ; caissiers attitrés ; caisse jamais négative (contrôle en base)
+- [x] Encaissements, dépenses par catégorie, TVA récupérable, transferts, annulation motivée
+- [x] Ventes de marchandises et prestations de services, factures numérotées FAC-AAAA-NNNNN, intangibles
+- [x] Facture PDF avec montant en lettres, imprimable directement après l'opération
+- [x] Écritures générées en brouillard, validation par lots par la comptabilité
+- [x] Taux de TVA paramétrable par l'entreprise (aucun taux codé en dur)
+- [x] 65 tests côté serveur, parcours navigateur de 22 étapes, test de la démonstration hors serveur
+- [x] Police Lato intégrée à l'application (fonctionne sans Internet)
+
 ## À faire ensuite
+
+**Ventes et trésorerie (suite).** Avoirs (correction d'une facture émise), rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.
+
 
 **Comptabilité (suite).** À-nouveaux, affectation du résultat, pièces justificatives, périodes mensuelles, comptes de tiers et lettrage, TVA paramétrable, états financiers SYSCOHADA. Les règles sont à valider par un expert-comptable (voir `COMPTABILITE.md`, section 7).
 

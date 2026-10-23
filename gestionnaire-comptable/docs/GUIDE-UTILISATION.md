@@ -72,6 +72,23 @@ Menu **Comptabilité**, visible avec le droit de consultation comptable. Voir au
 - **Plan comptable** : la liste fournie est restreinte et marquée « À vérifier ». Le DAF peut ajouter des sous-comptes, archiver un compte ou importer le plan officiel en CSV.
 - **Exercices et paramètres** : création et clôture (définitive) des exercices, séparation saisie / validation, comptes protégés.
 
-## 8. Mon compte
+## 8. Ventes, factures et caisse
+
+Menu **Ventes et trésorerie**. C'est ici que s'enregistrent les opérations de tous les jours, sans connaître le plan comptable.
+
+- **Vendre ou facturer une prestation** : *Nouvelle vente*. Choisissez *Vente de marchandises* ou *Prestation de services* (une même facture peut mélanger les deux, ligne par ligne). Saisissez le client (ou laissez « Client comptant »), les lignes, puis le mode de paiement : *Payé maintenant* dans une caisse, ou *À crédit*. Les totaux HT, TVA et TTC se calculent en direct.
+- **Imprimer la facture** : après *Émettre la facture*, la fiche s'ouvre ; *Imprimer la facture* ouvre directement la boîte d'impression avec le PDF. *Ouvrir le PDF* permet de l'enregistrer ou de l'envoyer.
+- **Une facture émise ne se modifie pas.** Son numéro est définitif. La correction par avoir n'est pas encore disponible.
+- **Encaisser une facture à crédit** : sur la fiche de la facture, *Enregistrer un règlement* (paiement partiel possible).
+- **Dépenses et autres recettes** : *Caisses et banques* → *Dépense* ou *Encaissement*. On choisit une catégorie (fournitures, transport, loyer…) : le compte comptable est déduit. La TVA récupérable se saisit sur les dépenses qui y sont soumises.
+- **Transfert** entre caisse, banque et mobile money : *Transfert*.
+- **Erreur sur un mouvement** : le DAF l'annule avec un motif. Le mouvement d'origine reste visible avec son annulation.
+- **Caissier** : il ne voit et n'utilise que la caisse qui lui est attribuée (par le DAF, *Caissiers* sur la carte de la caisse). Une caisse ne peut pas passer en négatif.
+
+**Côté comptabilité** : chaque vente et chaque mouvement produit une écriture en brouillard. Dans *Écritures*, filtrez *Origine : Ventes et trésorerie*, cochez les brouillards et cliquez sur *Valider la sélection*. Ces écritures ne se modifient pas à la main : on corrige l'opération d'origine.
+
+**Paramètres fiscaux** (*Exercices et paramètres*) : TVA applicable ou non, taux, mentions imprimées sur les factures. Le taux de la démonstration (19,25 %) est à vérifier dans la loi de finances en vigueur.
+
+## 9. Mon compte
 
 Changez votre mot de passe (vos autres sessions sont alors fermées), activez la double authentification et fermez les sessions que vous ne reconnaissez pas.

@@ -25,8 +25,8 @@ export function FicheEcriture({ id }: { id: string }) {
           <p>{x.libelle} · pièce {x.piece} · {dateFr(x.date)} · exercice {x.exercice.code}</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {brouillard && a("accounting.update") && x.exercice.ouvert && <button className="btn" onClick={() => aller(`/comptabilite/ecritures/${id}/modifier`)}>Modifier</button>}
-          {brouillard && a("accounting.update") && <button className="btn btn-danger" onClick={() => setAction("supprimer")}>Supprimer</button>}
+          {brouillard && !x.origine && a("accounting.update") && x.exercice.ouvert && <button className="btn" onClick={() => aller(`/comptabilite/ecritures/${id}/modifier`)}>Modifier</button>}
+          {brouillard && !x.origine && a("accounting.update") && <button className="btn btn-danger" onClick={() => setAction("supprimer")}>Supprimer</button>}
           {brouillard && a("accounting.approve") && <button className="btn btn-principal" disabled={!x.equilibree} title={x.equilibree ? "" : "Écriture déséquilibrée"} onClick={() => setAction("valider")}>Valider</button>}
           {!brouillard && !x.extourneDe && !x.extourneePar && a("accounting.cancel") && <button className="btn btn-danger" onClick={() => setAction("extourner")}>Extourner</button>}
         </div>
@@ -34,6 +34,9 @@ export function FicheEcriture({ id }: { id: string }) {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><BadgeEcriture e={x} /></div>
       {brouillard && !x.equilibree && <div className="alerte alerte-attention">Brouillard déséquilibré : écart de <Montant v={Math.abs(x.totalDebit - x.totalCredit)} /> FCFA. Il doit être corrigé avant validation.</div>}
       {brouillard && a("accounting.approve") && auteur && <div className="alerte">Vous êtes l'auteur de ce brouillard : si la séparation saisie / validation est active, une autre personne doit le valider.</div>}
+      {x.origine && <div className="alerte">Écriture générée automatiquement par {x.origine.type === "facture"
+        ? <>la facture <a href={`#/ventes/factures/${x.origine.id}`}>{x.origine.reference}</a></>
+        : <>le mouvement de trésorerie <a href={`#/tresorerie/mouvements/${x.origine.id}`}>{x.origine.reference}</a></>}. Elle ne se modifie pas ici : corrigez l'opération d'origine.</div>}
       {x.extourneDe && <div className="alerte">Extourne de l'écriture <a href={`#/comptabilite/ecritures/${x.extourneDe.id}`}>{x.extourneDe.journal} n° {x.extourneDe.numero}</a>. Motif : {x.extourneDe.motif}</div>}
       {x.extourneePar && <div className="alerte alerte-attention">Cette écriture a été annulée par l'extourne <a href={`#/comptabilite/ecritures/${x.extourneePar.id}`}>n° {x.extourneePar.numero}</a>. Elle reste dans les livres, son effet est neutralisé.</div>}
 
