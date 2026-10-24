@@ -82,6 +82,22 @@ try {
   await page.getByText(/3 écriture\(s\) validée\(s\), 1 refusée\(s\) : Séparation des tâches/).waitFor();
   await page.screenshot({ path: `${DOSSIER}/demo-validation.png` });
   etape("DAF : validation par lots (3 validées), son fonds de caisse refusé");
+  await menu("Ventes et factures").click();
+  await page.getByRole("cell", { name: numero }).click();
+  await page.getByRole("button", { name: "Établir un avoir" }).click();
+  const dlg = page.getByRole("dialog", { name: new RegExp(`Avoir sur la facture ${numero}`) });
+  await dlg.getByLabel("Quantité à créditer : Cartouche d'encre").fill("1");
+  await dlg.getByLabel("Motif").fill("Retour d'une cartouche défectueuse");
+  await dlg.getByRole("checkbox", { name: /Rembourser 17 888 FCFA/ }).check();
+  const choix = dlg.getByLabel("Rembourser depuis");
+  await choix.selectOption(await choix.locator("option", { hasText: "Caisse principale" }).getAttribute("value"));
+  await dlg.getByRole("button", { name: "Émettre l'avoir" }).click();
+  await page.getByRole("heading", { name: new RegExp(`Avoir AV-${new Date().getFullYear()}-00001`) }).waitFor();
+  await page.locator(".apercu-facture").getByText("Dix-sept mille huit cent quatre-vingt-huit francs CFA").waitFor();
+  await page.screenshot({ path: `${DOSSIER}/demo-avoir.png` });
+  await menu("Caisses et banques").click();
+  await page.getByText("142 700").first().waitFor();
+  etape("DAF : avoir de 17 888 FCFA remboursé en caisse (160 588 → 142 700)");
   assert.deepEqual(erreurs.filter((e) => !/status of 40[0-9]/.test(e)), []);
   etape("aucune erreur JavaScript");
 } catch (e) {

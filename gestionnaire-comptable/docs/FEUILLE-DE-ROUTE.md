@@ -70,9 +70,18 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Parcours navigateur de 27 étapes, test de la démonstration
 - [x] Courbe des ventes et des encaissements sur six mois, brouillards par journal, détail de la sélection ; historique fictif dans l'option de démonstration
 
+## Fait (v0.1, étape 12 : avoirs)
+
+- [x] Avoir total ou partiel sur une facture émise, ligne par ligne ; numérotation AV-AAAA-NNNNN ; plafonds contrôlés par la base
+- [x] Écriture inverse en brouillard ; remboursement facultatif limité au trop-perçu (caisse ou banque)
+- [x] PDF et aperçu « AVOIR » avec code QR signé, vérifiable comme une facture ; liste des avoirs
+- [x] Reste dû, statut « annulée par avoir », tableau de bord net des avoirs
+- [x] 9 tests serveur dédiés (dont des écritures directes en base), étape d'avoir dans le parcours navigateur et dans le test de la démonstration
+- [ ] Imputation comptable des avoirs (701/706 ou 709) et mentions obligatoires à valider par l'expert-comptable
+
 ## À faire ensuite
 
-**Ventes et trésorerie (suite).** Avoirs (correction d'une facture émise), rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.
+**Ventes et trésorerie (suite).** Rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.
 
 
 **Comptabilité (suite).** À-nouveaux, affectation du résultat, pièces justificatives, périodes mensuelles, comptes de tiers et lettrage, TVA paramétrable, états financiers SYSCOHADA. Les règles sont à valider par un expert-comptable (voir `COMPTABILITE.md`, section 7).

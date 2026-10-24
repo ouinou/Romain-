@@ -8,7 +8,8 @@ import { BadgePaiement } from "./commun";
 
 interface Resultat {
   authentique: boolean; raison?: string;
-  facture?: { id: string; numero: string; date: string; client: string; totalTtc: number; devise: string; statutPaiement: string; auteur: string; creeLe: string };
+  facture?: { id: string; numero: string; date: string; client: string; totalTtc: number; totalAvoirs?: number; devise: string; statutPaiement: string; auteur: string; creeLe: string };
+  avoir?: { id: string; numero: string; date: string; facture: string; client: string; totalTtc: number; devise: string; auteur: string; creeLe: string };
 }
 
 /**
@@ -34,7 +35,7 @@ export function VerifierFacture() {
   return (
     <>
       <div className="entete-page"><div><h2>Vérifier une facture</h2>
-        <p>Scannez le code QR imprimé en bas d'une facture pour savoir si elle a bien été émise par l'entreprise, et si son montant n'a pas été modifié.</p></div></div>
+        <p>Scannez le code QR imprimé en bas d'une facture ou d'un avoir pour savoir s'il a bien été émis par l'entreprise, et si son montant n'a pas été modifié.</p></div></div>
       <div className="deux">
         <section className="panneau" style={{ display: "grid", gap: 12, alignContent: "start" }}>
           <form onSubmit={(e) => { e.preventDefault(); if (code.trim()) verifier(code); }} style={{ display: "grid", gap: 10 }}>
@@ -65,10 +66,25 @@ export function VerifierFacture() {
                   <dt>Date</dt><dd>{dateFr(res.facture.date)}</dd>
                   <dt>Client</dt><dd>{res.facture.client}</dd>
                   <dt>Montant TTC</dt><dd><b><Montant v={res.facture.totalTtc} /> {res.facture.devise === "XAF" ? "FCFA" : res.facture.devise}</b></dd>
+                  {!!res.facture.totalAvoirs && <><dt>Avoirs</dt><dd><Montant v={res.facture.totalAvoirs} /> FCFA déjà crédités</dd></>}
                   <dt>Paiement</dt><dd><BadgePaiement s={res.facture.statutPaiement} /></dd>
                   <dt>Émise par</dt><dd>{res.facture.auteur} · {dateHeure(res.facture.creeLe)}</dd>
                 </dl>
                 <button className="btn" style={{ justifySelf: "start" }} onClick={() => aller(`/ventes/factures/${res.facture!.id}`)}>Ouvrir la facture</button>
+              </div>
+            ) : res.authentique && res.avoir ? (
+              <div className="verdict verdict-ok">
+                <div className="verdict-titre">✓ Avoir authentique</div>
+                <p style={{ margin: 0 }}>Émis par l'entreprise, enregistré dans le logiciel, montant conforme.</p>
+                <dl className="verdict-details">
+                  <dt>N°</dt><dd><b>{res.avoir.numero}</b></dd>
+                  <dt>Date</dt><dd>{dateFr(res.avoir.date)}</dd>
+                  <dt>Sur la facture</dt><dd>{res.avoir.facture}</dd>
+                  <dt>Client</dt><dd>{res.avoir.client}</dd>
+                  <dt>Montant TTC</dt><dd><b><Montant v={res.avoir.totalTtc} /> {res.avoir.devise === "XAF" ? "FCFA" : res.avoir.devise}</b></dd>
+                  <dt>Émis par</dt><dd>{res.avoir.auteur} · {dateHeure(res.avoir.creeLe)}</dd>
+                </dl>
+                <button className="btn" style={{ justifySelf: "start" }} onClick={() => aller(`/ventes/avoirs/${res.avoir!.id}`)}>Ouvrir l'avoir</button>
               </div>
             ) : (
               <div className="verdict verdict-ko">

@@ -98,18 +98,20 @@ Menu **Ventes et trésorerie**. C'est ici que s'enregistrent les opérations de 
 
 - **Vendre ou facturer une prestation** : *Nouvelle vente*. Choisissez *Vente de marchandises* ou *Prestation de services* (une même facture peut mélanger les deux, ligne par ligne). Saisissez le client (ou laissez « Client comptant »), les lignes, puis le mode de paiement : *Payé maintenant* dans une caisse, ou *À crédit*. Les totaux HT, TVA et TTC se calculent en direct.
 - **Imprimer la facture** : après *Émettre la facture*, la fiche s'ouvre ; *Imprimer la facture* ouvre directement la boîte d'impression avec le PDF. *Ouvrir le PDF* permet de l'enregistrer ou de l'envoyer.
-- **Une facture émise ne se modifie pas.** Son numéro est définitif. La correction par avoir n'est pas encore disponible.
+- **Une facture émise ne se modifie pas.** Son numéro est définitif. Une erreur, un retour de marchandise ou une annulation se traitent par un **avoir** (voir plus bas).
 - **Encaisser une facture à crédit** : sur la fiche de la facture, *Enregistrer un règlement* (paiement partiel possible).
 - **Dépenses et autres recettes** : *Caisses et banques* → *Dépense* ou *Encaissement*. On choisit une catégorie (fournitures, transport, loyer…) : le compte comptable est déduit. La TVA récupérable se saisit sur les dépenses qui y sont soumises.
 - **Transfert** entre caisse, banque et mobile money : *Transfert*.
 - **Erreur sur un mouvement** : le DAF l'annule avec un motif. Le mouvement d'origine reste visible avec son annulation.
 - **Caissier** : il ne voit et n'utilise que la caisse qui lui est attribuée (par le DAF, *Caissiers* sur la carte de la caisse). Une caisse ne peut pas passer en négatif.
 
+**Avoirs** : sur la fiche de la facture, *Établir un avoir* (réservé au directeur financier par défaut, droit « Ventes : annuler »). On indique, ligne par ligne, la quantité à créditer (le bouton *Tout le reste* annule ce qui reste de la facture), le motif et la date. Le logiciel affiche le montant HT, la TVA et le total de l'avoir. Si le client a déjà payé plus que ce qu'il doit après l'avoir, on peut le rembourser depuis une caisse ou une banque ; sinon, l'avoir réduit simplement ce qu'il doit. L'avoir reçoit son propre numéro (AV-AAAA-NNNNN), s'imprime comme une facture (logo, en-tête, code QR) et se retrouve dans *Ventes → Avoirs*. On ne peut jamais créditer plus que ce qui a été facturé.
+
 **Côté comptabilité** : chaque vente et chaque mouvement produit une écriture en brouillard. Dans *Écritures*, filtrez *Origine : Ventes et trésorerie*, cochez les brouillards et cliquez sur *Valider la sélection*. Ces écritures ne se modifient pas à la main : on corrige l'opération d'origine.
 
 **Ventes en direct** : la liste des factures du jour, toutes caisses confondues, avec le chiffre d'affaires, l'encaissé et le crédit. Elle se met à jour seule toutes les 5 secondes ; une nouvelle facture apparaît surlignée.
 
-**Vérifier une facture** : scannez le code QR imprimé sur une facture, avec la caméra du poste (en HTTPS), avec une douchette USB (cliquer dans le champ puis scanner) ou en collant le code. Le résultat dit si la facture est authentique, et sinon pourquoi (montant modifié, faux code, autre entreprise).
+**Vérifier une facture** : scannez le code QR imprimé sur une facture ou un avoir, avec la caméra du poste (en HTTPS), avec une douchette USB (cliquer dans le champ puis scanner) ou en collant le code. Le résultat dit si la facture est authentique, et sinon pourquoi (montant modifié, faux code, autre entreprise).
 
 **Paramètres fiscaux** (*Exercices et paramètres*) : TVA applicable ou non, taux, mentions imprimées sur les factures. Le taux de la démonstration (19,25 %) est à vérifier dans la loi de finances en vigueur.
 

@@ -18,6 +18,8 @@ export interface FacturePdf {
   codeVerification?: string;
   /** Logo PNG ou JPEG figé à l'émission. */
   logo?: Buffer;
+  /** Document d'avoir : il cite sa facture et son motif ; « paiement » décrit alors le traitement (imputation ou remboursement). */
+  avoir?: { facture: string; dateFacture: string; motif: string };
 }
 
 const GRIS = "#5d6d80", LIGNE = "#dfe5ec", ENCRE = "#17263b";
@@ -45,7 +47,8 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
   const PRINC = f.vendeur.couleurs?.principale ?? "#101d35", ACCENT = f.vendeur.couleurs?.accent ?? "#ff6a00";
   const NUIT = lisibleSurBlanc(PRINC), ORANGE_TXT = lisibleSurBlanc(ACCENT), SUR_PRINC = texteSur(PRINC);
   return new Promise((ok, ko) => {
-    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `Facture ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: "Gestionnaire Comptable" } });
+    const nom = f.avoir ? "Avoir" : "Facture";
+    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `${nom} ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: "Gestionnaire Comptable" } });
     const morceaux: Buffer[] = [];
     doc.on("data", (b: Buffer) => morceaux.push(b));
     doc.on("end", () => ok(Buffer.concat(morceaux)));
@@ -68,15 +71,16 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
       v.regimeFiscal && `Régime fiscal : ${v.regimeFiscal}`, v.patente && `Patente : ${v.patente}`].filter(Boolean))
       doc.text(String(l), xId, doc.y + 1, { width: lId });
     const basEntete = Math.max(doc.y, f.logo ? 104 : 0);
-    doc.font("Helvetica-Bold").fontSize(22).fillColor(NUIT).text("FACTURE", L + W * 0.58, 32, { width: W * 0.42, align: "right" });
+    doc.font("Helvetica-Bold").fontSize(22).fillColor(NUIT).text(nom.toUpperCase(), L + W * 0.58, 32, { width: W * 0.42, align: "right" });
     doc.font("Helvetica-Bold").fontSize(11).fillColor(ORANGE_TXT).text(`N° ${f.numero}`, { width: W * 0.42, align: "right" });
     doc.font("Helvetica").fontSize(9).fillColor(GRIS).text(`Date : ${dateFr(f.date)}`, { width: W * 0.45, align: "right" })
       .text(f.type, { width: W * 0.45, align: "right" });
+    if (f.avoir) doc.font("Helvetica-Bold").fillColor(NUIT).text(`Sur la facture ${f.avoir.facture} du ${dateFr(f.avoir.dateFacture)}`, { width: W * 0.45, align: "right" });
 
     // Bloc client.
     let y = Math.max(doc.y, basEntete, 130) + 14;
     doc.roundedRect(L + W * 0.5, y, W * 0.5, 74, 6).lineWidth(0.8).strokeColor(LIGNE).stroke();
-    doc.font("Helvetica-Bold").fontSize(8).fillColor(GRIS).text("FACTURÉ À", L + W * 0.5 + 12, y + 10);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor(GRIS).text(f.avoir ? "CLIENT" : "FACTURÉ À", L + W * 0.5 + 12, y + 10);
     doc.font("Helvetica-Bold").fontSize(11).fillColor(NUIT).text(f.client.nom, L + W * 0.5 + 12, y + 22, { width: W * 0.5 - 24 });
     doc.font("Helvetica").fontSize(9).fillColor(GRIS);
     for (const l of [f.client.adresse, f.client.telephone && `Tél. : ${f.client.telephone}`, f.client.niu && `NIU : ${f.client.niu}`].filter(Boolean))
@@ -123,14 +127,18 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     total("Total hors taxes", fmt(f.totalHt));
     total(f.tauxTvaPdm ? `TVA (${taux(f.tauxTvaPdm)})` : "TVA", f.tauxTvaPdm ? fmt(f.totalTva) : "Non applicable");
     doc.rect(L + W * 0.5, y - 3, W * 0.5, 24).fill("#f3f5f8");
-    total(`Net à payer (${f.devise})`, fmt(f.totalTtc), true);
+    total(f.avoir ? `Montant de l'avoir (${f.devise})` : `Net à payer (${f.devise})`, fmt(f.totalTtc), true);
 
     y = Math.max(y, yQr) + 10;
     doc.font("Helvetica").fontSize(9.5).fillColor(NUIT)
-      .text(`Arrêtée la présente facture à la somme de : `, L, y, { continued: true })
+      .text(f.avoir ? "Arrêté le présent avoir à la somme de : " : "Arrêtée la présente facture à la somme de : ", L, y, { continued: true })
       .font("Helvetica-Bold").text(`${montantEnLettres(f.totalTtc)}.`, { width: W });
     y = doc.y + 8;
-    doc.font("Helvetica").fontSize(9).fillColor(GRIS).text(`Règlement : ${f.paiement}${f.paye > 0 && f.paye < f.totalTtc ? ` (déjà réglé : ${fmt(f.paye)} ${f.devise})` : ""}`, L, y);
+    if (f.avoir) {
+      doc.font("Helvetica-Bold").fontSize(9.5).fillColor(NUIT).text(`Motif : ${f.avoir.motif}`, L, y, { width: W });
+      y = doc.y + 4;
+    }
+    doc.font("Helvetica").fontSize(9).fillColor(GRIS).text(`${f.avoir ? "Traitement" : "Règlement"} : ${f.paiement}${f.paye > 0 && f.paye < f.totalTtc ? ` (déjà réglé : ${fmt(f.paye)} ${f.devise})` : ""}`, L, y);
     if (f.note) doc.text(`Observation : ${f.note}`, L, doc.y + 2, { width: W });
     if (f.mentions) doc.text(f.mentions, L, doc.y + 6, { width: W });
 
@@ -138,7 +146,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     const bas = doc.page.height - 40;
     doc.moveTo(L, bas - 8).lineTo(R, bas - 8).lineWidth(0.5).strokeColor(LIGNE).stroke();
     doc.font("Helvetica").fontSize(7.5).fillColor(GRIS)
-      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · Facture ${f.numero} · Document émis par Gestionnaire Comptable`,
+      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · ${nom} ${f.numero} · Document émis par Gestionnaire Comptable`,
         L, bas, { width: W, align: "center", lineBreak: false });
     doc.end();
   });

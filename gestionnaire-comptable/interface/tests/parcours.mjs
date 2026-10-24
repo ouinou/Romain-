@@ -363,6 +363,35 @@ try {
   await f.getByRole("cell", { name: "Alt+B" }).waitFor();
   await f.keyboard.press("Escape");
   etape("DAF : commande du ruban, raccourci Alt+B, recherche Ctrl+F, menu Fichier, barre d'état");
+  // Avoir partiel avec remboursement en caisse : 1 cartouche sur 3 → 15 000 HT + 2 888 TVA = 17 888 FCFA.
+  const AN = new Date().getFullYear();
+  await f.getByRole("cell", { name: new RegExp(`FAC-${AN}-00001`) }).first().click();
+  await f.getByRole("button", { name: "Établir un avoir" }).click();
+  const dlg = f.getByRole("dialog", { name: new RegExp(`Avoir sur la facture FAC-${AN}-00001`) });
+  await dlg.getByLabel("Quantité à créditer : Cartouche d'encre").fill("1");
+  await dlg.getByLabel("Motif").fill("Retour d'une cartouche défectueuse");
+  await dlg.getByText("17 888 FCFA", { exact: true }).waitFor();
+  await dlg.getByRole("checkbox", { name: /Rembourser 17 888 FCFA/ }).check();
+  const choixCaisse = dlg.getByLabel("Rembourser depuis");
+  await choixCaisse.selectOption(await choixCaisse.locator("option", { hasText: "Caisse principale" }).getAttribute("value"));
+  await capture(f, "avoir-saisie");
+  await dlg.getByRole("button", { name: "Émettre l'avoir" }).click();
+  const reauth = f.getByRole("dialog", { name: "Confirmez votre identité" });
+  await Promise.race([reauth.waitFor(), f.getByRole("heading", { name: new RegExp(`Avoir AV-${AN}-00001`) }).waitFor()]);
+  if (await reauth.isVisible()) { await reauth.getByLabel("Mot de passe").fill(MDP); await f.getByRole("button", { name: "Confirmer" }).click(); }
+  await f.getByRole("heading", { name: new RegExp(`Avoir AV-${AN}-00001`) }).waitFor();
+  const apercuAvoir = f.locator(".apercu-facture");
+  await apercuAvoir.getByText(`Sur la facture FAC-${AN}-00001`).waitFor();
+  await apercuAvoir.getByText("Dix-sept mille huit cent quatre-vingt-huit francs CFA").waitFor();
+  await f.locator(".apercu-facture svg.qr").waitFor();
+  await capture(f, "avoir-fiche");
+  const pdfAvoir = await f.evaluate(async () => { const r = await fetch(location.hash.replace("#", "/api").split("?")[0] + "/pdf"); return [r.status, r.headers.get("content-type")]; });
+  assert.deepEqual(pdfAvoir, [200, "application/pdf"]);
+  await f.getByRole("link", { name: `FAC-${AN}-00001` }).click();
+  await f.getByRole("link", { name: `AV-${AN}-00001` }).waitFor();
+  await ouvrir(f, "Avoirs");
+  await f.getByRole("cell", { name: `AV-${AN}-00001` }).waitFor();
+  etape("DAF : avoir partiel remboursé en caisse (17 888 FCFA), aperçu avec QR, PDF, lien facture ↔ avoir");
 
   // Déconnexion
   await p.getByRole("button", { name: "Déconnexion" }).click();

@@ -12,9 +12,9 @@ export interface Ecriture {
   auteur: { id: string; nom: string }; creeLe: string; modifieLe: string; validateur: { id: string; nom: string } | null; valideeLe: string | null;
   extourneDe: { id: string; numero: number; journal: string; motif: string } | null; extourneePar: { id: string; numero: number } | null;
   lignes: LigneEcriture[]; totalDebit: number; totalCredit: number; equilibree: boolean;
-  origine: { type: "facture" | "mouvement"; id: string; reference: string } | null;
+  origine: { type: "facture" | "avoir" | "mouvement"; id: string; reference: string } | null;
 }
-export interface EcritureResume { id: string; statut: "brouillard" | "validee"; numero: number | null; date: string; journal: string; piece: string; libelle: string; auteur: string; totalDebit: number; totalCredit: number; equilibree: boolean; extourne: boolean; extournee: boolean; origine: "facture" | "tresorerie" | null }
+export interface EcritureResume { id: string; statut: "brouillard" | "validee"; numero: number | null; date: string; journal: string; piece: string; libelle: string; auteur: string; totalDebit: number; totalCredit: number; equilibree: boolean; extourne: boolean; extournee: boolean; origine: "facture" | "avoir" | "tresorerie" | null }
 
 export const TYPES_JOURNAL: Record<string, string> = {
   purchases: "Achats", sales: "Ventes", bank: "Banque", cash: "Caisse", general: "Opérations diverses", opening: "À-nouveaux",

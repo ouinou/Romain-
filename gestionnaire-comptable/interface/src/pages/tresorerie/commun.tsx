@@ -15,6 +15,6 @@ export interface Categorie { code: string; libelle: string; compte: string; tva:
 export const TYPES_TRESORERIE: Record<string, string> = { cash: "Caisse", bank: "Banque", mobile: "Mobile money" };
 export const ICONES_TRESORERIE: Record<string, string> = { cash: "◫", bank: "⌂", mobile: "◱" };
 export const NATURES: Record<string, string> = {
-  receipt: "Encaissement", expense: "Dépense", transfer: "Transfert", invoice_payment: "Règlement de facture", reversal: "Annulation",
+  receipt: "Encaissement", expense: "Dépense", transfer: "Transfert", invoice_payment: "Règlement de facture", reversal: "Annulation", credit_refund: "Remboursement d'avoir",
 };
 export const comptesTresorerie = () => api.get<CompteTresorerie[]>("/api/tresorerie/comptes");

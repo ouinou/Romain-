@@ -1,7 +1,8 @@
 /**
  * Trésorerie et ventes SIMULÉES pour la démonstration hors serveur : caisses, mouvements, factures, clients.
  * Reprend les règles visibles du vrai serveur (caisse jamais négative, caisse attitrée, numérotation des factures,
- * écritures générées en brouillard), en mémoire et sans aucune garantie. Les vraies règles sont dans PostgreSQL (migration 005).
+ * écritures générées en brouillard, avoirs plafonnés à ce qui a été facturé), en mémoire et sans aucune garantie.
+ * Les vraies règles sont dans PostgreSQL (migrations 005 et 007).
  */
 import { brouillonsGeneres, comptesProtegesPour, etatEcriture, genererEcriture, lignesEcriture, validerEcritureDemo } from "./comptabilite-simulee";
 
@@ -24,12 +25,17 @@ interface CompteT { id: string; type: "cash" | "bank" | "mobile"; nom: string; b
 interface Mvt {
   id: string; compteId: string; sens: "entree" | "sortie"; nature: string; montant: number; tva: number; date: string; reference: string; libelle: string;
   categorie: string | null; contrepartie: string; factureId: string | null; annulationDe: string | null; motif: string | null; auteur: string; creeLe: string;
-  ecritureId: string | null; groupe: string | null;
+  ecritureId: string | null; groupe: string | null; avoirId?: string | null;
 }
 interface Fac {
   id: string; numero: string; date: string; type: "goods" | "services" | "mixed"; client: { id: string | null; nom: string; niu: string | null; adresse: string | null; telephone: string | null };
   vendeur: ReturnType<Outils["entreprise"]>; devise: string; tauxTvaPdm: number; lignes: { ordre: number; designation: string; quantite: number; prixUnitaire: number; montant: number; nature: string }[];
   totalHt: number; totalTva: number; totalTtc: number; paiement: "comptant" | "credit"; tresorerie: string | null; note: string | null; auteur: string; creeLe: string; ecritureId: string | null;
+}
+interface Av {
+  id: string; numero: string; date: string; motif: string; factureId: string; vendeur: Fac["vendeur"]; tauxTvaPdm: number;
+  lignes: { ordre: number; ligneFacture: number; quantite: number; montant: number }[]; totalHt: number; totalTva: number; totalTtc: number;
+  auteur: string; creeLe: string; ecritureId: string | null;
 }
 interface Client { id: string; nom: string; niu: string | null; telephone: string | null; email: string | null; adresse: string | null }
 
@@ -53,14 +59,20 @@ const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const comptesT: CompteT[] = [];
 const mouvements: Mvt[] = [];
 const factures: Fac[] = [];
+const avoirs: Av[] = [];
 const clients: Client[] = [
   { id: uid(), nom: "Établissements Fictifs Mbarga", niu: "P000000000001X (fictif)", telephone: "+237 600 00 00 01", email: null, adresse: "Douala, Akwa (fictif)" },
   { id: uid(), nom: "Cabinet Démo Ndjamena", niu: null, telephone: null, email: "contact@demo.cm", adresse: "N'Djamena (fictif)" },
 ];
 let fiscal = { tvaApplicable: true, tauxTvaPdm: 1925, mentionsFacture: "Document de démonstration : données fictives, taux de TVA à vérifier." };
-let seqMvt = 0, seqFac = 0;
+let seqMvt = 0, seqFac = 0, seqAv = 0;
 
 const solde = (id: string) => mouvements.filter((m) => m.compteId === id).reduce((s, m) => s + (m.sens === "entree" ? m.montant : -m.montant), 0);
+const avoirsDe = (f: Fac) => avoirs.filter((x) => x.factureId === f.id);
+const totalAvoirs = (f: Fac) => avoirsDe(f).reduce((s, x) => s + x.totalTtc, 0);
+const qCreditee = (f: Fac, ordre: number) => Math.round(avoirsDe(f).flatMap((x) => x.lignes).filter((l) => l.ligneFacture === ordre).reduce((s, l) => s + l.quantite, 0) * 1000) / 1000;
+const mCredite = (f: Fac, ordre: number) => avoirsDe(f).flatMap((x) => x.lignes).filter((l) => l.ligneFacture === ordre).reduce((s, l) => s + l.montant, 0);
+const reste = (f: Fac) => f.totalTtc - totalAvoirs(f) - paye(f);
 const paye = (f: Fac) => mouvements.filter((m) => m.factureId === f.id).reduce((s, m) => s + (m.sens === "entree" ? m.montant : -m.montant), 0);
 /**
  * Code de vérification de DÉMONSTRATION : même format que le vrai, mais « signé » par une simple empreinte
@@ -168,12 +180,22 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
     return mv;
   };
   const vueFacture = (f: Fac) => {
-    const p = paye(f);
+    const p = paye(f), av = totalAvoirs(f);
     return { id: f.id, numero: f.numero, date: f.date, type: f.type, typeLibelle: TYPES_FACTURE[f.type], client: f.client, vendeur: f.vendeur, devise: f.devise, tauxTvaPdm: f.tauxTvaPdm,
-      lignes: f.lignes, totalHt: f.totalHt, totalTva: f.totalTva, totalTtc: f.totalTtc, paye: p, reste: f.totalTtc - p,
-      statutPaiement: p >= f.totalTtc ? "payee" : p > 0 ? "partielle" : "impayee", paiement: f.paiement, tresorerie: f.tresorerie, note: f.note,
+      lignes: f.lignes.map((l) => ({ ...l, quantiteCreditee: qCreditee(f, l.ordre), montantCredite: mCredite(f, l.ordre) })),
+      totalHt: f.totalHt, totalTva: f.totalTva, totalTtc: f.totalTtc, paye: p, totalAvoirs: av, tvaAvoirs: avoirsDe(f).reduce((s, x) => s + x.totalTva, 0), reste: f.totalTtc - av - p,
+      statutPaiement: av >= f.totalTtc ? "annulee" : p + av >= f.totalTtc ? "payee" : p > 0 ? "partielle" : "impayee",
+      avoirs: avoirsDe(f).map((x) => ({ id: x.id, numero: x.numero, date: x.date, totalTtc: x.totalTtc, motif: x.motif })), paiement: f.paiement, tresorerie: f.tresorerie, note: f.note,
       reglements: mouvements.filter((x) => x.factureId === f.id).map((x) => ({ id: x.id, date: x.date, montant: (x.sens === "entree" ? 1 : -1) * x.montant, reference: x.reference, compte: comptesT.find((t) => t.id === x.compteId)!.nom, nature: x.nature })),
       ecriture: etatEcriture(f.ecritureId), auteur: o.nomDe(f.auteur), creeLe: f.creeLe, codeVerification: codeDemo(o.entreprise().code, f) };
+  };
+  const vueAvoir = (x: Av) => {
+    const f = factures.find((y) => y.id === x.factureId)!, mv = mouvements.find((y) => y.avoirId === x.id);
+    return { id: x.id, numero: x.numero, date: x.date, motif: x.motif, facture: { id: f.id, numero: f.numero, date: f.date }, client: f.client, vendeur: x.vendeur, devise: "XAF", tauxTvaPdm: x.tauxTvaPdm,
+      lignes: x.lignes.map((l) => { const il = f.lignes.find((y) => y.ordre === l.ligneFacture)!; return { ...l, designation: il.designation, prixUnitaire: il.prixUnitaire }; }),
+      totalHt: x.totalHt, totalTva: x.totalTva, totalTtc: x.totalTtc,
+      remboursement: mv ? { mouvementId: mv.id, montant: mv.montant, reference: mv.reference, compte: comptesT.find((t) => t.id === mv.compteId)!.nom } : null,
+      ecriture: etatEcriture(x.ecritureId), auteur: o.nomDe(x.auteur), creeLe: x.creeLe, codeVerification: codeDemo(o.entreprise().code, { ...x, devise: "XAF" }) };
   };
   const montantOk = (v: unknown) => { if (!Number.isInteger(v) || (v as number) <= 0) throw o.erreur(400, "donnees_invalides", "Montant entier positif attendu (FCFA)."); return v as number; };
 
@@ -183,11 +205,13 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
     const n = Math.min(24, Math.max(2, Number(q.get("mois") ?? 6) || 6)), maintenant = new Date();
     const mois = Array.from({ length: n }, (_, i) => { const d = new Date(maintenant.getFullYear(), maintenant.getMonth() - (n - 1 - i), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
     const serie = (lignes: [string, number][]) => mois.map((m) => lignes.filter(([d]) => d.startsWith(m)).reduce((t, [, v]) => t + v, 0));
-    const ventes = voitVentes ? serie(factures.map((f) => [f.date, f.totalTtc])) : null;
+    const ventes = voitVentes ? serie([...factures.map((f) => [f.date, f.totalTtc] as [string, number]), ...avoirs.map((x) => [x.date, -x.totalTtc] as [string, number])]) : null;
     const encaissements = voitTreso ? serie(mouvements.filter((x) => visible(comptesT.find((t) => t.id === x.compteId)!)).map((x) => {
       if (x.sens === "entree" && (x.nature === "receipt" || x.nature === "invoice_payment")) return [x.date, x.montant] as [string, number];
+      if (x.nature === "credit_refund") return [x.date, -x.montant] as [string, number];
       const o2 = x.nature === "reversal" ? mouvements.find((y) => y.id === x.annulationDe) : null;
-      return [x.date, x.sens === "sortie" && o2 && (o2.nature === "receipt" || o2.nature === "invoice_payment") ? -x.montant : 0] as [string, number];
+      return [x.date, x.sens === "sortie" && o2 && (o2.nature === "receipt" || o2.nature === "invoice_payment") ? -x.montant
+        : x.sens === "entree" && o2?.nature === "credit_refund" ? x.montant : 0] as [string, number];
     })) : null;
     return { mois, ventes, encaissements };
   }
@@ -224,7 +248,12 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       if (p.length !== 7 || p[0] !== "GC1") rep = { authentique: false, raison: "Ce code n'est pas un code de facture Gestionnaire Comptable." };
       else if (p[1] !== code) rep = { authentique: false, raison: `Cette facture a été émise par une autre entreprise (code ${p[1]}). Elle ne peut être vérifiée que par celle-ci.` };
       else if (empreinteDemo(p.slice(0, 6).join(";")) !== p[6]) rep = { authentique: false, raison: "Signature invalide : le numéro, la date ou le montant ont été modifiés, ou le code est un faux." };
-      else {
+      else if (p[2].startsWith("AV-")) {
+        const x = avoirs.find((y) => y.numero === p[2]), f = x && factures.find((y) => y.id === x.factureId)!;
+        rep = !x || !f ? { authentique: false, raison: `Signature valide, mais l'avoir ${p[2]} est absent de la base.` }
+          : x.date !== p[3] || String(x.totalTtc) !== p[4] ? { authentique: false, raison: `L'avoir ${p[2]} existe, mais sa date ou son montant ne correspondent pas au code.` }
+          : { authentique: true, avoir: { id: x.id, numero: x.numero, date: x.date, facture: f.numero, client: f.client.nom, totalTtc: x.totalTtc, devise: "XAF", auteur: o.nomDe(x.auteur), creeLe: x.creeLe } };
+      } else {
         const f = factures.find((x) => x.numero === p[2]);
         rep = !f ? { authentique: false, raison: `Signature valide, mais la facture ${p[2]} est absente de la base.` }
           : f.date !== p[3] || String(f.totalTtc) !== p[4] ? { authentique: false, raison: `La facture ${p[2]} existe, mais sa date ou son montant ne correspondent pas au code.` }
@@ -268,6 +297,61 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       o.tracer({ type: "sales", action: "invoice_issue", objetType: "invoice", objetId: f.id, details: { numero: f.numero, totalTtc } });
       return vueFacture(f);
     }
+    // Avoirs : mêmes règles visibles que le serveur (plafond par ligne, TVA restante sur l'avoir qui solde, remboursement limité au trop-perçu).
+    if (r1 === "factures" && r2 && r3 === "avoirs" && m === "POST") {
+      o.exiger("sales.cancel", true);
+      const f = factures.find((x) => x.id === r2);
+      if (!f) throw o.erreur(404, "introuvable", "Facture introuvable.");
+      const motif = String(c.motif ?? "").trim(), date = String(c.date || aujourdhui());
+      if (motif.length < 3) throw o.erreur(400, "donnees_invalides", "Indiquez le motif de l'avoir (retour de marchandise, erreur de prix…).");
+      if (date < f.date) throw o.erreur(400, "date", "L'avoir ne peut pas être daté avant la facture.");
+      const demandees = (c.lignes ?? []) as { ordre: number; quantite: number }[];
+      if (!demandees.length) throw o.erreur(400, "donnees_invalides", "Choisissez au moins une ligne à créditer.");
+      const lignes = demandees.map((d, i) => {
+        const il = f.lignes.find((x) => x.ordre === d.ordre);
+        if (!il) throw o.erreur(400, "ligne_inconnue", `La facture ${f.numero} n'a pas de ligne ${d.ordre}.`);
+        const restant = Math.round((il.quantite - qCreditee(f, il.ordre)) * 1000) / 1000;
+        if (!(d.quantite > 0) || d.quantite > restant + 1e-9) throw o.erreur(409, "trop_credite", `« ${il.designation} » : ${restant.toLocaleString("fr-FR")} au plus peut encore être crédité.`);
+        const solde = Math.abs(d.quantite - restant) < 1e-9;
+        return { ordre: i + 1, ligneFacture: il.ordre, quantite: d.quantite, montant: solde ? il.montant - mCredite(f, il.ordre) : Number((BigInt(Math.round(d.quantite * 1000)) * BigInt(il.prixUnitaire) + 500n) / 1000n), solde };
+      });
+      const totalHt = lignes.reduce((t, l) => t + l.montant, 0);
+      const toutSolde = f.lignes.every((il) => lignes.some((l) => l.ligneFacture === il.ordre && l.solde) || qCreditee(f, il.ordre) >= il.quantite);
+      const totalTva = toutSolde ? f.totalTva - avoirsDe(f).reduce((t, x) => t + x.totalTva, 0) : tva(totalHt, f.tauxTvaPdm), totalTtc = totalHt + totalTva;
+      const trop = Math.min(totalTtc, paye(f) - (f.totalTtc - totalAvoirs(f) - totalTtc));
+      const tresorerie = c.rembourser ? utilisable(c.rembourser.compteTresorerieId) : null;
+      if (tresorerie && trop <= 0) throw o.erreur(409, "rien_a_rembourser", `Le client n'a rien payé au-delà de ce qu'il doit encore sur la facture ${f.numero} : l'avoir réduit simplement sa dette.`);
+      if (tresorerie && tresorerie.type === "cash" && trop > solde(tresorerie.id)) throw o.erreur(409, "regle_comptable", `Solde de caisse insuffisant : ${solde(tresorerie.id)} FCFA disponibles, ${trop} demandés.`);
+      const x: Av = { id: uid(), numero: `AV-${date.slice(0, 4)}-${String(++seqAv).padStart(5, "0")}`, date, motif, factureId: f.id, vendeur: o.entreprise(), tauxTvaPdm: f.tauxTvaPdm,
+        lignes: lignes.map(({ solde: _, ...l }) => l), totalHt, totalTva, totalTtc, auteur: moi.id, creeLe: new Date().toISOString(), ecritureId: null };
+      const libelle = `Avoir ${x.numero} sur ${f.numero} : ${f.client.nom}`;
+      const ht = (nat: string) => lignes.filter((l) => f.lignes.find((il) => il.ordre === l.ligneFacture)!.nature === nat).reduce((t, l) => t + l.montant, 0);
+      x.ecritureId = genererEcriture("VT", date, x.numero, libelle, moi.id, { type: "avoir", id: x.id, reference: x.numero },
+        [["701", ht("marchandise"), 0], ["706", ht("service"), 0], ["443", totalTva, 0], ["411", 0, totalTtc]]);
+      avoirs.push(x);
+      if (tresorerie) {
+        const mv = inserer({ compteId: tresorerie.id, sens: "sortie", nature: "credit_refund", montant: trop, tva: 0, date, reference: x.numero, libelle: `Remboursement ${libelle}`.slice(0, 200),
+          categorie: "remboursement_client", contrepartie: "411", factureId: f.id, annulationDe: null, motif: null, groupe: null, avoirId: x.id });
+        mv.ecritureId = genererEcriture(tresorerie.journal, date, x.numero, `Remboursement ${libelle}`, moi.id, { type: "mouvement", id: mv.id, reference: mv.reference }, [["411", trop, 0], [tresorerie.numero, 0, trop]]);
+      }
+      o.tracer({ type: "sales", action: "credit_note_issue", objetType: "credit_note", objetId: x.id, motif, details: { numero: x.numero, facture: f.numero, totalTtc } });
+      return vueAvoir(x);
+    }
+    if (r1 === "avoirs") {
+      o.exiger("sales.read");
+      if (r2) {
+        const x = avoirs.find((y) => y.id === r2);
+        if (!x) throw o.erreur(404, "introuvable", "Avoir introuvable.");
+        if (r3 === "pdf") throw o.erreur(404, "introuvable", "Démonstration : le PDF n'est produit que par le serveur installé.");
+        return vueAvoir(x);
+      }
+      const r = (q.get("recherche") ?? "").toLowerCase(), du = q.get("du"), au = q.get("au");
+      const l = avoirs.map(vueAvoir).filter((x) => (!r || `${x.numero} ${x.facture.numero} ${x.client.nom}`.toLowerCase().includes(r)) && (!du || x.date >= du) && (!au || x.date <= au))
+        .sort((x, y) => y.numero.localeCompare(x.numero));
+      const pg = o.page(l, q);
+      return { ...pg, totalTtc: l.reduce((t, x) => t + x.totalTtc, 0), elements: pg.elements.map((x) => ({ id: x.id, numero: x.numero, date: x.date, motif: x.motif,
+        facture: { id: x.facture.id, numero: x.facture.numero }, client: x.client.nom, totalHt: x.totalHt, totalTva: x.totalTva, totalTtc: x.totalTtc, rembourse: x.remboursement?.montant ?? 0, auteur: x.auteur, creeLe: x.creeLe })) };
+    }
     if (r1 === "factures" && r2) {
       o.exiger("sales.read");
       const f = factures.find((x) => x.id === r2);
@@ -279,11 +363,11 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       o.exiger("sales.read");
       const r = (q.get("recherche") ?? "").toLowerCase(), du = q.get("du"), au = q.get("au"), st = q.get("statut");
       const l = factures.filter((f) => (!r || (f.numero + " " + f.client.nom).toLowerCase().includes(r)) && (!du || f.date >= du) && (!au || f.date <= au)
-        && (st !== "payee" || paye(f) >= f.totalTtc) && (st !== "impayee" || paye(f) < f.totalTtc)).sort((x, y) => y.numero.localeCompare(x.numero));
+        && (st !== "payee" || reste(f) <= 0) && (st !== "impayee" || reste(f) > 0)).sort((x, y) => y.numero.localeCompare(x.numero));
       const pg = o.page(l, q);
       return { ...pg, elements: pg.elements.map((f) => { const v = vueFacture(f); return { id: v.id, numero: v.numero, date: v.date, type: v.type, client: v.client.nom, totalHt: v.totalHt, totalTva: v.totalTva,
-        totalTtc: v.totalTtc, paye: v.paye, reste: v.reste, statutPaiement: v.statutPaiement, paiement: v.paiement, auteur: v.auteur, creeLe: v.creeLe }; }),
-        totalTtc: l.reduce((s, f) => s + f.totalTtc, 0), totalReste: l.reduce((s, f) => s + f.totalTtc - paye(f), 0) };
+        totalTtc: v.totalTtc, paye: v.paye, totalAvoirs: v.totalAvoirs, reste: v.reste, statutPaiement: v.statutPaiement, paiement: v.paiement, auteur: v.auteur, creeLe: v.creeLe }; }),
+        totalTtc: l.reduce((s, f) => s + f.totalTtc, 0), totalReste: l.reduce((s, f) => s + reste(f), 0) };
     }
   }
 
@@ -390,8 +474,8 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
         if (c.factureId) {
           const f = factures.find((x) => x.id === c.factureId);
           if (!f) throw o.erreur(404, "introuvable", "Facture introuvable.");
-          const reste = f.totalTtc - paye(f);
-          if (montant > reste) throw o.erreur(409, "trop_percu", `Il reste ${reste} FCFA à régler sur la facture ${f.numero} : montant trop élevé.`);
+          const r = reste(f);
+          if (montant > r) throw o.erreur(409, "trop_percu", `Il reste ${r} FCFA à régler sur la facture ${f.numero} : montant trop élevé.`);
           cp = "411"; cat = "encaissement_client"; nature = "invoice_payment";
         } else {
           const def = (c.sens === "entree" ? ENTREES : SORTIES).find((x) => x[0] === c.categorie);

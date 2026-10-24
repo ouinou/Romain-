@@ -8,9 +8,9 @@ import { visibles } from "./tresorerie.js";
 /**
  * Évolution mensuelle pour le graphique du tableau de bord : ventes TTC facturées et encaissements.
  * Chaque série n'est calculée que si l'utilisateur a le droit de la voir (null sinon) :
- *  - ventes : sales.read (factures émises, par mois de la date de facture) ;
+ *  - ventes : sales.read (factures émises par mois de la date de facture, moins les avoirs du mois de l'avoir) ;
  *  - encaissements : treasury.read (tous les comptes) ou cash.read (ses caisses seulement). Ce sont les
- *    encaissements clients et autres recettes, nets de leurs annulations ; les transferts internes sont exclus.
+ *    encaissements clients et autres recettes, nets de leurs annulations et des remboursements d'avoirs ; les transferts internes sont exclus.
  */
 export function routesTableauDeBord(app: FastifyInstance, deps: Dependances) {
   app.get("/api/tableau-de-bord/evolution", proteger(deps, { permission: null }, async (req, ctx) => {
@@ -29,7 +29,9 @@ export function routesTableauDeBord(app: FastifyInstance, deps: Dependances) {
     let ventes: number[] | null = null, encaissements: number[] | null = null;
     if (voitVentes) {
       const { rows } = await ctx.c.query(
-        `SELECT to_char(invoice_date, 'YYYY-MM') AS mois, sum(total_ttc) AS total FROM invoices WHERE invoice_date >= $1::date GROUP BY 1`, [debut]);
+        `SELECT mois, sum(t) AS total FROM (
+           SELECT to_char(invoice_date, 'YYYY-MM') AS mois, total_ttc AS t FROM invoices WHERE invoice_date >= $1::date
+           UNION ALL SELECT to_char(credit_date, 'YYYY-MM'), -total_ttc FROM credit_notes WHERE credit_date >= $1::date) x GROUP BY 1`, [debut]);
       ventes = indexer(rows as { mois: string; total: string }[]);
     }
     if (voitTreso) {
@@ -37,6 +39,8 @@ export function routesTableauDeBord(app: FastifyInstance, deps: Dependances) {
         `SELECT to_char(m.movement_date, 'YYYY-MM') AS mois,
                 sum(CASE WHEN m.direction = 'in' AND m.kind IN ('receipt', 'invoice_payment') THEN m.amount
                          WHEN m.direction = 'out' AND m.kind = 'reversal' AND o.kind IN ('receipt', 'invoice_payment') THEN -m.amount
+                         WHEN m.kind = 'credit_refund' THEN -m.amount
+                         WHEN m.direction = 'in' AND m.kind = 'reversal' AND o.kind = 'credit_refund' THEN m.amount
                          ELSE 0 END) AS total
            FROM treasury_movements m
            JOIN treasury_accounts t ON t.id = m.treasury_account_id

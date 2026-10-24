@@ -17,7 +17,7 @@ interface Outils {
 
 interface Compte { id: string; numero: string; libelle: string; imputable: boolean; actif: boolean; source: string }
 interface Ligne { compteId: string; libelle: string | null; debit: number; credit: number }
-interface Origine { type: "facture" | "mouvement"; id: string; reference: string }
+interface Origine { type: "facture" | "avoir" | "mouvement"; id: string; reference: string }
 interface Ecr { origine?: Origine | null; id: string; statut: "brouillard" | "validee"; numero: number | null; journalId: string; exerciceId: string; date: string; piece: string; libelle: string; auteur: string; creeLe: string; modifieLe: string; validateur: string | null; valideeLe: string | null; extourneDe: string | null; motif: string | null; lignes: Ligne[] }
 
 let n = 0;
@@ -110,7 +110,7 @@ export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: 
       totalDebit: t.d, totalCredit: t.c, equilibree: equilibree(e), origine: e.origine ?? null,
     };
   };
-  const resume = (e: Ecr) => { const v = vue(e); return { id: v.id, statut: v.statut, numero: v.numero, date: v.date, journal: v.journal.code, piece: v.piece, libelle: v.libelle, auteur: v.auteur.nom, totalDebit: v.totalDebit, totalCredit: v.totalCredit, equilibree: v.equilibree, extourne: !!v.extourneDe, extournee: !!v.extourneePar, origine: e.origine ? (e.origine.type === "facture" ? "facture" : "tresorerie") : null }; };
+  const resume = (e: Ecr) => { const v = vue(e); return { id: v.id, statut: v.statut, numero: v.numero, date: v.date, journal: v.journal.code, piece: v.piece, libelle: v.libelle, auteur: v.auteur.nom, totalDebit: v.totalDebit, totalCredit: v.totalCredit, equilibree: v.equilibree, extourne: !!v.extourneDe, extournee: !!v.extourneePar, origine: e.origine ? (e.origine.type === "mouvement" ? "tresorerie" : e.origine.type) : null }; };
   const lireEcriture = () => {
     if (!c.piece || !String(c.piece).trim()) throw o.erreur(400, "donnees_invalides", "Référence de pièce obligatoire.");
     if (!c.libelle || String(c.libelle).trim().length < 2) throw o.erreur(400, "donnees_invalides", "Libellé obligatoire.");
@@ -254,13 +254,13 @@ export function traiterComptabilite(m: string, chemin: string, q: Q, c: any, o: 
       if (!r3 && m === "PUT") {
         o.exiger("accounting.update");
         if (e.statut !== "brouillard") throw o.erreur(409, "ecriture_validee", "Une écriture validée ne se modifie pas. Utilisez une extourne.");
-        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${e.origine.type === "facture" ? "la facture" : "le mouvement"} ${e.origine.reference} : corrigez l'opération d'origine.`);
+        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${({ facture: "la facture", avoir: "l'avoir", mouvement: "le mouvement" })[e.origine.type]} ${e.origine.reference} : corrigez l'opération d'origine.`);
         Object.assign(e, lireEcriture(), { modifieLe: new Date().toISOString() }); o.tracer({ type: "accounting", action: "entry_update", objetType: "entry", objetId: e.id }); return vue(e);
       }
       if (!r3 && m === "DELETE") {
         o.exiger("accounting.update");
         if (e.statut !== "brouillard") throw o.erreur(409, "ecriture_validee", "Une écriture validée ne se supprime pas. Utilisez une extourne.");
-        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${e.origine.type === "facture" ? "la facture" : "le mouvement"} ${e.origine.reference} : elle ne se supprime pas.`);
+        if (e.origine) throw o.erreur(409, "ecriture_generee", `Écriture générée par ${({ facture: "la facture", avoir: "l'avoir", mouvement: "le mouvement" })[e.origine.type]} ${e.origine.reference} : elle ne se supprime pas.`);
         ecritures.splice(ecritures.indexOf(e), 1); o.tracer({ type: "accounting", action: "entry_delete", objetType: "entry", objetId: e.id }); return { ok: true };
       }
       if (r3 === "validation") {

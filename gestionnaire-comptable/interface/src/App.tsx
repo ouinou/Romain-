@@ -32,6 +32,8 @@ import { FicheFacture } from "./pages/ventes/FicheFacture";
 import { Clients } from "./pages/ventes/Clients";
 import { JournalDirect } from "./pages/ventes/JournalDirect";
 import { VerifierFacture } from "./pages/ventes/VerifierFacture";
+import { Avoirs } from "./pages/ventes/Avoirs";
+import { FicheAvoir } from "./pages/ventes/FicheAvoir";
 import { appliquerCouleurs, chargerApparence, EVENEMENT_APPARENCE, type Apparence } from "./theme";
 import { Cadre, type Onglet } from "./composants/cadre/Cadre";
 import { FournisseurEtatCadre } from "./composants/cadre/etat";
@@ -124,6 +126,7 @@ function Coquille() {
       else if (sous === "verifier") { titre = "Vérifier une facture"; page = a("sales.read") ? <VerifierFacture /> : interdit; }
       else if (sous === "clients") { titre = "Clients"; page = a("sales.read") ? <Clients /> : interdit; }
       else if (sous === "factures" && fid) { titre = "Facture"; page = a("sales.read") ? <FicheFacture id={fid} /> : interdit; }
+      else if (sous === "avoirs") { titre = fid ? "Avoir" : "Avoirs"; page = !a("sales.read") ? interdit : fid ? <FicheAvoir id={fid} /> : <Avoirs />; }
       else { titre = "Ventes et factures"; page = a("sales.read") ? <Ventes /> : interdit; }
       break;
     }

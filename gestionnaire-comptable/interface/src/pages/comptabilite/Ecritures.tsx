@@ -90,7 +90,7 @@ export function Ecritures() {
                       <td className="num">{dateFr(e.date)}</td><td><span className="etiquette-journal">{e.journal}</span></td><td className="num">{e.numero ?? "—"}</td>
                       <td className="num">{e.piece}</td><td>{e.libelle}</td>
                       <td className="montant"><Montant v={e.totalDebit} /></td><td className="montant"><Montant v={e.totalCredit} /></td>
-                      <td><BadgeEcriture e={e} />{e.origine && <span className="badge badge-neutre" style={{ marginLeft: 4 }}>{e.origine === "facture" ? "Vente" : "Trésorerie"}</span>}</td><td>{e.auteur}</td>
+                      <td><BadgeEcriture e={e} />{e.origine && <span className="badge badge-neutre" style={{ marginLeft: 4 }}>{e.origine === "facture" ? "Vente" : e.origine === "avoir" ? "Avoir" : "Trésorerie"}</span>}</td><td>{e.auteur}</td>
                     </tr>))}
                 </tbody>
               </table>
@@ -153,8 +153,8 @@ function DetailEcriture({ id, onFermer }: { id: string; onFermer: () => void }) 
           {x.origine && (
             <section className="section-detail">
               <h4>Origine</h4>
-              <dl><dt>{x.origine.type === "facture" ? "Facture" : "Mouvement"}</dt>
-                <dd><a href={x.origine.type === "facture" ? `#/ventes/factures/${x.origine.id}` : `#/tresorerie/mouvements/${x.origine.id}`}>{x.origine.reference}</a></dd></dl>
+              <dl><dt>{x.origine.type === "facture" ? "Facture" : x.origine.type === "avoir" ? "Avoir" : "Mouvement"}</dt>
+                <dd><a href={x.origine.type === "facture" ? `#/ventes/factures/${x.origine.id}` : x.origine.type === "avoir" ? `#/ventes/avoirs/${x.origine.id}` : `#/tresorerie/mouvements/${x.origine.id}`}>{x.origine.reference}</a></dd></dl>
             </section>
           )}
           <button className="btn btn-principal" onClick={() => aller(`/comptabilite/ecritures/${x.id}`)}>Ouvrir la fiche</button>

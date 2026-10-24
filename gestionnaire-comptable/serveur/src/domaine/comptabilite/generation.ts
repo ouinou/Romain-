@@ -16,7 +16,7 @@ export async function exerciceOuvertPour(c: Client, date: string) {
 
 export async function genererEcriture(c: Client, e: {
   journalId: string; date: string; piece: string; libelle: string; auteur: string;
-  source: { type: "treasury_movement" | "invoice"; id: string }; lignes: LigneGeneree[];
+  source: { type: "treasury_movement" | "invoice" | "credit_note"; id: string }; lignes: LigneGeneree[];
 }) {
   const lignes = e.lignes.filter((l) => l.debit > 0 || l.credit > 0);
   const exercice = await exerciceOuvertPour(c, e.date);

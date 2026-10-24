@@ -41,7 +41,8 @@ export const ROLES_SYSTEME: RoleSysteme[] = [
       ...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
       ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
       ...p("cash", "read", "approve", "print"),
-      ...p("sales", "read", "create", "print"), ...p("purchases", "read", "approve", "print"),
+      // sales.cancel : émettre un avoir (et rembourser le client).
+      ...p("sales", "read", "create", "cancel", "print"), ...p("purchases", "read", "approve", "print"),
       ...p("payroll", "read", "approve"),
       ...p("reports", "read", "print", "export"),
     ],

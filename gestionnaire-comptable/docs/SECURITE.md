@@ -49,7 +49,9 @@ Ce document dit ce que le logiciel protège réellement, et où sont les limites
 
 ## Authenticité des factures (code QR)
 
-Chaque facture porte un code QR qui contient son numéro, sa date, son montant TTC et une signature Ed25519 propre à l'entreprise. La clé privée est créée à la première facture, chiffrée avec `GC_CLE_CHIFFREMENT` et jamais modifiée (une nouvelle clé rendrait invérifiables les factures déjà imprimées). La vérification (menu *Vérifier une facture*) contrôle la signature **et** la présence de la facture, identique, dans la base.
+Chaque facture porte un code QR qui contient son numéro, sa date, son montant TTC et une signature Ed25519 propre à l'entreprise. La clé privée est créée à la première facture, chiffrée avec `GC_CLE_CHIFFREMENT` et jamais modifiée (une nouvelle clé rendrait invérifiables les factures déjà imprimées). La vérification (menu *Vérifier une facture*) contrôle la signature **et** la présence de la facture, identique, dans la base. Les avoirs portent le même code, avec leur numéro AV-… ; ils se vérifient de la même façon.
+
+Émettre un avoir demande le droit « Ventes : annuler » et une confirmation récente du mot de passe : un avoir remboursé fait sortir de l'argent. Le caissier n'a pas ce droit par défaut, pour qu'une même personne ne puisse pas encaisser, annuler la vente puis se rembourser.
 
 Limites : la vérification se fait dans le logiciel, donc par une personne connectée de l'entreprise ; un client extérieur ne peut pas vérifier seul. Si `GC_CLE_CHIFFREMENT` est perdue, les nouvelles factures ne peuvent plus être signées : elle fait partie de ce qui doit être sauvegardé hors du serveur.
 

@@ -59,13 +59,15 @@ async function soldeCompte(c: Client, id: string) {
   return versEntier(r.s);
 }
 
-/** Montant restant dû sur une facture (TTC − règlements nets). */
+/** Montant restant dû sur une facture (TTC − avoirs − règlements nets). */
 export async function resteDu(c: Client, factureId: string) {
   const { rows: [f] } = await c.query(
-    `SELECT i.number, i.total_ttc, coalesce((SELECT sum(CASE WHEN m.direction = 'in' THEN m.amount ELSE -m.amount END) FROM treasury_movements m WHERE m.invoice_id = i.id), 0) AS paye
+    `SELECT i.number, i.total_ttc, coalesce((SELECT sum(CASE WHEN m.direction = 'in' THEN m.amount ELSE -m.amount END) FROM treasury_movements m WHERE m.invoice_id = i.id), 0) AS paye,
+            coalesce((SELECT sum(a.total_ttc) FROM credit_notes a WHERE a.invoice_id = i.id), 0) AS avoirs
        FROM invoices i WHERE i.id = $1`, [factureId]);
   if (!f) throw nonTrouve("Facture");
-  return { numero: f.number as string, reste: versEntier(f.total_ttc) - versEntier(f.paye) };
+  const ttc = versEntier(f.total_ttc), avoirs = versEntier(f.avoirs), paye = versEntier(f.paye);
+  return { numero: f.number as string, ttc, avoirs, paye, reste: ttc - avoirs - paye };
 }
 
 interface NouveauMouvement {

@@ -1,6 +1,6 @@
 {
   "name": "gestionnaire-comptable-serveur",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Serveur de GESTIONNAIRE COMPTABLE : API, authentification, permissions, journal d'audit",
   "type": "module",

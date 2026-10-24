@@ -40,6 +40,7 @@ export async function chargerEcriture(c: Client, id: string, permissions: string
             x.id AS extourne_id, x.entry_number AS extourne_numero,
             CASE e.source_type
               WHEN 'invoice' THEN (SELECT json_build_object('type', 'facture', 'id', i.id, 'reference', i.number) FROM invoices i WHERE i.id = e.source_id)
+              WHEN 'credit_note' THEN (SELECT json_build_object('type', 'avoir', 'id', a.id, 'reference', a.number) FROM credit_notes a WHERE a.id = e.source_id)
               WHEN 'treasury_movement' THEN (SELECT json_build_object('type', 'mouvement', 'id', m.id, 'reference', m.reference) FROM treasury_movements m WHERE m.id = e.source_id)
             END AS origine,
             EXISTS (SELECT 1 FROM entry_lines l JOIN accounts a ON a.id = l.account_id
@@ -69,7 +70,7 @@ export async function chargerEcriture(c: Client, id: string, permissions: string
     extourneDe: e.reversal_of ? { id: e.reversal_of, numero: e.origine_numero, journal: e.origine_journal, motif: e.reversal_reason } : null,
     extourneePar: e.extourne_id ? { id: e.extourne_id, numero: e.extourne_numero } : null,
     lignes: ls, totalDebit, totalCredit, equilibree: totalDebit === totalCredit && totalDebit > 0 && ls.length >= 2,
-    origine: e.origine as { type: "facture" | "mouvement"; id: string; reference: string } | null,
+    origine: e.origine as { type: "facture" | "avoir" | "mouvement"; id: string; reference: string } | null,
   };
 }
 
@@ -145,7 +146,7 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
         return { id: e.id, statut: e.status === "validated" ? "validee" : "brouillard", numero: e.entry_number, date: e.date, journal: e.journal,
           piece: e.piece_reference, libelle: e.label, auteur: e.auteur, totalDebit: debit, totalCredit: credit,
           equilibree: debit === credit && debit > 0 && e.nb_lignes >= 2, extourne: !!e.reversal_of, extournee: e.extournee,
-          origine: e.source_type === "invoice" ? "facture" : e.source_type === "treasury_movement" ? "tresorerie" : null };
+          origine: e.source_type === "invoice" ? "facture" : e.source_type === "credit_note" ? "avoir" : e.source_type === "treasury_movement" ? "tresorerie" : null };
       }),
       total, page, taille,
     };
@@ -179,7 +180,7 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     const avant = await chargerEcriture(ctx.c, id, [...ctx.permissions]);
     if (!avant) throw nonTrouve("Écriture");
     if (avant.statut !== "brouillard") throw new ErreurHttp(409, "ecriture_validee", "Une écriture validée ne se modifie pas. Utilisez une extourne.");
-    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${avant.origine.type === "facture" ? "la facture" : "le mouvement"} ${avant.origine.reference} : corrigez l'opération d'origine.`);
+    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${({ facture: "la facture", avoir: "l'avoir", mouvement: "le mouvement" })[avant.origine.type]} ${avant.origine.reference} : corrigez l'opération d'origine.`);
     await verifierJournal(ctx.c, d.journalId);
     await verifierComptes(ctx, d.lignes.map((l) => l.compteId));
     const exercice = await exerciceOuvertPour(ctx.c, d.date);
@@ -198,7 +199,7 @@ export function routesEcritures(app: FastifyInstance, deps: Dependances) {
     const avant = await chargerEcriture(ctx.c, id, [...ctx.permissions]);
     if (!avant) throw nonTrouve("Écriture");
     if (avant.statut !== "brouillard") throw new ErreurHttp(409, "ecriture_validee", "Une écriture validée ne se supprime pas. Utilisez une extourne.");
-    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${avant.origine.type === "facture" ? "la facture" : "le mouvement"} ${avant.origine.reference} : elle ne se supprime pas.`);
+    if (avant.origine) throw new ErreurHttp(409, "ecriture_generee", `Écriture générée par ${({ facture: "la facture", avoir: "l'avoir", mouvement: "le mouvement" })[avant.origine.type]} ${avant.origine.reference} : elle ne se supprime pas.`);
     await avecReglesBase(() => ctx.c.query("DELETE FROM journal_entries WHERE id = $1", [id]));
     await ctx.journaliser({ type: "accounting", action: "entry_delete", objetType: "entry", objetId: id, avant: resume(avant) });
     return { ok: true };

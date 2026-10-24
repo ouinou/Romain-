@@ -36,6 +36,7 @@ export function FicheEcriture({ id }: { id: string }) {
       {brouillard && a("accounting.approve") && auteur && <div className="alerte">Vous êtes l'auteur de ce brouillard : si la séparation saisie / validation est active, une autre personne doit le valider.</div>}
       {x.origine && <div className="alerte">Écriture générée automatiquement par {x.origine.type === "facture"
         ? <>la facture <a href={`#/ventes/factures/${x.origine.id}`}>{x.origine.reference}</a></>
+        : x.origine.type === "avoir" ? <>l'avoir <a href={`#/ventes/avoirs/${x.origine.id}`}>{x.origine.reference}</a></>
         : <>le mouvement de trésorerie <a href={`#/tresorerie/mouvements/${x.origine.id}`}>{x.origine.reference}</a></>}. Elle ne se modifie pas ici : corrigez l'opération d'origine.</div>}
       {x.extourneDe && <div className="alerte">Extourne de l'écriture <a href={`#/comptabilite/ecritures/${x.extourneDe.id}`}>{x.extourneDe.journal} n° {x.extourneDe.numero}</a>. Motif : {x.extourneDe.motif}</div>}
       {x.extourneePar && <div className="alerte alerte-attention">Cette écriture a été annulée par l'extourne <a href={`#/comptabilite/ecritures/${x.extourneePar.id}`}>n° {x.extourneePar.numero}</a>. Elle reste dans les livres, son effet est neutralisé.</div>}

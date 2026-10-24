@@ -18,6 +18,7 @@ const DESSINS: Record<string, ReactNode> = {
   etats: <><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 17v-3M12 17v-6M15 17v-4" stroke={A} strokeWidth="2"/></>,
   administration: <><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/><circle cx="12" cy="12" r="1.2" fill={A} stroke="none"/></>,
   facture: <><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 14h7M9 17h4"/><circle cx="17.5" cy="18.5" r="3" fill={A} stroke="none"/><path d="M17.5 17v3M16 18.5h3" stroke="#fff" strokeWidth="1.4"/></>,
+  avoir: <><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 14h5"/><circle cx="17.5" cy="18.5" r="3" fill={R} stroke="none"/><path d="M16 18.5h3" stroke="#fff" strokeWidth="1.4"/></>,
   client: <><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="18" cy="17" r="3" fill={A} stroke="none"/><path d="M18 15.6v2.8M16.6 17h2.8" stroke="#fff" strokeWidth="1.4"/></>,
   clients: <><circle cx="9" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5" stroke={A}/><path d="M3 19c.5-3.2 2.9-5 6-5s5.5 1.8 6 5M15 14.2c2.6.2 4.6 1.8 5 4.8"/></>,
   reglement: <><rect x="3" y="6" width="15" height="10" rx="1.5"/><circle cx="10.5" cy="11" r="2.2"/><path d="M14 19h7M18 16l3 3-3 3" stroke={V}/></>,

@@ -35,7 +35,7 @@ const roles: Role[] = [
     [...METIER.flatMap((m) => p(m, "read")), ...p("reports", "print", "export"), ...p("accounting", "approve"), ...p("treasury", "approve"), ...p("purchases", "approve"), ...p("audit", "read"), ...p("users", "read"), ...p("company", "read")]),
   role("finance_director", "Directeur financier", "Finances, trésorerie et rapports détaillés ; validation selon délégation.", true,
     [...p("accounting", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"), ...p("treasury", "read", "create", "update", "submit", "approve", "cancel", "print", "export", "admin"),
-     ...p("cash", "read", "approve", "print"), ...p("sales", "read", "create", "print"), ...p("purchases", "read", "approve", "print"), ...p("payroll", "read", "approve"), ...p("reports", "read", "print", "export")]),
+     ...p("cash", "read", "approve", "print"), ...p("sales", "read", "create", "cancel", "print"), ...p("purchases", "read", "approve", "print"), ...p("payroll", "read", "approve"), ...p("reports", "read", "print", "export")]),
   role("accountant", "Comptable", "Écritures et pièces. Banques, paie et résultats globaux sur autorisation explicite.", false,
     [...p("accounting", "read", "create", "update", "submit", "cancel", "print", "export"), ...p("sales", "read"), ...p("purchases", "read")]),
   role("cashier", "Caissier", "Mouvements de caisse et solde de sa caisse uniquement.", false, [...p("cash", "read", "create", "submit", "print"), ...p("sales", "read", "create", "print")]),

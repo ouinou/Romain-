@@ -15,32 +15,47 @@ import { ErreurHttp, nonTrouve } from "../erreurs.js";
 
 const TYPES: Record<string, string> = { goods: "Vente de marchandises", services: "Prestation de services", mixed: "Vente et prestation" };
 
+/** Statut de paiement : « annulee » quand des avoirs couvrent toute la facture. */
+export const statutPaiement = (ttc: number, avoirs: number, paye: number) =>
+  avoirs >= ttc ? "annulee" : paye + avoirs >= ttc ? "payee" : paye > 0 ? "partielle" : "impayee";
+/** Total TTC des avoirs d'une facture (alias SQL « i »). */
+export const SQL_AVOIRS = "coalesce((SELECT sum(a.total_ttc) FROM credit_notes a WHERE a.invoice_id = i.id), 0)";
+
 /** Paramètres fiscaux de l'entreprise (aucun taux codé en dur : à saisir d'après la loi de finances en vigueur). */
-async function parametresFiscaux(c: Client, entrepriseId: string) {
+export async function parametresFiscaux(c: Client, entrepriseId: string) {
   const { rows: [e] } = await c.query("SELECT settings, currency_code FROM companies WHERE id = $1", [entrepriseId]);
   const f = e.settings?.fiscal ?? {};
   return { tvaApplicable: !!f.tvaApplicable, tauxTvaPdm: f.tvaApplicable ? Number(f.tauxTvaPdm ?? 0) : 0, mentionsFacture: (f.mentionsFacture as string) ?? "", devise: e.currency_code as string };
 }
 
-async function chargerFacture(c: Client, id: string) {
+export async function chargerFacture(c: Client, id: string) {
   const { rows: [f] } = await c.query(
     `SELECT i.*, i.invoice_date::text AS date, u.full_name AS auteur, t.name AS tresorerie,
             coalesce((SELECT sum(CASE WHEN m.direction = 'in' THEN m.amount ELSE -m.amount END) FROM treasury_movements m WHERE m.invoice_id = i.id), 0) AS paye,
+            ${SQL_AVOIRS} AS avoirs, coalesce((SELECT sum(a.total_tax) FROM credit_notes a WHERE a.invoice_id = i.id), 0) AS tva_avoirs,
             (SELECT json_build_object('id', e.id, 'statut', e.status, 'numero', e.entry_number) FROM journal_entries e WHERE e.source_type = 'invoice' AND e.source_id = i.id) AS ecriture
        FROM invoices i JOIN app_users u ON u.id = i.created_by LEFT JOIN treasury_accounts t ON t.id = i.treasury_account_id WHERE i.id = $1`, [id]);
   if (!f) return null;
   const { rows: lignes } = await c.query(
-    "SELECT l.line_no, l.description, l.quantity::text AS quantite, l.unit_price, l.amount, a.account_number FROM invoice_lines l JOIN accounts a ON a.id = l.revenue_account_id WHERE l.invoice_id = $1 ORDER BY l.line_no", [id]);
+    `SELECT l.line_no, l.description, l.quantity::text AS quantite, l.unit_price, l.amount, a.account_number,
+            coalesce(sum(cl.quantity), 0)::text AS q_credit, coalesce(sum(cl.amount), 0) AS m_credit
+       FROM invoice_lines l JOIN accounts a ON a.id = l.revenue_account_id
+       LEFT JOIN credit_note_lines cl ON cl.invoice_id = l.invoice_id AND cl.invoice_line_no = l.line_no
+      WHERE l.invoice_id = $1 GROUP BY l.invoice_id, l.line_no, a.account_number ORDER BY l.line_no`, [id]);
+  const { rows: avoirs } = await c.query(
+    "SELECT id, number, credit_date::text AS date, total_ttc, reason FROM credit_notes WHERE invoice_id = $1 ORDER BY credit_year, sequence_no", [id]);
   const { rows: reglements } = await c.query(
     "SELECT m.id, m.movement_date::text AS date, m.direction, m.amount, m.reference, m.kind, t.name AS compte FROM treasury_movements m JOIN treasury_accounts t ON t.id = m.treasury_account_id WHERE m.invoice_id = $1 ORDER BY m.created_at", [id]);
-  const ttc = versEntier(f.total_ttc), paye = versEntier(f.paye);
+  const ttc = versEntier(f.total_ttc), paye = versEntier(f.paye), totalAvoirs = versEntier(f.avoirs);
   return {
     id: f.id, numero: f.number, date: f.date, type: f.kind, typeLibelle: TYPES[f.kind],
     client: { id: f.customer_id, nom: f.customer_name, niu: f.customer_niu, adresse: f.customer_address, telephone: f.customer_phone },
     vendeur: { ...f.seller, logoUrl: f.seller?.logoId ? `/api/entreprise/logos/${f.seller.logoId}` : null }, devise: f.currency, tauxTvaPdm: f.tax_rate_bp,
-    lignes: lignes.map((l) => ({ ordre: l.line_no, designation: l.description, quantite: Number(l.quantite), prixUnitaire: versEntier(l.unit_price), montant: versEntier(l.amount), nature: l.account_number === COMPTE_SERVICES_VENDUS ? "service" : "marchandise" })),
-    totalHt: versEntier(f.total_ht), totalTva: versEntier(f.total_tax), totalTtc: ttc, paye, reste: ttc - paye,
-    statutPaiement: paye >= ttc ? "payee" : paye > 0 ? "partielle" : "impayee",
+    lignes: lignes.map((l) => ({ ordre: l.line_no, designation: l.description, quantite: Number(l.quantite), prixUnitaire: versEntier(l.unit_price), montant: versEntier(l.amount), nature: l.account_number === COMPTE_SERVICES_VENDUS ? "service" : "marchandise",
+      quantiteCreditee: Number(l.q_credit), montantCredite: versEntier(l.m_credit) })),
+    totalHt: versEntier(f.total_ht), totalTva: versEntier(f.total_tax), totalTtc: ttc, paye, totalAvoirs, tvaAvoirs: versEntier(f.tva_avoirs), reste: ttc - totalAvoirs - paye,
+    statutPaiement: statutPaiement(ttc, totalAvoirs, paye),
+    avoirs: avoirs.map((a) => ({ id: a.id, numero: a.number, date: a.date, totalTtc: versEntier(a.total_ttc), motif: a.reason })),
     paiement: f.payment_mode === "immediate" ? "comptant" : "credit", tresorerie: f.tresorerie, note: f.notes,
     reglements: reglements.map((r) => ({ id: r.id, date: r.date, montant: (r.direction === "in" ? 1 : -1) * versEntier(r.amount), reference: r.reference, compte: r.compte, nature: r.kind })),
     ecriture: f.ecriture ? { id: f.ecriture.id, statut: f.ecriture.statut === "validated" ? "validee" : "brouillard", numero: f.ecriture.numero } : null,
@@ -49,13 +64,13 @@ async function chargerFacture(c: Client, id: string) {
 }
 
 /** Ajoute le code de vérification signé (contenu du QR imprimé sur la facture). */
-async function avecCode<T extends { numero: string; date: string; totalTtc: number; devise: string }>(ctx: Ctx, deps: Dependances, f: T) {
+export async function avecCode<T extends { numero: string; date: string; totalTtc: number; devise: string }>(ctx: Ctx, deps: Dependances, f: T) {
   const { rows: [e] } = await ctx.c.query("SELECT company_code FROM companies WHERE id = $1", [ctx.entrepriseId]);
   return { ...f, codeVerification: await codeVerification(ctx.c, deps.cfg.cleChiffrement,
     { codeEntreprise: e.company_code, numero: f.numero, date: f.date, totalTtc: f.totalTtc, devise: f.devise }) };
 }
 
-const quantiteTexte = (q: number) => q.toLocaleString("fr-FR", { maximumFractionDigits: 3 }).replace(/[  ]/g, " ");
+export const quantiteTexte = (q: number) => q.toLocaleString("fr-FR", { maximumFractionDigits: 3 }).replace(/[  ]/g, " ");
 
 export function routesVentes(app: FastifyInstance, deps: Dependances) {
   /* ------------------------------------------------------------ Paramètres fiscaux */
@@ -103,18 +118,18 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     if (q.du && /^\d{4}-\d{2}-\d{2}$/.test(q.du)) aj("i.invoice_date >= ?::date", q.du);
     if (q.au && /^\d{4}-\d{2}-\d{2}$/.test(q.au)) aj("i.invoice_date <= ?::date", q.au);
     const paye = "coalesce((SELECT sum(CASE WHEN m.direction = 'in' THEN m.amount ELSE -m.amount END) FROM treasury_movements m WHERE m.invoice_id = i.id), 0)";
-    if (q.statut === "payee") f.push(`${paye} >= i.total_ttc`);
-    if (q.statut === "impayee") f.push(`${paye} < i.total_ttc`);
+    if (q.statut === "payee") f.push(`${paye} + ${SQL_AVOIRS} >= i.total_ttc`);
+    if (q.statut === "impayee") f.push(`${paye} + ${SQL_AVOIRS} < i.total_ttc`);
     const where = "WHERE " + f.join(" AND ");
-    const { rows: [t] } = await ctx.c.query(`SELECT count(*)::int AS total, coalesce(sum(i.total_ttc), 0) AS ttc, coalesce(sum(i.total_ttc - ${paye}), 0) AS reste FROM invoices i ${where}`, v);
+    const { rows: [t] } = await ctx.c.query(`SELECT count(*)::int AS total, coalesce(sum(i.total_ttc), 0) AS ttc, coalesce(sum(i.total_ttc - ${SQL_AVOIRS} - ${paye}), 0) AS reste FROM invoices i ${where}`, v);
     const { rows } = await ctx.c.query(
-      `SELECT i.id, i.number, i.invoice_date::text AS date, i.kind, i.customer_name, i.total_ht, i.total_tax, i.total_ttc, i.payment_mode, i.created_at, ${paye} AS paye, u.full_name AS auteur
+      `SELECT i.id, i.number, i.invoice_date::text AS date, i.kind, i.customer_name, i.total_ht, i.total_tax, i.total_ttc, i.payment_mode, i.created_at, ${paye} AS paye, ${SQL_AVOIRS} AS avoirs, u.full_name AS auteur
          FROM invoices i JOIN app_users u ON u.id = i.created_by ${where} ORDER BY i.invoice_year DESC, i.sequence_no DESC LIMIT ${taille} OFFSET ${offset}`, v);
     return {
       elements: rows.map((r) => {
-        const ttc = versEntier(r.total_ttc), p = versEntier(r.paye);
+        const ttc = versEntier(r.total_ttc), p = versEntier(r.paye), av = versEntier(r.avoirs);
         return { id: r.id, numero: r.number, date: r.date, type: r.kind, client: r.customer_name, totalHt: versEntier(r.total_ht), totalTva: versEntier(r.total_tax),
-          totalTtc: ttc, paye: p, reste: ttc - p, statutPaiement: p >= ttc ? "payee" : p > 0 ? "partielle" : "impayee", paiement: r.payment_mode === "immediate" ? "comptant" : "credit", auteur: r.auteur, creeLe: r.created_at };
+          totalTtc: ttc, paye: p, totalAvoirs: av, reste: ttc - av - p, statutPaiement: statutPaiement(ttc, av, p), paiement: r.payment_mode === "immediate" ? "comptant" : "credit", auteur: r.auteur, creeLe: r.created_at };
       }),
       total: t.total, totalTtc: versEntier(t.ttc), totalReste: versEntier(t.reste), page, taille,
     };
@@ -136,14 +151,23 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     const s = await verifierSignature(ctx.c, deps.cfg.cleChiffrement, e.company_code, d.contenu);
     let reponse: Record<string, unknown>;
     if (!s.authentique) reponse = { authentique: false, raison: s.raison };
-    else {
+    else if (s.numero!.startsWith("AV-")) {
+      // Avoir : même principe que la facture.
+      const { rows: [a] } = await ctx.c.query(
+        `SELECT a.id, a.number, a.credit_date::text AS date, a.total_ttc, a.currency, a.created_at, i.number AS facture, i.customer_name, u.full_name AS auteur
+           FROM credit_notes a JOIN invoices i ON i.id = a.invoice_id JOIN app_users u ON u.id = a.created_by WHERE a.number = $1`, [s.numero]);
+      if (!a) reponse = { authentique: false, raison: `Signature valide, mais l'avoir ${s.numero} est absent de la base : vérifiez que vous êtes dans la bonne entreprise et que la base n'a pas été restaurée à une date antérieure.` };
+      else if (a.date !== s.donnees!.date || versEntier(a.total_ttc) !== s.donnees!.totalTtc || a.currency !== s.donnees!.devise)
+        reponse = { authentique: false, raison: `L'avoir ${s.numero} existe, mais sa date ou son montant ne correspondent pas au code.` };
+      else reponse = { authentique: true, avoir: { id: a.id, numero: a.number, date: a.date, facture: a.facture, client: a.customer_name, totalTtc: versEntier(a.total_ttc), devise: a.currency, auteur: a.auteur, creeLe: a.created_at } };
+    } else {
       const { rows: [i] } = await ctx.c.query("SELECT id, invoice_date::text AS date, total_ttc, currency FROM invoices WHERE number = $1", [s.numero]);
       if (!i) reponse = { authentique: false, raison: `Signature valide, mais la facture ${s.numero} est absente de la base : vérifiez que vous êtes dans la bonne entreprise et que la base n'a pas été restaurée à une date antérieure.` };
       else if (i.date !== s.donnees!.date || versEntier(i.total_ttc) !== s.donnees!.totalTtc || i.currency !== s.donnees!.devise)
         reponse = { authentique: false, raison: `La facture ${s.numero} existe, mais sa date ou son montant ne correspondent pas au code.` };
       else {
         const f = (await chargerFacture(ctx.c, i.id))!;
-        reponse = { authentique: true, facture: { id: f.id, numero: f.numero, date: f.date, client: f.client.nom, totalTtc: f.totalTtc, devise: f.devise, statutPaiement: f.statutPaiement, auteur: f.auteur, creeLe: f.creeLe } };
+        reponse = { authentique: true, facture: { id: f.id, numero: f.numero, date: f.date, client: f.client.nom, totalTtc: f.totalTtc, totalAvoirs: f.totalAvoirs, devise: f.devise, statutPaiement: f.statutPaiement, auteur: f.auteur, creeLe: f.creeLe } };
       }
     }
     await ctx.journaliser({ type: "sales", action: "invoice_verify", resultat: reponse.authentique ? "success" : "failure",

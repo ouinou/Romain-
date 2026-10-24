@@ -127,10 +127,14 @@ Lecture : `treasury.read` (tous les comptes) ou `cash.read` (seulement les caiss
 | PATCH | `/parametres` | accounting.admin + confirmation | Aucun taux n'est codé en dur : il se saisit ici. |
 | GET / POST | `/clients` | sales.read / sales.create | `{ nom, niu?, telephone?, email?, adresse? }`. |
 | GET | `/factures` | sales.read | Filtres `recherche`, `statut` (payee, impayee), `du`, `au` ; totaux TTC et reste dû. |
-| GET | `/factures/:id` | sales.read | Facture figée : vendeur, client, lignes, totaux, règlements, écriture. |
+| GET | `/factures/:id` | sales.read | Facture figée : vendeur, client, lignes (avec quantité déjà créditée), totaux, avoirs, règlements, écriture. `reste` = TTC − avoirs − règlements nets ; `statutPaiement` vaut `annulee` quand les avoirs couvrent toute la facture. |
 | POST | `/factures` | sales.create | `{ date, client: { id? \| nom, niu?, telephone?, adresse?, enregistrer? }, lignes: [{ designation, quantite, prixUnitaire, nature: marchandise\|service }], paiement: { mode: comptant, compteTresorerieId } \| { mode: credit }, note? }`. Numéro `FAC-AAAA-NNNNN` continu. Écriture de vente VT en brouillard ; si comptant, encaissement et écriture de règlement. |
-| POST | `/verification` | sales.read | `{ contenu }` : texte du code QR. Réponse `{ authentique, raison? , facture? }`. Tracée. |
+| POST | `/verification` | sales.read | `{ contenu }` : texte du code QR. Réponse `{ authentique, raison?, facture? \| avoir? }`. Tracée. |
 | GET | `/factures/:id/pdf` | sales.read | PDF A4 avec montant en lettres. Chaque génération est tracée. Affichable dans un cadre de la même origine (impression directe). |
+| POST | `/factures/:id/avoirs` | sales.cancel + confirmation | `{ date, motif, lignes: [{ ordre, quantite }], rembourser?: { compteTresorerieId } }`. Numéro `AV-AAAA-NNNNN`. Refus `trop_credite` au-delà du restant, `rien_a_rembourser` sans trop-perçu. Écriture VT inverse en brouillard ; si remboursement, mouvement `credit_refund` et écriture 411 / trésorerie. |
+| GET | `/avoirs` | sales.read | Filtres `recherche` (avoir, facture ou client), `du`, `au` ; total TTC. |
+| GET | `/avoirs/:id` | sales.read | Avoir figé : facture citée, lignes, totaux, remboursement, écriture, `codeVerification`. |
+| GET | `/avoirs/:id/pdf` | sales.read | PDF « AVOIR », même mise en page que la facture. Tracé. |
 
 Chaque facture renvoyée par `GET /factures/:id` porte `codeVerification` : `GC1;<code entreprise>;<numéro>;<date>;<TTC>;<devise>;<signature Ed25519>`, imprimé en QR sur le PDF.
 
@@ -140,4 +144,4 @@ Chaque facture renvoyée par `GET /factures/:id` porte `codeVerification` : `GC1
 
 | Méthode | Route | Permission | Remarques |
 |---|---|---|---|
-| GET | `/api/tableau-de-bord/evolution?mois=6` | sales.read et/ou treasury.read ou cash.read | `{ mois: ["AAAA-MM"…], ventes: number[] \| null, encaissements: number[] \| null }`. Ventes TTC par mois de facture ; encaissements clients et autres recettes, nets de leurs annulations, transferts exclus, limités aux caisses du caissier. 2 à 24 mois. |
+| GET | `/api/tableau-de-bord/evolution?mois=6` | sales.read et/ou treasury.read ou cash.read | `{ mois: ["AAAA-MM"…], ventes: number[] \| null, encaissements: number[] \| null }`. Ventes TTC par mois de facture, moins les avoirs du mois de l'avoir ; encaissements clients et autres recettes, nets de leurs annulations et des remboursements d'avoirs, transferts exclus, limités aux caisses du caissier. 2 à 24 mois. |

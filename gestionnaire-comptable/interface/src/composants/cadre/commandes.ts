@@ -29,6 +29,7 @@ export const MODULES: Module[] = [
   { id: "ventes", libelle: "Ventes", icone: "ventes", entrees: [
     { chemin: "/ventes/nouvelle", libelle: "Nouvelle vente", permission: "sales.create" },
     { chemin: "/ventes", libelle: "Ventes et factures", permission: "sales.read" },
+    { chemin: "/ventes/avoirs", libelle: "Avoirs", permission: "sales.read" },
     { chemin: "/ventes/direct", libelle: "Ventes en direct", permission: "sales.read" },
     { chemin: "/ventes/verifier", libelle: "Vérifier une facture", permission: "sales.read" },
     { chemin: "/ventes/clients", libelle: "Clients", permission: "sales.read" },
@@ -97,7 +98,7 @@ export const RUBAN: Record<string, Groupe[]> = {
   ventes: [
     { nom: "Nouveau", commandes: [NOUVELLE_FACTURE, NOUVEAU_CLIENT] },
     { nom: "Suivi", commandes: [
-      c("factures", "Factures", "ecritures", "/ventes", "sales.read"), DIRECT,
+      c("factures", "Factures", "ecritures", "/ventes", "sales.read"), c("avoirs", "Avoirs", "avoir", "/ventes/avoirs", "sales.read"), DIRECT,
       c("clients", "Clients", "clients", "/ventes/clients", "sales.read"),
     ] },
     { nom: "Encaissement", commandes: [REGLEMENT] },
