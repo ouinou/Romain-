@@ -31,7 +31,7 @@ export function FicheUtilisateur({ id }: { id: string }) {
       <div className="entete-page">
         <div className="personne">
           <div className="avatar" aria-hidden="true" style={{ width: 46, height: 46, fontSize: 15 }}>{initiales(util.nom)}</div>
-          <div><h2>{util.nom}</h2><p>{util.email}</p></div>
+          <div><h2>{util.nom}</h2><p className="infos">{util.email}</p></div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {a("users.update") && <button className="btn" onClick={() => setAction("modifier")}>Modifier</button>}

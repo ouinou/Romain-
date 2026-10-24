@@ -31,7 +31,15 @@ async function nouvellePage(largeur = 1366, hauteur = 860) {
 }
 
 /** Lien du menu principal (évite les liens homonymes dans la page). */
-const menu = (page, nom) => page.getByRole("navigation").getByRole("link", { name: nom, exact: true });
+// Les groupes du menu latéral se replient : includeHidden permet de vérifier qu'une entrée existe (droits),
+// et ouvrir() déplie son groupe si besoin avant de cliquer.
+const nav = (page) => page.getByRole("navigation", { name: "Navigation principale" });
+const menu = (page, nom) => nav(page).getByRole("link", { name: nom, exact: true, includeHidden: true });
+async function ouvrir(page, nom) {
+  const lien = menu(page, nom);
+  if (!(await lien.isVisible())) await nav(page).getByRole("button", { name: await lien.getAttribute("data-groupe"), exact: true }).click();
+  await lien.click();
+}
 
 async function connexion(page, email, mdp = MDP) {
   await page.goto(URL_BASE + "/");
@@ -60,7 +68,7 @@ try {
     etape("connexion et tableau de bord");
   }
 
-  await menu(p, "Utilisateurs").click();
+  await ouvrir(p, "Utilisateurs");
   await p.getByRole("cell", { name: /Paul Ngaro/ }).waitFor();
   await capture(p, "utilisateurs");
   await p.getByPlaceholder("Rechercher un nom ou un e-mail…").fill("amina");
@@ -83,7 +91,7 @@ try {
   etape("désactivation avec motif et confirmation par mot de passe");
 
   // Création d'un compte avec rôle → code d'invitation affiché une fois
-  await menu(p, "Utilisateurs").click();
+  await ouvrir(p, "Utilisateurs");
   await p.getByRole("button", { name: "+ Ajouter un utilisateur" }).click();
   await p.getByLabel("Nom complet").fill("Brigitte Essomba");
   await p.getByLabel("Adresse e-mail professionnelle").fill("brigitte.essomba@demo.cm");
@@ -97,7 +105,7 @@ try {
   etape("création d'un compte et code d'invitation");
 
   // Rôle personnalisé copié du Caissier, puis modification de la grille
-  await menu(p, "Rôles et permissions").click();
+  await ouvrir(p, "Rôles et permissions");
   await p.getByRole("cell", { name: /Comptable/ }).first().waitFor();
   await capture(p, "roles");
   await p.getByRole("button", { name: "+ Créer un rôle" }).click();
@@ -115,7 +123,7 @@ try {
   etape("rôle personnalisé et grille module × action");
 
   // Journal : intégrité + détail d'un événement
-  await menu(p, "Journal d'audit").click();
+  await ouvrir(p, "Journal d'audit");
   await p.locator("tbody tr").first().waitFor();
   await p.getByRole("button", { name: "Vérifier l'intégrité" }).click();
   await p.getByText(/Journal intègre/).waitFor();
@@ -124,7 +132,7 @@ try {
   await capture(p, "journal");
   etape("journal : intégrité vérifiée, détail avant/après");
 
-  await menu(p, "Entreprise").click();
+  await ouvrir(p, "Entreprise");
   await p.getByLabel("Raison sociale").waitFor();
   await capture(p, "entreprise");
   etape("page entreprise");
@@ -141,7 +149,7 @@ try {
   await dessin.context().close();
   await p.getByLabel("Fichier du logo (PNG ou JPEG)").setInputFiles(fichierLogo);
   await p.getByText(/Logo enregistré/).waitFor();
-  await p.locator(".laterale img.logo-entreprise").waitFor();
+  await p.locator(".barre-titre img.logo-entreprise").waitFor();
   await p.getByLabel("Couleur principale").fill("#0b5d3b");
   await p.getByLabel("Couleur d'accent").fill("#f2c200");
   await p.getByRole("button", { name: "Enregistrer les couleurs" }).click();
@@ -156,6 +164,7 @@ try {
   await m.getByRole("heading", { name: /Bonjour/ }).waitFor();
   await capture(m, "mobile-tableau-de-bord");
   await m.getByRole("button", { name: "Ouvrir le menu" }).click();
+  await nav(m).getByRole("button", { name: "Administration", exact: true }).click();
   await menu(m, "Utilisateurs").waitFor({ state: "visible" });
   await m.screenshot({ path: `${DOSSIER}/${String(++n).padStart(2, "0")}-mobile-menu.png` });
   const debord = await m.evaluate(() => document.documentElement.scrollWidth - innerWidth);
@@ -191,7 +200,7 @@ try {
   etape("activation d'un compte par invitation puis connexion");
 
   // Le refus côté caissière est bien tracé (vu par l'administratrice)
-  await menu(p, "Journal d'audit").click();
+  await ouvrir(p, "Journal d'audit");
   await p.getByLabel("Résultat").selectOption({ label: "Refusé" });
   await p.getByRole("cell", { name: /Accès refusé/ }).first().waitFor();
   etape("le refus d'accès de la caissière apparaît dans le journal");
@@ -202,14 +211,14 @@ try {
   // Comptable : saisie d'un brouillard, d'abord déséquilibré, puis corrigé ; pas de bouton Valider.
   const k = await nouvellePage();
   await connexion(k, "paul.ngaro@demo.cm");
-  await menu(k, "Tableau comptable").click();
+  await ouvrir(k, "Tableau comptable");
   await k.getByRole("heading", { name: "Comptabilité générale" }).waitFor();
   await capture(k, "comptabilite-tableau");
-  await menu(k, "Balance générale").click();
+  await ouvrir(k, "Balance générale");
   await k.getByText("Balance partielle.").waitFor();
   etape("comptable : balance partielle (banque masquée)");
-  await menu(k, "Écritures").click();
-  await k.getByRole("button", { name: "+ Nouvelle écriture" }).click();
+  await ouvrir(k, "Écritures");
+  await k.getByRole("toolbar", { name: "Actions sur les écritures" }).getByRole("button", { name: "Nouvelle écriture" }).click();
   await k.getByLabel("Journal *").selectOption({ label: "AC · Achats" });
   await k.getByLabel("Référence de la pièce").fill("FAC-TEST-001");
   await k.getByLabel("Libellé *", { exact: true }).fill("Achat de cartouches d'encre");
@@ -245,7 +254,7 @@ try {
   await f.getByText(/Extourne de l'écriture/).waitFor();
   etape("DAF : extourne motivée, liée à l'écriture d'origine");
 
-  await menu(f, "Balance générale").click();
+  await ouvrir(f, "Balance générale");
   await f.getByText(/Balance équilibrée/).waitFor();
   await f.getByText(/Résultat de la période/).waitFor();
   await capture(f, "comptabilite-balance");
@@ -254,7 +263,7 @@ try {
   await f.getByText(/605 · Autres achats/).waitFor();
   await capture(f, "comptabilite-grand-livre");
   etape("DAF : balance complète équilibrée avec résultat, grand livre du compte 605");
-  await menu(f, "Plan comptable").click();
+  await ouvrir(f, "Plan comptable");
   await f.getByRole("cell", { name: "Autres achats" }).first().waitFor();
   await capture(f, "comptabilite-plan");
   const debordCompta = await f.evaluate(() => document.documentElement.scrollWidth - innerWidth);
@@ -266,14 +275,20 @@ try {
   await connexion(v, "amina.mahamat@demo.cm");
   await v.getByRole("heading", { name: /Bonjour Amina/ }).waitFor();
   assert.equal(await menu(v, "Tableau comptable").count(), 0, "la caissière n'a pas accès à la comptabilité");
-  await menu(v, "Caisses et banques").click();
+  await ouvrir(v, "Caisses et banques");
   await v.getByText("Caisse principale").first().waitFor();
   assert.equal(await v.getByText("Banque fictive").count(), 0, "la caissière ne voit que sa caisse");
   etape("caissière : seulement sa caisse (fonds initial 100 000)");
+  // Ruban : les commandes interdites au profil n'apparaissent pas.
+  await v.getByRole("tab", { name: "Comptabilité" }).click();
+  await v.getByText("Aucune commande disponible avec vos droits dans cet onglet.").waitFor();
+  await v.getByRole("tab", { name: "Ventes" }).click();
+  assert.equal(await v.getByRole("toolbar", { name: "Commandes" }).getByRole("link", { name: /Nouvelle facture/ }).count(), 1);
+  etape("caissière : ruban limité à ses droits (aucune commande comptable)");
   // Le DAF suit les ventes en direct pendant que la caissière vend.
-  await menu(f, "Ventes en direct").click();
+  await ouvrir(f, "Ventes en direct");
   await f.getByText(/En direct · mis à jour/).waitFor();
-  await menu(v, "Nouvelle vente").click();
+  await ouvrir(v, "Nouvelle vente");
   await v.getByLabel("Client").fill("Établissements Fictifs Mbarga");
   await v.getByLabel("Désignation de la ligne 1").fill("Cartouche d'encre");
   await v.getByLabel("Quantité de la ligne 1").fill("3");
@@ -295,7 +310,7 @@ try {
   await capture(f, "ventes-direct");
   etape("DAF : la facture apparaît d'elle-même dans « Ventes en direct »");
   const codeQr = await v.evaluate(async () => (await (await fetch("/api" + location.hash.slice(1).split("?")[0])).json()).codeVerification);
-  await menu(f, "Vérifier une facture").click();
+  await ouvrir(f, "Vérifier une facture");
   await f.getByLabel("Code de la facture").fill(codeQr);
   await f.getByRole("button", { name: "Vérifier", exact: true }).click();
   await f.getByText("✓ Facture authentique").waitFor();
@@ -309,7 +324,7 @@ try {
   await v.getByRole("button", { name: /Imprimer la facture/ }).click();
   await v.locator("#cadre-impression").waitFor({ state: "attached" });
   etape("caissière : vente comptant, TVA 19,25 %, facture n° 1 en lettres, PDF imprimable");
-  await menu(v, "Caisses et banques").click();
+  await ouvrir(v, "Caisses et banques");
   await v.getByRole("button", { name: "− Dépense" }).click();
   await v.getByLabel("Catégorie").selectOption({ label: "Fournitures et petits achats" });
   await v.getByLabel("Montant").fill("5000");
@@ -320,14 +335,32 @@ try {
   etape("caissière : dépense ; solde de caisse 160 588 FCFA");
 
   // DAF : validation par lots des écritures générées ; la sienne (fonds de caisse) est refusée.
-  await menu(f, "Écritures").click();
+  await ouvrir(f, "Écritures");
   await f.getByLabel("Origine").selectOption({ label: "Ventes et trésorerie" });
-  await f.getByLabel("État").selectOption({ label: "Brouillards" });
+  await f.getByLabel("État", { exact: true }).selectOption({ label: "Brouillards" });
   await f.getByRole("button", { name: /Tout sélectionner/ }).click();
   await f.getByRole("button", { name: /Valider la sélection/ }).click();
   await f.getByRole("dialog").getByRole("button", { name: "Valider" }).click();
   await f.getByText(/écriture\(s\) validée\(s\), 1 refusée\(s\) : Séparation des tâches/).waitFor();
   etape("DAF : validation par lots ; son propre fonds de caisse refusé (séparation des tâches)");
+  // Ruban, raccourcis clavier, recherche et barre d'état.
+  await f.getByRole("tab", { name: "Trésorerie" }).click();
+  await f.getByRole("toolbar", { name: "Commandes" }).getByRole("link", { name: /Dépense/ }).click();
+  await f.getByRole("dialog").getByLabel("Montant").waitFor();
+  await f.getByRole("dialog").getByRole("button", { name: "Annuler" }).click();
+  await f.keyboard.press("Alt+b");
+  await f.getByRole("heading", { name: "Balance générale" }).waitFor();
+  await f.keyboard.press("Control+f");
+  await f.keyboard.type(`FAC-${new Date().getFullYear()}`);
+  await f.keyboard.press("Enter");
+  await f.getByRole("heading", { name: "Ventes et factures" }).waitFor();
+  await f.getByRole("cell", { name: new RegExp(`FAC-${new Date().getFullYear()}-00001`) }).first().waitFor();
+  await f.getByRole("contentinfo", { name: "Barre d'état" }).getByText("Connecté au serveur").waitFor();
+  await f.getByRole("button", { name: "Fichier" }).click();
+  await f.getByRole("dialog", { name: "Menu Fichier" }).getByRole("button", { name: "Raccourcis clavier" }).click();
+  await f.getByRole("cell", { name: "Alt+B" }).waitFor();
+  await f.keyboard.press("Escape");
+  etape("DAF : commande du ruban, raccourci Alt+B, recherche Ctrl+F, menu Fichier, barre d'état");
 
   // Déconnexion
   await p.getByRole("button", { name: "Déconnexion" }).click();

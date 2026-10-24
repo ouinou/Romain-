@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, qs } from "../../api";
 import { useSession } from "../../session";
-import { aller } from "../../routeur";
+import { aller, effacerParametres, useParametres } from "../../routeur";
 import { Chargement, Pagination, useDonnees, useRetarde } from "../../composants/ui";
 import { Montant, dateFr } from "../comptabilite/commun";
 import { BadgePaiement, type FactureResume } from "./commun";
@@ -13,6 +13,9 @@ export function Ventes() {
   const [du, setDu] = useState("");
   const [au, setAu] = useState("");
   const [page, setPage] = useState(1);
+  // Recherche globale (Ctrl+F) : #/ventes?recherche=FAC-…
+  const params = useParametres();
+  useEffect(() => { const r = params.get("recherche") ?? params.get("client"); if (r !== null) { setRecherche(r); setPage(1); effacerParametres(); } }, [params]);
   const rech = useRetarde(recherche);
   const liste = useDonnees(() => api.get<{ elements: FactureResume[]; total: number; totalTtc: number; totalReste: number; page: number; taille: number }>(
     `/api/ventes/factures${qs({ recherche: rech, statut, du, au, page, taille: 25 })}`), [rech, statut, du, au, page]);

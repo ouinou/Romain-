@@ -35,7 +35,7 @@ export function FicheRole({ id }: { id: string }) {
     <>
       <div><a href="#/roles" className="btn-lien">← Tous les rôles</a></div>
       <div className="entete-page">
-        <div><h2>{r.libelle}</h2><p>{r.description ?? "Sans description"} · {r.utilisateurs} utilisateur(s){r.mfaRequise ? " · double authentification exigée" : ""}</p></div>
+        <div><h2>{r.libelle}</h2><p className="infos">{r.description ?? "Sans description"} · {r.utilisateurs} utilisateur(s){r.mfaRequise ? " · double authentification exigée" : ""}</p></div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {a("roles.create") && <button className="btn" onClick={() => setCopier(true)}>Créer un rôle à partir de celui-ci</button>}
           {!r.systeme && !r.archiveLe && a("roles.archive") && <button className="btn btn-danger" onClick={() => setArchiver(true)}>Archiver</button>}

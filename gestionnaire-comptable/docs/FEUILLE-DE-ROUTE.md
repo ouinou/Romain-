@@ -60,6 +60,15 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [ ] Setup à éprouver sur un vrai Windows 10/11 et Windows Server (construit et vérifié sous Linux seulement)
 - [ ] Signature numérique du setup (certificat de signature de code à acquérir)
 
+## Fait (v0.1, étape 11 : interface de logiciel de bureau)
+
+- [x] Barre de titre, accès rapide avec recherche (Ctrl+F), ruban à onglets et groupes, menu Fichier, menu latéral par module
+- [x] Onglets des documents ouverts, panneau de détail (écritures), barre d'état avec connexion, brouillards, somme sélectionnée et zoom
+- [x] Palette de la charte : fond blanc, texte noir, bleu nuit pour la structure, orange pour les actions ; grilles bordées, montants négatifs en rouge
+- [x] Tableau de bord : synthèse du jour, trésorerie par compte, documents récents (données réelles, selon les droits)
+- [x] Raccourcis clavier, navigation au clavier dans les tableaux, impression sans le cadre du logiciel
+- [x] Parcours navigateur de 27 étapes, test de la démonstration
+
 ## À faire ensuite
 
 **Ventes et trésorerie (suite).** Avoirs (correction d'une facture émise), rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.

@@ -25,26 +25,23 @@ export function assombrirPour(h: string, fond: string, cible: number) {
   for (let i = 0; i < 60 && contraste(c, fond) < cible; i++) c = melange(c, "#000000", 0.06);
   return c;
 }
-/** Éclaircit la couleur jusqu'à atteindre le contraste voulu face à `fond` (accents sur la barre latérale). */
-function eclaircirPour(h: string, fond: string, cible: number) {
-  let c = h;
-  for (let i = 0; i < 60 && contraste(c, fond) < cible; i++) c = melange(c, "#ffffff", 0.06);
-  return c;
-}
 
 export function variables(c: Couleurs): Record<string, string> {
-  const marine = assombrirPour(c.principale, "#ffffff", 9);   // fond de la barre latérale : texte clair très lisible
-  const bouton = assombrirPour(c.accent, "#ffffff", 4.6);       // bouton principal à texte blanc
+  // Structure (barre de titre, menu latéral, barre d'état) : couleur principale, assez foncée pour du texte blanc.
+  const marine = assombrirPour(c.principale, "#ffffff", 9);
+  // Accent : gardé tel quel en fond (boutons, sélection) avec le texte le plus lisible dessus (bleu nuit, noir ou blanc).
+  const accent = c.accent;
+  const surAccent = [marine, "#000000", "#ffffff"].sort((x, y) => contraste(y, accent) - contraste(x, accent))[0];
   return {
     "--marine": marine,
-    "--marine-2": melange(marine, "#ffffff", 0.08),
-    "--marine-3": melange(marine, "#ffffff", 0.15),
+    "--marine-2": melange(marine, "#ffffff", 0.07),
+    "--marine-3": melange(marine, "#ffffff", 0.14),
     "--marine-fin": melange(marine, "#000000", 0.3),
-    "--bleu": bouton,
-    "--bleu-fonce": melange(bouton, "#000000", 0.14),
-    "--cyan": eclaircirPour(c.accent, marine, 3),                 // repères et focus, visibles sur la barre
-    "--lien": assombrirPour(c.accent, "#f3f5f8", 4.6),
-    "--orange-doux": melange(c.accent, "#ffffff", 0.9),
+    "--accent": accent,
+    "--accent-texte": surAccent,
+    "--accent-fonce": melange(accent, "#000000", 0.12),
+    "--accent-doux": melange(accent, "#ffffff", 0.9),
+    "--lien": assombrirPour(accent, "#ffffff", 4.6),   // l'accent utilisé comme texte sur fond blanc
   };
 }
 

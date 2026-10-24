@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { effacerParametres, useParametres } from "../../routeur";
 import { api, qs } from "../../api";
 import { useSession } from "../../session";
 import { Chargement, Pagination, dateHeure, useDonnees, useRetarde, useToast } from "../../composants/ui";
@@ -17,6 +18,9 @@ export function Mouvements() {
   const [au, setAu] = useState("");
   const [recherche, setRecherche] = useState("");
   const [page, setPage] = useState(1);
+  // Recherche globale (Ctrl+F) : #/tresorerie/mouvements?recherche=MVT-…
+  const params = useParametres();
+  useEffect(() => { const r = params.get("recherche"); if (r !== null) { setRecherche(r); setPage(1); effacerParametres(); } }, [params]);
   const rech = useRetarde(recherche);
   const liste = useDonnees(() => api.get<Page<Mouvement>>(`/api/tresorerie/mouvements${qs({ compte, sens, du, au, recherche: rech, page, taille: 25 })}`), [compte, sens, du, au, rech, page]);
   const choisi = comptes.donnees?.find((c) => c.id === compte);
@@ -57,7 +61,7 @@ export function FicheMouvement({ id }: { id: string }) {
     <>
       <div><a href="#/tresorerie/mouvements" className="btn-lien">← Tous les mouvements</a></div>
       <div className="entete-page">
-        <div><h2>{NATURES[x.nature] ?? x.nature} {x.reference}</h2><p>{x.libelle} · {x.compte.nom} · {dateFr(x.date)}</p></div>
+        <div><h2>{NATURES[x.nature] ?? x.nature} {x.reference}</h2><p className="infos">{x.libelle} · {x.compte.nom} · {dateFr(x.date)}</p></div>
         {a("treasury.cancel") && !x.annuleePar && x.nature !== "reversal" && <button className="btn btn-danger" onClick={() => setAnnuler(true)}>Annuler ce mouvement</button>}
       </div>
       {x.annuleePar && <div className="alerte alerte-attention">Ce mouvement a été annulé (<a href={`#/tresorerie/mouvements/${x.annuleePar}`}>voir l'annulation</a>).</div>}

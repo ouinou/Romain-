@@ -31,7 +31,7 @@ export function MonCompte() {
 
   return (
     <>
-      <div className="entete-page"><div><h2>Mon compte</h2><p>{moi.utilisateur.nom} · {moi.utilisateur.email}</p></div></div>
+      <div className="entete-page"><div><h2>Mon compte</h2><p className="infos">{moi.utilisateur.nom} · {moi.utilisateur.email}</p></div></div>
       <div className="deux">
         <section className="panneau">
           <div className="entete-panneau"><div><h3>Changer mon mot de passe</h3><p>Vos autres sessions seront fermées</p></div></div>
@@ -44,7 +44,7 @@ export function MonCompte() {
           </form>
         </section>
         <section className="panneau">
-          <div className="entete-panneau"><div><h3>Mes rôles et droits</h3><p>{moi.permissions.length} permission(s)</p></div></div>
+          <div className="entete-panneau"><div><h3>Mes rôles et droits</h3><p className="infos">{moi.permissions.length} permission(s)</p></div></div>
           <div>{moi.roles.length ? moi.roles.map((r) => <span key={r.id} className="etiquette-role">{r.libelle}</span>) : <span className="discret">Aucun rôle</span>}</div>
           <h3 style={{ marginTop: 16 }}>Double authentification</h3>
           <p style={{ margin: "6px 0 10px" }}>{moi.mfa.active ? <span className="badge badge-vert">Activée</span> : <span className="badge badge-orange">Non activée</span>}{moi.mfa.requise && " · exigée par l'un de vos rôles"}</p>

@@ -54,7 +54,7 @@ export async function appel<T = any>(methode: string, url: string, corps?: unkno
     if (await demanderConfirmation()) return appel<T>(methode, url, corps, 1);
     throw new ApiErreur(403, "annulee", "Opération annulée.");
   }
-  if (r.status === 401 && ["session_invalide", "non_authentifie"].includes(err.code) && !url.startsWith("/api/auth/connexion"))
+  if (r.status === 401 && ["session_invalide", "non_authentifie"].includes(err.code) && !url.startsWith("/api/auth/connexion") && !url.startsWith("/api/auth/moi"))
     sessionPerdue?.(err.message);
   throw err;
 }

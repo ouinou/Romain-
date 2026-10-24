@@ -46,7 +46,7 @@ export function FicheFacture({ id }: { id: string }) {
     <>
       <div><a href="#/ventes" className="btn-lien">← Ventes et factures</a></div>
       <div className="entete-page">
-        <div><h2>Facture {x.numero}</h2><p>{x.client.nom} · {dateFr(x.date)} · <BadgePaiement s={x.statutPaiement} /></p></div>
+        <div><h2>Facture {x.numero}</h2><p className="infos">{x.client.nom} · {dateFr(x.date)} · <BadgePaiement s={x.statutPaiement} /></p></div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="btn btn-principal" onClick={imprimer}>🖨 Imprimer la facture</button>
           {!__DEMO__ && <a className="btn" href={urlPdf} target="_blank" rel="noopener">Ouvrir le PDF</a>}

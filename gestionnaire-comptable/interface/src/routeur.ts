@@ -16,3 +16,21 @@ export function useRoute() {
 }
 
 export const aller = (chemin: string) => { location.hash = chemin; };
+
+/** Paramètres du fragment (#/tresorerie?action=entree), relus à chaque changement d'adresse. */
+export function useParametres() {
+  const lire = () => new URLSearchParams(location.hash.split("?")[1] ?? "");
+  const [p, setP] = useState(lire);
+  useEffect(() => {
+    const f = () => setP(lire());
+    addEventListener("hashchange", f);
+    return () => removeEventListener("hashchange", f);
+  }, []);
+  return p;
+}
+
+/** Retire les paramètres du fragment sans recharger l'écran (une commande du ruban ne se rejoue pas au retour). */
+export const effacerParametres = () => {
+  const [chemin] = location.hash.split("?");
+  history.replaceState(null, "", chemin || "#/");
+};

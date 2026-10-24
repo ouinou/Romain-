@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiErreur, surConfirmationRequise, surSessionPerdue } from "./api";
-import type { Moi, Notification } from "./types";
+import type { Moi } from "./types";
 import { SessionCtx, useSession, type Session } from "./session";
 import { useRoute } from "./routeur";
-import { Chargement, dateHeure, initiales, useToast } from "./composants/ui";
+import { Chargement } from "./composants/ui";
 import { FenetreReauthentification } from "./composants/Confirmations";
 import { Accueil } from "./pages/Accueil";
 import { ConfigurationMfa } from "./pages/ConfigurationMfa";
@@ -33,36 +33,9 @@ import { Clients } from "./pages/ventes/Clients";
 import { JournalDirect } from "./pages/ventes/JournalDirect";
 import { VerifierFacture } from "./pages/ventes/VerifierFacture";
 import { appliquerCouleurs, chargerApparence, EVENEMENT_APPARENCE, type Apparence } from "./theme";
-
-interface EntreeNav { chemin: string; libelle: string; icone: string; permission?: string | string[] }
-const NAV: { titre: string; entrees: EntreeNav[] }[] = [
-  { titre: "Pilotage", entrees: [{ chemin: "/", libelle: "Tableau de bord", icone: "▦" }] },
-  { titre: "Ventes et trésorerie", entrees: [
-    { chemin: "/ventes/nouvelle", libelle: "Nouvelle vente", icone: "＋", permission: "sales.create" },
-    { chemin: "/ventes", libelle: "Ventes et factures", icone: "▧", permission: "sales.read" },
-    { chemin: "/ventes/direct", libelle: "Ventes en direct", icone: "◉", permission: "sales.read" },
-    { chemin: "/ventes/verifier", libelle: "Vérifier une facture", icone: "✓", permission: "sales.read" },
-    { chemin: "/tresorerie", libelle: "Caisses et banques", icone: "◫", permission: ["treasury.read", "cash.read"] },
-    { chemin: "/tresorerie/mouvements", libelle: "Mouvements", icone: "⇄", permission: ["treasury.read", "cash.read"] },
-    { chemin: "/ventes/clients", libelle: "Clients", icone: "♙", permission: "sales.read" },
-  ] },
-  { titre: "Comptabilité", entrees: [
-    { chemin: "/comptabilite", libelle: "Tableau comptable", icone: "◧", permission: "accounting.read" },
-    { chemin: "/comptabilite/ecritures", libelle: "Écritures", icone: "✎", permission: "accounting.read" },
-    { chemin: "/comptabilite/grand-livre", libelle: "Grand livre", icone: "☷", permission: "accounting.read" },
-    { chemin: "/comptabilite/balance", libelle: "Balance générale", icone: "⚖", permission: "accounting.read" },
-    { chemin: "/comptabilite/plan", libelle: "Plan comptable", icone: "▤", permission: "accounting.read" },
-    { chemin: "/comptabilite/journaux", libelle: "Journaux", icone: "▥", permission: "accounting.read" },
-    { chemin: "/comptabilite/parametres", libelle: "Exercices et paramètres", icone: "⚙", permission: "accounting.read" },
-  ] },
-  { titre: "Administration", entrees: [
-    { chemin: "/utilisateurs", libelle: "Utilisateurs", icone: "♙", permission: "users.read" },
-    { chemin: "/roles", libelle: "Rôles et permissions", icone: "▤", permission: "roles.read" },
-    { chemin: "/journal", libelle: "Journal d'audit", icone: "◷", permission: "audit.read" },
-    { chemin: "/entreprise", libelle: "Entreprise", icone: "▣", permission: "company.read" },
-  ] },
-  { titre: "Personnel", entrees: [{ chemin: "/mon-compte", libelle: "Mon compte", icone: "◉" }] },
-];
+import { Cadre, type Onglet } from "./composants/cadre/Cadre";
+import { FournisseurEtatCadre } from "./composants/cadre/etat";
+import { aller } from "./routeur";
 
 export function App() {
   const [moi, setMoi] = useState<Moi | null>(null);
@@ -99,7 +72,7 @@ export function App() {
   return (
     <SessionCtx.Provider value={session}>
       <Bandeau />
-      {moi.mfa.requise && !moi.mfa.active ? <ConfigurationMfa obligatoire /> : <Coquille />}
+      {moi.mfa.requise && !moi.mfa.active ? <ConfigurationMfa obligatoire /> : <FournisseurEtatCadre><Coquille /></FournisseurEtatCadre>}
       {reauth && <FenetreReauthentification mfa={moiRef.current?.mfa.active ?? false} onFin={reauth} />}
     </SessionCtx.Provider>
   );
@@ -118,9 +91,8 @@ function Bandeau() {
 
 function Coquille() {
   const route = useRoute();
-  const [menu, setMenu] = useState(false);
-  const { moi, a, deconnecter } = useSession();
-  useEffect(() => setMenu(false), [route]);
+  const { a } = useSession();
+  const [cle, setCle] = useState(0);   // « Actualiser » : l'écran est recréé et recharge ses données
   // Couleurs et logo de l'entreprise ; rechargés quand l'administrateur modifie le profil, retirés à la déconnexion.
   const [apparence, setApparence] = useState<Apparence | null>(null);
   useEffect(() => {
@@ -134,14 +106,14 @@ function Coquille() {
   let page: JSX.Element, titre: string;
   const interdit = <div className="alerte alerte-erreur">Vous n'avez pas accès à cette page.</div>;
   switch (section) {
-    case "utilisateurs": titre = "Utilisateurs"; page = !a("users.read") ? interdit : id ? <FicheUtilisateur id={id} /> : <Utilisateurs />; break;
-    case "roles": titre = "Rôles et permissions"; page = !a("roles.read") ? interdit : id ? <FicheRole id={id} /> : <Roles />; break;
+    case "utilisateurs": titre = id ? "Fiche utilisateur" : "Utilisateurs"; page = !a("users.read") ? interdit : id ? <FicheUtilisateur id={id} /> : <Utilisateurs />; break;
+    case "roles": titre = id ? "Fiche rôle" : "Rôles et permissions"; page = !a("roles.read") ? interdit : id ? <FicheRole id={id} /> : <Roles />; break;
     case "journal": titre = "Journal d'audit"; page = !a("audit.read") ? interdit : <Journal />; break;
     case "entreprise": titre = "Entreprise"; page = !a("company.read") ? interdit : <Entreprise />; break;
     case "mon-compte": titre = "Mon compte"; page = <MonCompte />; break;
     case "tresorerie": {
       const [, sous, mid] = route.split("/").filter(Boolean);
-      titre = sous === "mouvements" ? "Mouvements de trésorerie" : "Caisses et banques";
+      titre = sous === "mouvements" ? (mid ? "Fiche mouvement" : "Mouvements de trésorerie") : "Caisses et banques";
       page = !(a("treasury.read") || a("cash.read")) ? interdit : sous === "mouvements" ? (mid ? <FicheMouvement id={mid} /> : <Mouvements />) : <Tresorerie />;
       break;
     }
@@ -161,7 +133,7 @@ function Coquille() {
         plan: ["Plan comptable", <PlanComptable />], journaux: ["Journaux comptables", <Journaux />],
         "grand-livre": ["Grand livre", <GrandLivre />], balance: ["Balance générale", <Balance />],
         parametres: ["Exercices et paramètres", <ParametresComptables />],
-        ecritures: ["Écritures", !ecritureId ? <Ecritures /> : ecritureId === "nouvelle"
+        ecritures: [!ecritureId ? "Écritures" : ecritureId === "nouvelle" ? "Nouvelle écriture" : mode === "modifier" ? "Modifier le brouillard" : "Fiche écriture", !ecritureId ? <Ecritures /> : ecritureId === "nouvelle"
           ? (a("accounting.create") ? <SaisieEcriture /> : interdit)
           : mode === "modifier" ? (a("accounting.update") ? <SaisieEcriture id={ecritureId} /> : interdit) : <FicheEcriture id={ecritureId} />],
       };
@@ -171,85 +143,27 @@ function Coquille() {
     }
     default: titre = "Tableau de bord"; page = <TableauDeBord />;
   }
-  // Entrée de menu active : la plus longue qui préfixe la route (ex. /comptabilite/ecritures/… → Écritures).
-  const actif = NAV.flatMap((g) => g.entrees.map((e) => e.chemin)).filter((c) => c === "/" ? route === "/" : route === c || route.startsWith(c + "/"))
-    .sort((x, y) => y.length - x.length)[0] ?? "/";
-
-  return (
-    <div className={"app" + (menu ? " menu-ouvert" : "")}>
-      <aside className="laterale" aria-label="Navigation principale">
-        <div className="marque">
-          {apparence?.logoUrl
-            ? <><img className="logo-entreprise" src={apparence.logoUrl} alt={`Logo de ${moi.entreprise.raisonSociale}`} />
-                <div><h1 className="nom-entreprise">{moi.entreprise.raisonSociale}</h1><p>Gestionnaire Comptable</p></div></>
-            : <><div className="logo" aria-hidden="true">GC</div>
-                <div><h1>GESTIONNAIRE<br />COMPTABLE</h1><p>{moi.entreprise.raisonSociale}</p></div></>}
-        </div>
-        <nav className="nav">
-          {NAV.map((g) => {
-            const entrees = g.entrees.filter((e) => !e.permission || [e.permission].flat().some(a));
-            if (!entrees.length) return null;
-            return (
-              <div key={g.titre}>
-                <div className="nav-titre">{g.titre}</div>
-                {entrees.map((e) => (
-                  <a key={e.chemin} href={"#" + e.chemin} aria-current={actif === e.chemin ? "page" : undefined}>
-                    <span className="icone" aria-hidden="true">{e.icone}</span>{e.libelle}
-                  </a>
-                ))}
-              </div>
-            );
-          })}
-        </nav>
-        <div className="bas">Espace {moi.entreprise.code}<br />Réseau local · version 0.1</div>
-      </aside>
-      <div className="principal" onClick={() => menu && setMenu(false)}>
-        <header className="barre">
-          <button className="btn btn-petit bouton-menu" aria-label="Ouvrir le menu" aria-expanded={menu} onClick={(e) => { e.stopPropagation(); setMenu(!menu); }}>☰</button>
-          <div className="titre">
-            <div className="fil">{moi.entreprise.raisonSociale} / {titre}</div>
-            <strong>{titre}</strong>
-          </div>
-          <Notifications />
-          <div className="profil">
-            <div className="avatar" aria-hidden="true">{initiales(moi.utilisateur.nom)}</div>
-            <div className="nom"><b>{moi.utilisateur.nom}</b><br /><span className="discret">{moi.roles.map((r) => r.libelle).join(", ") || "Aucun rôle"}</span></div>
-            <button className="btn btn-petit" onClick={deconnecter}>Déconnexion</button>
-          </div>
-        </header>
-        <main className="contenu" id="contenu">{page}</main>
-      </div>
-    </div>
-  );
+  return <CoquilleOnglets route={route} titre={titre} page={page} apparence={apparence} cle={cle} setCle={setCle} />;
 }
 
-function Notifications() {
-  const [ouvert, setOuvert] = useState(false);
-  const [liste, setListe] = useState<{ elements: Notification[]; nonLues: number } | null>(null);
-  const toast = useToast();
-  const charger = useCallback((auto = false) => (auto ? api.getAuto("/api/notifications?taille=20") : api.get("/api/notifications?taille=20")).then(setListe).catch(() => {}), []);
-  useEffect(() => { charger(); const t = setInterval(() => charger(true), 60_000); return () => clearInterval(t); }, [charger]);
-  const lire = async (n: Notification) => {
-    if (n.lue) return;
-    try { await api.post(`/api/notifications/${n.id}/lecture`); charger(); } catch { toast("Impossible de marquer la notification comme lue.", true); }
+/** Documents ouverts : chaque écran visité reste disponible dans un onglet (le tableau de bord en premier). */
+function CoquilleOnglets({ route, titre, page, apparence, cle, setCle }: {
+  route: string; titre: string; page: JSX.Element; apparence: Apparence | null; cle: number; setCle: (f: (k: number) => number) => void;
+}) {
+  const [onglets, setOnglets] = useState<Onglet[]>([{ chemin: "/", titre: "Tableau de bord" }]);
+  useEffect(() => {
+    setOnglets((l) => {
+      if (l.some((o) => o.chemin === route)) return l.map((o) => (o.chemin === route ? { ...o, titre } : o));
+      const suite = [...l, { chemin: route, titre }];
+      return suite.length > 10 ? [suite[0], ...suite.slice(-9)] : suite;
+    });
+  }, [route, titre]);
+  const fermerOnglet = (chemin: string) => {
+    const i = onglets.findIndex((o) => o.chemin === chemin);
+    const reste = onglets.filter((o) => o.chemin !== chemin);
+    setOnglets(reste);
+    if (chemin === route) aller((reste[i - 1] ?? reste[0]).chemin);
   };
-  return (
-    <div className="cloche">
-      <button className="btn btn-petit" aria-expanded={ouvert} aria-label={`Notifications${liste?.nonLues ? `, ${liste.nonLues} non lues` : ""}`} onClick={() => setOuvert(!ouvert)}>
-        🔔{liste && liste.nonLues > 0 && <span className="compteur num">{liste.nonLues}</span>}
-      </button>
-      {ouvert && (
-        <div className="panneau-notifs" role="region" aria-label="Notifications">
-          {!liste?.elements.length ? <div className="vide">Aucune notification.</div> : liste.elements.map((n) => (
-            <div key={n.id} className={"notif" + (n.lue ? "" : " non-lue")} onClick={() => lire(n)}>
-              <b>{n.type === "security" ? "⚠ " : ""}{n.titre}</b>
-              {n.texte && <p>{n.texte}</p>}
-              <p className="num">{dateHeure(n.date)}{!n.lue && " · cliquer pour marquer comme lue"}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <Cadre route={route} titre={titre} page={page} logoUrl={apparence?.logoUrl ?? null} cle={cle}
+    onActualiser={() => setCle((k) => k + 1)} onglets={onglets} onFermerOnglet={fermerOnglet} />;
 }
-

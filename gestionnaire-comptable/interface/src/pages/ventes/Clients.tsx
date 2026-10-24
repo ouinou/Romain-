@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { effacerParametres, useParametres } from "../../routeur";
 import { api, qs } from "../../api";
 import { useSession } from "../../session";
 import { Champ, Chargement, Modale, messageErreur, useDonnees, useRetarde, useToast } from "../../composants/ui";
@@ -9,6 +10,9 @@ export function Clients() {
   const { a } = useSession();
   const [recherche, setRecherche] = useState("");
   const [creation, setCreation] = useState(false);
+  // Commande « Nouveau client » du ruban : #/ventes/clients?nouveau=1.
+  const params = useParametres();
+  useEffect(() => { if (params.get("nouveau")) { setCreation(true); effacerParametres(); } }, [params]);
   const rech = useRetarde(recherche);
   const liste = useDonnees(() => api.get<Client[]>(`/api/ventes/clients${qs({ recherche: rech })}`), [rech]);
   return (

@@ -151,7 +151,7 @@ function LogoEtCouleurs({ ent, modifiable, onFin }: { ent: Ent; modifiable: bool
   useEffect(() => () => { window.dispatchEvent(new Event(EVENEMENT_APPARENCE)); }, []);
   const modifie = c.principale !== ent.couleurs.principale || c.accent !== ent.couleurs.accent;
   const v = variables(c);
-  const ajuste = v["--bleu"].toLowerCase() !== c.accent.toLowerCase() || v["--marine"].toLowerCase() !== c.principale.toLowerCase();
+  const ajuste = v["--marine"].toLowerCase() !== c.principale.toLowerCase();
   const enregistrer = async () => {
     try { await api.patch("/api/entreprise", { couleurs: c }); toast("Couleurs enregistrées."); onFin(); }
     catch (err) { toast(messageErreur(err), true); }
@@ -192,7 +192,7 @@ function LogoEtCouleurs({ ent, modifiable, onFin }: { ent: Ent; modifiable: bool
       </div>
       <div className="apercu-couleurs" aria-label="Aperçu">
         <span style={{ background: v["--marine"], color: "#fff" }}>Menu</span>
-        <span style={{ background: v["--bleu"], color: "#fff" }}>Bouton</span>
+        <span style={{ background: v["--accent"], color: v["--accent-texte"] }}>Bouton</span>
         <span style={{ color: v["--lien"], background: "#fff", border: "1px solid var(--ligne)" }}>Lien</span>
         <span style={{ background: c.principale, color: contraste(c.principale, "#ffffff") >= 4.5 ? "#fff" : "#17263b" }}>En-tête de facture</span>
       </div>

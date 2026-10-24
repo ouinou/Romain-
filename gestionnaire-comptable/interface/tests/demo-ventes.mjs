@@ -9,7 +9,12 @@ const erreurs = [];
 page.on("pageerror", (e) => erreurs.push(e.message));
 page.on("console", (m) => m.type() === "error" && erreurs.push(m.text()));
 const etape = (t) => console.log("✓ " + t);
-const menu = (t) => page.getByRole("navigation").getByRole("link", { name: t, exact: true });
+const nav = () => page.getByRole("navigation", { name: "Navigation principale" });
+const menu = (t) => ({ click: async () => {
+  const lien = nav().getByRole("link", { name: t, exact: true, includeHidden: true });
+  if (!(await lien.isVisible())) await nav().getByRole("button", { name: await lien.getAttribute("data-groupe"), exact: true }).click();
+  await lien.click();
+} });
 async function connexion(email) {
   await page.getByLabel("Code entreprise").fill("GC-DEMO-2026");
   await page.getByLabel("Adresse e-mail").fill(email);
@@ -60,7 +65,7 @@ try {
   await connexion("ousmane.djibrine@demo.cm");
   await menu("Écritures").click();
   await page.getByLabel("Origine").selectOption({ label: "Ventes et trésorerie" });
-  await page.getByLabel("État").selectOption({ label: "Brouillards" });
+  await page.getByLabel("État", { exact: true }).selectOption({ label: "Brouillards" });
   await page.getByRole("button", { name: /Tout sélectionner/ }).click();
   await page.getByRole("button", { name: /Valider la sélection/ }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Valider" }).click();

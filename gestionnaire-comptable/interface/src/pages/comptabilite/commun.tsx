@@ -23,7 +23,9 @@ export const TYPES_JOURNAL: Record<string, string> = {
 /* ------------------------------------------------------------------ Montants (entiers, FCFA) */
 const fmt = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 export const formatMontant = (n: number) => fmt.format(n).replace(/ | /g, " ");
-export const Montant = ({ v, vide = "" }: { v: number; vide?: string }) => <>{v === 0 && vide ? vide : formatMontant(v)}</>;
+/** Montant en FCFA : séparateur de milliers ; un montant négatif s'affiche en rouge. */
+export const Montant = ({ v, vide = "" }: { v: number; vide?: string }) =>
+  v === 0 && vide ? <>{vide}</> : v < 0 ? <span className="negatif">{formatMontant(v)}</span> : <>{formatMontant(v)}</>;
 
 /** Lecture d'une saisie libre (« 1 500 000 », « 1500000 ») ; NaN si invalide (décimales, lettres, négatif). */
 export function lireMontant(texte: string): number {

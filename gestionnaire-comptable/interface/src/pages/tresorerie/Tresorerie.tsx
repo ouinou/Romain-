@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../session";
-import { aller } from "../../routeur";
+import { aller, effacerParametres, useParametres } from "../../routeur";
 import { Champ, Chargement, Modale, Selection, messageErreur, useDonnees, useToast } from "../../composants/ui";
 import { Montant, dateFr } from "../comptabilite/commun";
 import { ICONES_TRESORERIE, NATURES, TYPES_TRESORERIE, comptesTresorerie, type CompteTresorerie, type Mouvement } from "./commun";
@@ -20,6 +20,14 @@ export function Tresorerie() {
   const [caissiers, setCaissiers] = useState<CompteTresorerie | null>(null);
   const peutSaisir = a("treasury.create") || a("cash.create");
   const recharger = () => { comptes.recharger(); tableau.recharger(); derniers.recharger(); };
+  // Commandes du ruban (Règlement, Dépense, Transfert) : #/tresorerie?action=entree|sortie|transfert.
+  const params = useParametres();
+  const action = params.get("action");
+  useEffect(() => {
+    if (!comptes.donnees || !action) return;
+    if ((action === "entree" || action === "sortie" || action === "transfert") && peutSaisir) setOperation({ type: action });
+    effacerParametres();
+  }, [action, comptes.donnees, peutSaisir]);
   if (comptes.erreur) return <div className="alerte alerte-erreur">{comptes.erreur}</div>;
   if (!comptes.donnees || !tableau.donnees) return <Chargement />;
   const t = tableau.donnees;

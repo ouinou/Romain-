@@ -2,6 +2,21 @@
 
 Ce guide couvre ce qui existe aujourd'hui : l'accès, les utilisateurs, les rôles, le journal et les réglages de l'entreprise. Les modules de gestion (trésorerie, comptabilité, stocks…) auront leur propre chapitre quand ils seront livrés.
 
+## 0. Se repérer dans le logiciel
+
+L'écran est organisé comme un logiciel de bureau :
+
+- **Barre de titre** (en haut) : logo et nom de l'entreprise, notifications, votre nom (ouvre *Mon compte*), *Déconnexion*.
+- **Barre d'accès rapide** : tableau de bord, écran précédent, actualiser, imprimer la page, et le champ **Rechercher** (Ctrl+F) qui trouve un écran, une commande ou une facture par son numéro.
+- **Ruban** : un onglet par module (Accueil, Ventes, Trésorerie, Comptabilité, États, Administration). Les commandes sont regroupées par fonction ; leur raccourci est indiqué dessous. Seules celles que votre rôle autorise apparaissent.
+- **Fichier** : informations sur l'entreprise, exercice comptable, sauvegardes, raccourcis clavier, aide, déconnexion.
+- **Menu latéral** : tous les écrans, par module ; cliquez sur un module pour le déplier.
+- **Onglets des documents** : chaque écran ouvert reste disponible au-dessus de la zone de travail ; la croix le ferme.
+- **Panneau de détail** (Écritures) : cliquez sur une ligne pour voir son détail à droite ; double-clic ou Entrée ouvre la fiche.
+- **Barre d'état** (en bas) : entreprise, exercice, utilisateur, connexion au serveur, brouillards à valider, somme de la sélection, zoom de la zone de travail.
+
+**Raccourcis** : Alt+N nouvelle facture, Alt+R règlement, Alt+D dépense, Alt+T transfert, Alt+E saisie d'écriture, Alt+B balance, Alt+G grand livre, Alt+L ventes en direct, Alt+V vérifier une facture, F9 valider la sélection (Écritures), Ctrl+F rechercher, F1 aide, Échap fermer. Dans un tableau, les flèches passent d'une ligne à l'autre et Entrée ouvre la ligne.
+
 ## 1. Se connecter
 
 Ouvrez l'adresse du serveur dans le navigateur, par exemple `https://192.168.1.10:8443`. Saisissez :

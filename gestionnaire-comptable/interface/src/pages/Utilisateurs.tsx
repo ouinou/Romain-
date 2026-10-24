@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, qs } from "../api";
 import { useSession } from "../session";
-import { aller } from "../routeur";
+import { aller, effacerParametres, useParametres } from "../routeur";
 import { STATUTS } from "../libelles";
 import { Champ, Chargement, Modale, Pagination, SecretUnique, dateHeure, initiales, messageErreur, useDonnees, useRetarde, useToast } from "../composants/ui";
 import type { Page, Role, Utilisateur } from "../types";
@@ -17,6 +17,9 @@ export function Utilisateurs() {
   const [role, setRole] = useState("");
   const [page, setPage] = useState(1);
   const [creation, setCreation] = useState(false);
+  // Commande « Nouvel utilisateur » du ruban : #/utilisateurs?nouveau=1.
+  const params = useParametres();
+  useEffect(() => { if (params.get("nouveau") && a("users.create")) { setCreation(true); effacerParametres(); } }, [params, a]);
   const rech = useRetarde(recherche);
 
   const roles = useDonnees(() => (a("roles.read") ? api.get<Role[]>("/api/roles") : Promise.resolve([] as Role[])), []);
