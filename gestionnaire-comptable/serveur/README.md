@@ -1,4 +1,4 @@
-# Gestionnaire Comptable : serveur
+# FINEXA ERP : serveur
 
 API sécurisée et outils d'exploitation. Node.js 22, TypeScript, Fastify, PostgreSQL 16.
 

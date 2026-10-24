@@ -4,6 +4,7 @@
  * onglets des documents ouverts, zone de travail, panneau de détail rétractable et barre d'état.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { EDITEUR, EmblemeFinexa, LogoFinexa, NOM_LOGICIEL } from "../Marque";
 import { api } from "../../api";
 import { aller } from "../../routeur";
 import { useSession } from "../../session";
@@ -60,9 +61,10 @@ export function Cadre(props: {
     <div className={"app" + (menuMobile ? " menu-ouvert" : "")}>
       <header className="barre-titre">
         <button className="bouton-titre bouton-menu" aria-label="Ouvrir le menu" aria-expanded={menuMobile} onClick={() => setMenuMobile(!menuMobile)}><Icone nom="menu" taille={18} /></button>
-        {props.logoUrl ? <img className="logo-entreprise" src={props.logoUrl} alt={`Logo de ${moi.entreprise.raisonSociale}`} /> : <div className="logo" aria-hidden="true">GC</div>}
-        <span className="nom-logiciel">GESTIONNAIRE COMPTABLE</span>
+        <EmblemeFinexa />
+        <span className="nom-logiciel">{NOM_LOGICIEL}</span>
         <span className="separateur" aria-hidden="true" />
+        {props.logoUrl && <img className="logo-entreprise" src={props.logoUrl} alt={`Logo de ${moi.entreprise.raisonSociale}`} />}
         <span className="nom-entreprise">{moi.entreprise.raisonSociale}</span>
         <span className="espace" />
         <Notifications />
@@ -326,8 +328,9 @@ function MenuFichier({ vue, setVue }: { vue: "infos" | "sauvegardes" | "raccourc
           <div style={{ maxWidth: 760, display: "grid", gap: 10 }}>
             <p style={{ margin: 0 }}>Le <b>ruban</b> regroupe les commandes par onglet ; seules celles que votre rôle autorise apparaissent. Le <b>menu latéral</b> donne accès à tous les écrans du module. Chaque écran ouvert reste disponible dans les <b>onglets</b> au-dessus de la zone de travail.</p>
             <p style={{ margin: 0 }}>Une facture émise, un mouvement de caisse ou une écriture validée ne se modifient pas : ils se corrigent par une opération inverse, motivée et tracée.</p>
-            <p style={{ margin: 0 }}>Le guide complet (« Guide d'utilisation ») est installé avec le logiciel et accessible depuis le menu Démarrer de Windows, dossier « Gestionnaire Comptable ».</p>
+            <p style={{ margin: 0 }}>Le guide complet (« Guide d'utilisation ») est installé avec le logiciel et accessible depuis le menu Démarrer de Windows, dossier « {NOM_LOGICIEL} ».</p>
             <p style={{ margin: 0 }}>Un problème d'accès : adressez-vous à l'administrateur de votre entreprise. Mot de passe oublié : il vous remettra un code de réinitialisation.</p>
+            <div className="a-propos"><LogoFinexa largeur={180} /><p style={{ margin: 0 }}><b>{NOM_LOGICIEL}</b>, gestion intégrée des entreprises de l'espace OHADA.<br />Éditeur : {EDITEUR}.</p></div>
           </div>
         </>}
       </section>

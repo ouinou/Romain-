@@ -141,7 +141,7 @@ export function ApercuFacture({ f, avoir }: { f: Facture; avoir?: { facture: str
       {f.codeVerification && (
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <div style={{ width: 96, flexShrink: 0 }}><QrCode texte={f.codeVerification} titre={`Code de vérification ${avoir ? "de l'avoir" : "de la facture"} ${f.numero}`} /></div>
-          <span className="aide">Code de vérification : scannez-le dans Gestionnaire Comptable (« Vérifier une facture ») pour contrôler l'authenticité de ce document.</span>
+          <span className="aide">Code de vérification : scannez-le dans FINEXA ERP (« Vérifier une facture ») pour contrôler l'authenticité de ce document.</span>
         </div>)}
       <p style={{ margin: 0 }}>{avoir ? "Arrêté le présent avoir" : "Arrêtée la présente facture"} à la somme de : <b>{montantEnLettres(f.totalTtc)}</b>.</p>
       {avoir ? <>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EmblemeFinexa } from "../composants/Marque";
 import { api } from "../api";
 import { useSession } from "../session";
 import { QrCode } from "../composants/QrCode";
@@ -63,7 +64,7 @@ export function ConfigurationMfa({ obligatoire = false, onTermine }: { obligatoi
     <main className="ecran-accueil">
       <div style={{ display: "grid", gap: 12, width: "min(660px, 100%)" }}>
         <div className="marque" style={{ color: "#fff" }}>
-          <div className="logo" aria-hidden="true">GC</div>
+          <EmblemeFinexa taille={36} />
           <div><h1>Double authentification</h1><p style={{ color: "#c9d8e6" }}>{moi.utilisateur.nom} · {moi.entreprise.raisonSociale}</p></div>
         </div>
         {contenu}

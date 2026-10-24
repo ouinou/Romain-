@@ -22,7 +22,7 @@ export async function dechiffrerFichier(cle: Buffer, source: string, cible: stri
   readSync(fd, entete, 0, entete.length, 0);
   readSync(fd, tag, 0, 16, taille - 16);
   closeSync(fd);
-  if (!entete.subarray(0, MAGIE.length).equals(MAGIE)) throw new Error("Ce fichier n'est pas une sauvegarde Gestionnaire Comptable.");
+  if (!entete.subarray(0, MAGIE.length).equals(MAGIE)) throw new Error("Ce fichier n'est pas une sauvegarde FINEXA ERP.");
   const d = createDecipheriv("aes-256-gcm", cle, entete.subarray(MAGIE.length));
   d.setAuthTag(tag);
   // final() échoue si le fichier a été altéré ou si la clé est fausse : la restauration s'arrête.

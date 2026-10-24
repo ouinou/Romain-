@@ -1,4 +1,4 @@
-; GESTIONNAIRE COMPTABLE : setup Windows « tout inclus » (serveur, interface, Node.js, PostgreSQL privé).
+; FINEXA ERP : setup Windows « tout inclus » (serveur, interface, Node.js, PostgreSQL privé).
 ; Construit par installateur/construire.sh :  makensis -DVERSION=… -DETAPE=… -DSORTIE=… gestionnaire-comptable.nsi
 Unicode true
 SetCompressor /SOLID lzma
@@ -10,13 +10,18 @@ SetCompressorDictSize 64
 !include "FileFunc.nsh"
 !include "Sections.nsh"
 
-!define NOM "Gestionnaire Comptable"
+!define NOM "FINEXA ERP"
+!define EDITEUR "Incubateur Technologique de l'Innovation (ITI)"
+; Ancien nom du produit (versions 0.1.x) : ses raccourcis sont retirés à la mise à jour.
+!define ANCIEN_NOM "Gestionnaire Comptable"
+; Les identifiants techniques (dossiers, services, clé de désinstallation) gardent l'ancien nom : les installations
+; existantes se mettent à jour sur place, sans perdre leurs données ni leurs services.
 !define CLE_DESINSTALL "Software\Microsoft\Windows\CurrentVersion\Uninstall\GestionnaireComptable"
 !define SERVICE_APP "GestionnaireComptable-Serveur"
 !define SERVICE_PG "GestionnaireComptable-Base"
 
 Name "${NOM} ${VERSION}"
-OutFile "${SORTIE}\GestionnaireComptable-Setup-${VERSION}.exe"
+OutFile "${SORTIE}\FINEXA-ERP-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\GestionnaireComptable"
 RequestExecutionLevel admin
 ShowInstDetails show
@@ -24,6 +29,7 @@ ShowUninstDetails show
 BrandingText "${NOM} ${VERSION}"
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey /LANG=1036 "ProductName" "${NOM}"
+VIAddVersionKey /LANG=1036 "CompanyName" "${EDITEUR}"
 VIAddVersionKey /LANG=1036 "FileDescription" "Installation de ${NOM}"
 VIAddVersionKey /LANG=1036 "FileVersion" "${VERSION}"
 VIAddVersionKey /LANG=1036 "LegalCopyright" "Voir LICENCES.txt"
@@ -34,6 +40,8 @@ Var OPT_DEMO
 Var LANCEUR
 
 !define MUI_ABORTWARNING
+!define MUI_ICON "${ETAPE}\finexa.ico"
+!define MUI_UNICON "${ETAPE}\finexa.ico"
 !define MUI_WELCOMEPAGE_TITLE "Installation de ${NOM}"
 !define MUI_WELCOMEPAGE_TEXT "Ce programme installe ${NOM} sur ce poste, qui deviendra le serveur de l'entreprise :$\r$\n$\r$\n  • le logiciel et son interface web ;$\r$\n  • une base de données PostgreSQL privée ;$\r$\n  • les services Windows, le certificat HTTPS et les sauvegardes du soir.$\r$\n$\r$\nLes autres postes n'installent rien : ils utilisent un navigateur.$\r$\n$\r$\nChoisissez un poste allumé pendant les heures de travail, avec une adresse IP fixe sur le réseau local."
 !define MUI_FINISHPAGE_TITLE "${NOM} est installé"
@@ -78,7 +86,7 @@ Function OuvrirLogiciel
   ${EndIf}
 FunctionEnd
 
-Section "Gestionnaire Comptable (obligatoire)" SecPrincipale
+Section "FINEXA ERP (obligatoire)" SecPrincipale
   SectionIn RO
   SetShellVarContext all
   SetRegView 64
@@ -106,6 +114,7 @@ Section "Gestionnaire Comptable (obligatoire)" SecPrincipale
   DetailPrint "Copie des fichiers…"
   SetOutPath "$INSTDIR"
   File "${ETAPE}\LICENCES.txt"
+  File "${ETAPE}\finexa.ico"
   File /r "${ETAPE}\serveur"
   File /r "${ETAPE}\interface"
   File /r "${ETAPE}\outils"
@@ -131,6 +140,12 @@ Section "Gestionnaire Comptable (obligatoire)" SecPrincipale
   FileClose $1
   StrCpy $ADRESSE $ADRESSE -1
   WriteINIStr "$INSTDIR\${NOM}.url" "InternetShortcut" "URL" "$ADRESSE"
+  WriteINIStr "$INSTDIR\${NOM}.url" "InternetShortcut" "IconFile" "$INSTDIR\finexa.ico"
+  WriteINIStr "$INSTDIR\${NOM}.url" "InternetShortcut" "IconIndex" "0"
+  ; Mise à jour depuis une version 0.1.x : raccourcis de l'ancien nom retirés.
+  Delete "$DESKTOP\${ANCIEN_NOM}.lnk"
+  RMDir /r "$SMPROGRAMS\${ANCIEN_NOM}"
+  Delete "$INSTDIR\${ANCIEN_NOM}.url"
 
   ; Ouverture dans une fenêtre d'application (sans barre d'adresse ni onglets) avec Microsoft Edge,
   ; présent sur Windows 10 et 11. Sans Edge : le navigateur par défaut.
@@ -142,8 +157,8 @@ Section "Gestionnaire Comptable (obligatoire)" SecPrincipale
   ${EndIf}
   CreateDirectory "$SMPROGRAMS\${NOM}"
   ${If} $LANCEUR != ""
-    CreateShortCut "$SMPROGRAMS\${NOM}\${NOM}.lnk" "$LANCEUR" "--app=$ADRESSE" "$LANCEUR" 0 SW_SHOWMAXIMIZED "" "${NOM}"
-    CreateShortCut "$DESKTOP\${NOM}.lnk" "$LANCEUR" "--app=$ADRESSE" "$LANCEUR" 0 SW_SHOWMAXIMIZED "" "${NOM}"
+    CreateShortCut "$SMPROGRAMS\${NOM}\${NOM}.lnk" "$LANCEUR" "--app=$ADRESSE" "$INSTDIR\finexa.ico" 0 SW_SHOWMAXIMIZED "" "${NOM}"
+    CreateShortCut "$DESKTOP\${NOM}.lnk" "$LANCEUR" "--app=$ADRESSE" "$INSTDIR\finexa.ico" 0 SW_SHOWMAXIMIZED "" "${NOM}"
     CreateShortCut "$SMPROGRAMS\${NOM}\${NOM} (dans le navigateur).lnk" "$INSTDIR\${NOM}.url"
   ${Else}
     CreateShortCut "$SMPROGRAMS\${NOM}\${NOM}.lnk" "$INSTDIR\${NOM}.url"
@@ -161,7 +176,8 @@ Section "Gestionnaire Comptable (obligatoire)" SecPrincipale
   WriteUninstaller "$INSTDIR\Desinstaller.exe"
   WriteRegStr HKLM "${CLE_DESINSTALL}" "DisplayName" "${NOM}"
   WriteRegStr HKLM "${CLE_DESINSTALL}" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKLM "${CLE_DESINSTALL}" "Publisher" "${NOM}"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "Publisher" "${EDITEUR}"
+  WriteRegStr HKLM "${CLE_DESINSTALL}" "DisplayIcon" "$INSTDIR\finexa.ico"
   WriteRegStr HKLM "${CLE_DESINSTALL}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${CLE_DESINSTALL}" "UninstallString" '"$INSTDIR\Desinstaller.exe"'
   WriteRegDWORD HKLM "${CLE_DESINSTALL}" "NoModify" 1

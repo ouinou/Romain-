@@ -48,7 +48,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
   const NUIT = lisibleSurBlanc(PRINC), ORANGE_TXT = lisibleSurBlanc(ACCENT), SUR_PRINC = texteSur(PRINC);
   return new Promise((ok, ko) => {
     const nom = f.avoir ? "Avoir" : "Facture";
-    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `${nom} ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: "Gestionnaire Comptable" } });
+    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `${nom} ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: "FINEXA ERP" } });
     const morceaux: Buffer[] = [];
     doc.on("data", (b: Buffer) => morceaux.push(b));
     doc.on("end", () => ok(Buffer.concat(morceaux)));
@@ -115,7 +115,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     if (y + 120 > doc.page.height - 60) { doc.addPage(); y = 48; }
     if (qr) {
       doc.image(qr, L, y, { width: 92 });
-      doc.font("Helvetica").fontSize(7).fillColor(GRIS).text("Code de vérification : scannez-le dans Gestionnaire Comptable (menu Ventes et trésorerie, « Vérifier une facture ») pour contrôler l'authenticité de ce document.",
+      doc.font("Helvetica").fontSize(7).fillColor(GRIS).text("Code de vérification.\nÀ scanner dans FINEXA ERP,\nécran « Vérifier une facture »,\npour contrôler l'authenticité\nde ce document.",
         L + 98, y + 6, { width: W * 0.5 - 110 });
     }
     const yQr = y + (qr ? 96 : 0);
@@ -146,7 +146,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     const bas = doc.page.height - 40;
     doc.moveTo(L, bas - 8).lineTo(R, bas - 8).lineWidth(0.5).strokeColor(LIGNE).stroke();
     doc.font("Helvetica").fontSize(7.5).fillColor(GRIS)
-      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · ${nom} ${f.numero} · Document émis par Gestionnaire Comptable`,
+      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · ${nom} ${f.numero} · Document émis par FINEXA ERP`,
         L, bas, { width: W, align: "center", lineBreak: false });
     doc.end();
   });

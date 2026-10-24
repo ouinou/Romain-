@@ -16,6 +16,6 @@ if (/src="\/assets|href="\/assets/.test(html)) throw new Error("Une ressource ex
 if (process.argv.includes("--fragment"))
   html = html.replace(/<!doctype html>\s*/i, "").replace(/<\/?(html|head|body)[^>]*>\s*/gi, "")
     .replace(/<meta charset[^>]*>\s*/i, "").replace(/<meta name="viewport"[^>]*>\s*/i, "")
-    .replace("<title>Gestionnaire Comptable</title>", "<title>Gestionnaire Comptable démo</title>");
+    .replace("<title>FINEXA ERP</title>", "<title>FINEXA ERP (démonstration)</title>");
 writeFileSync(sortie, html);
 console.log(`${sortie} : ${(html.length / 1024).toFixed(0)} Kio`);

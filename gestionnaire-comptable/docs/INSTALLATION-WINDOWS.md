@@ -1,6 +1,6 @@
 # Installation sous Windows (réseau local)
 
-> **Méthode conseillée : le setup Windows** (`GestionnaireComptable-Setup-<version>.exe`), qui fait toutes les étapes ci-dessous automatiquement. Voir `installateur/INSTALLATION-SETUP.md`. Ce guide décrit l'installation manuelle, utile pour comprendre ce que fait le setup ou pour une installation sur mesure.
+> **Méthode conseillée : le setup Windows** (`FINEXA-ERP-Setup-<version>.exe`), qui fait toutes les étapes ci-dessous automatiquement. Voir `installateur/INSTALLATION-SETUP.md`. Ce guide décrit l'installation manuelle, utile pour comprendre ce que fait le setup ou pour une installation sur mesure.
 
 Guide pour installer le serveur sur un poste Windows 10/11 ou Windows Server, accessible depuis les autres postes du réseau. Compter environ une heure la première fois.
 

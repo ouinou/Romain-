@@ -1,4 +1,4 @@
-# Guide d'utilisation (version 0.1)
+# Guide d'utilisation de FINEXA ERP (version 0.2)
 
 Ce guide couvre ce qui existe aujourd'hui : l'accès, les utilisateurs, les rôles, le journal et les réglages de l'entreprise. Les modules de gestion (trésorerie, comptabilité, stocks…) auront leur propre chapitre quand ils seront livrés.
 

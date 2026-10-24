@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LogoFinexa, NOM_LOGICIEL } from "../composants/Marque";
 import { api, ApiErreur } from "../api";
 import { Champ, SecretUnique, messageErreur } from "../composants/ui";
 
@@ -70,9 +71,10 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
   return (
     <main className="ecran-accueil">
       <div className="boite-accueil">
-        <div className="marque">
-          <div className="logo" aria-hidden="true">GC</div>
-          <div><h1>GESTIONNAIRE COMPTABLE</h1><p>Espace sécurisé de l'entreprise</p></div>
+        <div className="marque-accueil">
+          <LogoFinexa />
+          <h1 className="cache-visuel">{NOM_LOGICIEL}</h1>
+          <p>Espace sécurisé de l'entreprise</p>
         </div>
         <div>
           <h2>{titres[mode][0]}</h2>
@@ -134,9 +136,10 @@ function PremiereInstallation({ onFin }: { onFin: (code: string, jeton: string) 
   return (
     <main className="ecran-accueil">
       <div className="boite-accueil" style={{ width: "min(560px, 100%)" }}>
-        <div className="marque">
-          <div className="logo" aria-hidden="true">GC</div>
-          <div><h1>GESTIONNAIRE COMPTABLE</h1><p>Première installation</p></div>
+        <div className="marque-accueil">
+          <LogoFinexa />
+          <h1 className="cache-visuel">{NOM_LOGICIEL}</h1>
+          <p>Première installation</p>
         </div>
         {!res ? (
           <form onSubmit={creer} style={{ display: "grid", gap: 12 }}>

@@ -45,5 +45,5 @@ export function verifierTotp(secretB32: string, code: string, dernierPas: number
   return null;
 }
 
-export const uriOtpauth = (secret: string, compte: string, emetteur = "Gestionnaire Comptable") =>
+export const uriOtpauth = (secret: string, compte: string, emetteur = "FINEXA ERP") =>
   `otpauth://totp/${encodeURIComponent(emetteur)}:${encodeURIComponent(compte)}?secret=${secret}&issuer=${encodeURIComponent(emetteur)}&digits=6&period=30`;

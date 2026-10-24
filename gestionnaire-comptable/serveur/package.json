@@ -1,8 +1,8 @@
 {
   "name": "gestionnaire-comptable-serveur",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "private": true,
-  "description": "Serveur de GESTIONNAIRE COMPTABLE : API, authentification, permissions, journal d'audit",
+  "description": "Serveur de FINEXA ERP : API, authentification, permissions, journal d'audit",
   "type": "module",
   "engines": {
     "node": ">=22.9"

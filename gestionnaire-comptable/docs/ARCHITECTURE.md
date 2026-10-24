@@ -1,4 +1,4 @@
-# Architecture de GESTIONNAIRE COMPTABLE
+# Architecture de FINEXA ERP
 
 État : socle technique (sections 1 à 6 du cahier des charges). Les modules métier (comptabilité OHADA, trésorerie, stocks, paie…) viendront se brancher dessus.
 

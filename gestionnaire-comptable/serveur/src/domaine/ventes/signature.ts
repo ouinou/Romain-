@@ -44,7 +44,7 @@ export type ResultatVerification =
 /** Contrôle de forme et de signature ; la présence en base est vérifiée par l'appelant. */
 export async function verifierSignature(c: Client, cleChiffrement: Buffer, codeEntreprise: string, contenu: string): Promise<ResultatVerification & { donnees?: DonneesCode }> {
   const p = contenu.trim().split(";");
-  if (p.length !== 7 || p[0] !== "GC1") return { authentique: false, raison: "Ce code n'est pas un code de facture Gestionnaire Comptable." };
+  if (p.length !== 7 || p[0] !== "GC1") return { authentique: false, raison: "Ce code n'est pas un code de facture FINEXA ERP." };
   const [, ent, numero, date, ttc, devise, sig] = p;
   if (ent.toUpperCase() !== codeEntreprise.toUpperCase()) return { authentique: false, raison: `Cette facture a été émise par une autre entreprise (code ${ent}). Elle ne peut être vérifiée que par celle-ci.` };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{1,15}$/.test(ttc) || !/^[A-Za-z0-9_-]{80,90}$/.test(sig)) return { authentique: false, raison: "Code incomplet ou altéré." };

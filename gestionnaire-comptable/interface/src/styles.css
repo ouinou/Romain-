@@ -1,4 +1,4 @@
-/* Gestionnaire Comptable : présentation de logiciel de bureau (barre de titre, accès rapide, ruban, menu latéral,
+/* FINEXA ERP : présentation de logiciel de bureau (barre de titre, accès rapide, ruban, menu latéral,
    onglets de documents, barre d'état), d'après les images de référence de src/assets/reference/.
    Zone de travail blanche, texte noir, bleu nuit pour la structure, orange pour les actions et les sélections. */
 /* Police Lato (licence SIL OFL 1.1, voir src/polices/LICENCE-OFL.txt), intégrée à l'application :
@@ -118,6 +118,12 @@ h1, h2, h3 { text-wrap: balance; }
 .boite-accueil > .marque { margin: 0 -24px 4px; padding: 14px 24px; background: var(--marine); color: var(--blanc); border-bottom: 3px solid var(--accent); }
 .boite-accueil > .marque p { color: #d6dbe3; }
 .marque { display: flex; align-items: center; gap: 12px; }
+/* Logo FINEXA ERP : dessiné sur fond blanc, il reste sur fond blanc (pavé blanc dans la barre de titre). */
+.boite-accueil > .marque-accueil { margin: 0 -24px 4px; padding: 18px 24px 10px; display: grid; justify-items: center; gap: 4px; border-bottom: 3px solid var(--accent); }
+.marque-accueil p { margin: 0; font-size: 12px; color: var(--discret); }
+.logo-finexa { max-width: 100%; height: auto; display: block; }
+.embleme-finexa { flex-shrink: 0; background: #fff; border-radius: 4px; padding: 1px; }
+.a-propos { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--ligne-2); padding-top: 12px; margin-top: 4px; }
 .logo { width: 36px; height: 36px; flex-shrink: 0; border-radius: 3px; background: var(--accent); color: var(--marine); display: grid; place-items: center; font-weight: 900; font-size: 16px; }
 .marque h1 { font-size: 15px; letter-spacing: .5px; margin: 0; }
 .marque p { margin: 2px 0 0; font-size: 12px; color: var(--discret); }

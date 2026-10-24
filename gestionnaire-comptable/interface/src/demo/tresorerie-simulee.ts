@@ -245,7 +245,7 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       if (!c.contenu || !String(c.contenu).trim()) throw o.erreur(400, "donnees_invalides", "Scannez ou collez le code de la facture.");
       const code = o.entreprise().code;
       let rep: Record<string, unknown>;
-      if (p.length !== 7 || p[0] !== "GC1") rep = { authentique: false, raison: "Ce code n'est pas un code de facture Gestionnaire Comptable." };
+      if (p.length !== 7 || p[0] !== "GC1") rep = { authentique: false, raison: "Ce code n'est pas un code de facture FINEXA ERP." };
       else if (p[1] !== code) rep = { authentique: false, raison: `Cette facture a été émise par une autre entreprise (code ${p[1]}). Elle ne peut être vérifiée que par celle-ci.` };
       else if (empreinteDemo(p.slice(0, 6).join(";")) !== p[6]) rep = { authentique: false, raison: "Signature invalide : le numéro, la date ou le montant ont été modifiés, ou le code est un faux." };
       else if (p[2].startsWith("AV-")) {

@@ -19,7 +19,7 @@ export function creerCertificats({ noms, ips, nomAutorite }) {
   ac.publicKey = cleAc.publicKey;
   ac.serialNumber = numeroSerie();
   ac.validity.notBefore = dans(-1); ac.validity.notAfter = dans(3650);
-  const sujetAc = [{ name: "commonName", value: nomAutorite }, { name: "organizationName", value: "Gestionnaire Comptable" }];
+  const sujetAc = [{ name: "commonName", value: nomAutorite }, { name: "organizationName", value: "FINEXA ERP" }];
   ac.setSubject(sujetAc); ac.setIssuer(sujetAc);
   ac.setExtensions([
     { name: "basicConstraints", cA: true, pathLenConstraint: 0, critical: true },
@@ -33,7 +33,7 @@ export function creerCertificats({ noms, ips, nomAutorite }) {
   cert.publicKey = cle.publicKey;
   cert.serialNumber = numeroSerie();
   cert.validity.notBefore = dans(-1); cert.validity.notAfter = dans(825);
-  cert.setSubject([{ name: "commonName", value: noms[1] ?? noms[0] }, { name: "organizationName", value: "Gestionnaire Comptable" }]);
+  cert.setSubject([{ name: "commonName", value: noms[1] ?? noms[0] }, { name: "organizationName", value: "FINEXA ERP" }]);
   cert.setIssuer(sujetAc);
   cert.setExtensions([
     { name: "basicConstraints", cA: false, critical: true },

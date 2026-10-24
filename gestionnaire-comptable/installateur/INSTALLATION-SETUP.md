@@ -1,11 +1,13 @@
-# Gestionnaire Comptable : installation avec le setup Windows
+# FINEXA ERP : installation avec le setup Windows
+
+> FINEXA ERP s'appelait « Gestionnaire Comptable » jusqu'à la version 0.1.5. Les dossiers techniques (`C:\Program Files\GestionnaireComptable`, `C:\ProgramData\GestionnaireComptable`) et les noms des services gardent l'ancien nom : une installation existante se met à jour sur place, sans perte de données.
 
 ## Pour évaluer le logiciel (installation d'essai)
 
 Faites l'essai sur un PC de test ou une machine virtuelle Windows 10/11, pas sur un poste qui contient des données importantes.
 
 1. Lancez le setup. À l'écran « Choisir les composants », cochez **Données de démonstration (évaluation)**.
-2. À la fin, le logiciel s'ouvre dans sa propre fenêtre (Microsoft Edge en mode application, sans barre d'adresse). Un raccourci « Gestionnaire Comptable » est aussi posé sur le bureau.
+2. À la fin, le logiciel s'ouvre dans sa propre fenêtre (Microsoft Edge en mode application, sans barre d'adresse). Un raccourci « FINEXA ERP » est aussi posé sur le bureau.
 3. Connectez-vous avec le code entreprise `GC-DEMO-2026` et le mot de passe `Demonstration-2026!`, en changeant de compte pour voir chaque rôle :
    - `amina.mahamat@demo.cm` (caissière) : faites une vente, imprimez la facture, enregistrez une dépense ;
    - `ousmane.djibrine@demo.cm` (DAF) : suivez les ventes en direct, validez les écritures par lots, vérifiez une facture ;
@@ -18,7 +20,7 @@ Faites l'essai sur un PC de test ou une machine virtuelle Windows 10/11, pas sur
 ## Sur le poste serveur (une seule fois)
 
 1. Choisissez le poste qui servira de serveur : allumé pendant les heures de travail, Windows 10/11 ou Windows Server 64 bits, 8 Go de mémoire, adresse IP fixe sur le réseau local (réservation sur la box ou le routeur).
-2. Lancez `GestionnaireComptable-Setup-<version>.exe` avec un compte administrateur.
+2. Lancez `FINEXA-ERP-Setup-<version>.exe` avec un compte administrateur.
    Le fichier n'est pas encore signé numériquement : Windows peut afficher « Windows a protégé votre ordinateur ». Vérifiez son empreinte SHA-256 (fournie avec le fichier), puis cliquez sur « Informations complémentaires », puis sur « Exécuter quand même ».
 3. Le setup installe tout : le logiciel, une base PostgreSQL privée, les services Windows, le certificat HTTPS, le pare-feu (réseau privé seulement) et les sauvegardes de 20 h.
 4. À la fin, le logiciel s'ouvre dans le navigateur. Créez votre entreprise et son administrateur. Deux codes s'affichent **une seule fois** :
@@ -48,12 +50,12 @@ Lancez le setup de la nouvelle version sur le serveur. Il arrête les services, 
 
 ## Désinstallation
 
-Panneau de configuration, « Programmes », puis « Gestionnaire Comptable ». Par défaut, la base et les sauvegardes sont **conservées** dans `C:\ProgramData\GestionnaireComptable`. Elles ne sont effacées que si vous le confirmez deux fois.
+Panneau de configuration, « Programmes », puis « FINEXA ERP ». Par défaut, la base et les sauvegardes sont **conservées** dans `C:\ProgramData\GestionnaireComptable`. Elles ne sont effacées que si vous le confirmez deux fois.
 
 ## En cas de problème
 
 - Le journal de l'installation se trouve dans `C:\ProgramData\GestionnaireComptable\journaux\installation.log`.
 - Les journaux du serveur sont dans le même dossier.
-- Services Windows : « Gestionnaire Comptable - serveur » (`GestionnaireComptable-Serveur`) et la base (`GestionnaireComptable-Base`).
+- Services Windows : « FINEXA ERP - serveur » (`GestionnaireComptable-Serveur`) et la base (`GestionnaireComptable-Base`).
 - **« Échec de initdb.exe … pw.tmp … Permission denied »** (setup 0.1.4 et antérieurs) : corrigé en 0.1.5. Windows relance l'outil de création de la base avec des droits réduits, qui ne permettaient pas de lire le fichier temporaire du mot de passe. Relancez simplement le setup 0.1.5 : aucune base n'avait été créée, rien n'est à nettoyer.
 - **« Une base existe déjà … mais sa configuration est absente »** : le dossier `base` contient une base alors que `config\serveur.env` a disparu. Le setup s'arrête sans rien toucher. Restaurez le fichier de configuration (copie de sauvegarde), ou, s'il s'agit d'une base d'essai sans valeur, déplacez le dossier `base` puis relancez le setup.

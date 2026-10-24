@@ -1,4 +1,10 @@
-# GESTIONNAIRE COMPTABLE
+# FINEXA ERP
+
+*« Une gestion intelligente, une entreprise performante. »*
+
+Éditeur : Incubateur Technologique de l'Innovation (ITI). Domaine : gestion intégrée des entreprises. Marché : pays membres de l'espace OHADA.
+
+![Logo FINEXA ERP](docs/marque/finexa-logo-original.png)
 
 Logiciel de gestion comptable et financière pour PME et organisations de l'espace OHADA (Cameroun en premier lieu), fonctionnant sur réseau local sans Internet obligatoire.
 

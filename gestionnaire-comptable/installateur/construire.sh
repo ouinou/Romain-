@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Construit le setup Windows « tout inclus » de Gestionnaire Comptable (depuis Linux, avec NSIS).
+# Construit le setup Windows « tout inclus » de FINEXA ERP (depuis Linux, avec NSIS).
 #   installateur/construire.sh [dossier-cache-des-téléchargements]
 # Prérequis : Node.js 22, npm, unzip, makensis (paquet nsis), curl.
 set -euo pipefail
@@ -36,9 +36,11 @@ rm -f "$ETAPE"/runtime/pgsql/bin/{stackbuilder.exe,wx*.dll,*regress*.exe,isolati
 rm -rf "$ETAPE/runtime/pgsql/lib/pgxs"
 cp "$CACHE/WinSW-x64.exe" "$CACHE/vc_redist.x64.exe" "$ETAPE/runtime/"
 
+cp "$ICI/marque/finexa.ico" "$ETAPE/finexa.ico"
+
 echo "» Documentation et licences"
 cp "$RACINE/docs/GUIDE-UTILISATION.md" "$ETAPE/docs/GUIDE-UTILISATION.txt"; cp "$RACINE/docs/SECURITE.md" "$ETAPE/docs/SECURITE.txt"; cp "$ICI/INSTALLATION-SETUP.md" "$ETAPE/docs/INSTALLATION-SETUP.txt"
-{ echo "GESTIONNAIRE COMPTABLE ${VERSION} : composants tiers et leurs licences"; echo
+{ echo "FINEXA ERP ${VERSION} (éditeur : Incubateur Technologique de l'Innovation, ITI) : composants tiers et leurs licences"; echo
   echo "== PostgreSQL (licence PostgreSQL) =="; cat "$ETAPE/runtime/pgsql/server_license.txt"; echo
   echo "== Node.js (licence MIT et autres, voir runtime/node/LICENSE) =="; head -25 "$ETAPE/runtime/node/LICENSE"; echo
   echo "== WinSW (licence MIT) : https://github.com/winsw/winsw =="; echo

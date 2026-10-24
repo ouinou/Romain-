@@ -2,7 +2,7 @@
   "name": "gestionnaire-comptable-interface",
   "version": "0.1.0",
   "private": true,
-  "description": "Interface web de GESTIONNAIRE COMPTABLE (servie par le serveur applicatif)",
+  "description": "Interface web de FINEXA ERP (servie par le serveur applicatif)",
   "type": "module",
   "scripts": {
     "dev": "vite",

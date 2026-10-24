@@ -1,5 +1,5 @@
 /**
- * GESTIONNAIRE COMPTABLE : configuration après installation (lancée par le setup Windows, avec le Node.js fourni).
+ * FINEXA ERP : configuration après installation (lancée par le setup Windows, avec le Node.js fourni).
  *
  *   node configurer.mjs --app <dossier du programme> --donnees <dossier des données>          installation ou mise à jour
  *   node configurer.mjs --app … --donnees … --demo                                              + entreprise fictive d'évaluation
@@ -39,6 +39,9 @@ const D = {
   certs: join(DONNEES, "certificats"), sauvegardes: join(DONNEES, "sauvegardes"), journaux: join(DONNEES, "journaux"),
   copie: join(DONNEES, "copie-journal"), services: join(DONNEES, "services"),
 };
+// Identifiants techniques (services, règle de pare-feu, tâches planifiées, autorité de certification) : ils gardent
+// l'ancien nom du produit pour que les installations existantes se mettent à jour et se désinstallent sans reste.
+// Le nom affiché du produit est FINEXA ERP.
 const SERVICE_PG = "GestionnaireComptable-Base", SERVICE_APP = "GestionnaireComptable-Serveur";
 const JOURNAL = join(DONNEES, "journaux", "installation.log");
 
@@ -162,7 +165,7 @@ if (!miseAJour) {
     GC_JOURNAL_NIVEAU: "info", GC_PG_PORT: String(portPg),
   };
   writeFileSync(D.env, [
-    "# Gestionnaire Comptable : configuration générée à l'installation. NE PAS DIFFUSER.",
+    "# FINEXA ERP : configuration générée à l'installation. NE PAS DIFFUSER.",
     "# GC_CLE_SAUVEGARDE : sans elle, les sauvegardes sont illisibles. Copiez-la HORS de ce serveur (papier sous scellé, coffre).",
     "# GC_CLE_CHIFFREMENT : protège la double authentification et la signature des factures. À sauvegarder de la même façon.",
     "# GC_DOSSIER_COPIE_JOURNAL : à déplacer vers un support que l'administrateur technique ne contrôle pas seul (NAS, autre poste).",
@@ -204,8 +207,8 @@ if (WIN) {
   etape("Service Windows du serveur applicatif");
   const xml = `<service>
   <id>${SERVICE_APP}</id>
-  <name>Gestionnaire Comptable - serveur</name>
-  <description>Serveur applicatif de Gestionnaire Comptable (réseau local).</description>
+  <name>FINEXA ERP - serveur</name>
+  <description>Serveur applicatif de FINEXA ERP (réseau local).</description>
   <executable>${NODE}</executable>
   <arguments>--env-file="${D.env}" "${join(SERVEUR, "dist", "src", "index.js")}"</arguments>
   <workingdirectory>${SERVEUR}</workingdirectory>

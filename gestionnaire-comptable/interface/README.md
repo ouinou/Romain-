@@ -1,4 +1,4 @@
-# Gestionnaire Comptable : interface web
+# FINEXA ERP : interface web
 
 Application web (React 18 + TypeScript, compilée avec Vite) servie par le serveur applicatif. Les postes n'installent rien : un navigateur récent suffit.
 
