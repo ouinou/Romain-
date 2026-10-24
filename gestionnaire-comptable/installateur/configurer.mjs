@@ -15,9 +15,9 @@
  */
 import { spawnSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync, appendFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { hostname, networkInterfaces } from "node:os";
+import { hostname, networkInterfaces, tmpdir } from "node:os";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -42,7 +42,16 @@ const D = {
 const SERVICE_PG = "GestionnaireComptable-Base", SERVICE_APP = "GestionnaireComptable-Serveur";
 const JOURNAL = join(DONNEES, "journaux", "installation.log");
 
-const etape = (t) => { console.log(`» ${t}`); try { appendFileSync(JOURNAL, `${new Date().toISOString()} ${t}\n`); } catch { /* dossier pas encore créé */ } };
+// La fenêtre du setup (NSIS) affiche la sortie en page de code ANSI : sous Windows, la console reçoit un texte sans
+// accents pour rester lisible ; le journal d'installation garde le texte complet (UTF-8).
+const lisible = (t) => (WIN ? String(t).replace(/»/g, ">").replace(/[\u2013\u2014]/g, "-").replace(/[«]/g, "\"").replace(/[\u2019]/g, "'").normalize("NFD").replace(/[\u0300-\u036f]/g, "") : String(t));
+process.on("uncaughtException", (e) => {
+  console.error(lisible(`ERREUR : ${e?.message ?? e}`));
+  try { appendFileSync(JOURNAL, `${new Date().toISOString()} ERREUR : ${e?.stack ?? e}\n`); } catch { /* journal indisponible */ }
+  process.exit(1);
+});
+process.on("unhandledRejection", (e) => { throw e; });
+const etape = (t) => { console.log(lisible(`» ${t}`)); try { appendFileSync(JOURNAL, `${new Date().toISOString()} ${t}\n`); } catch { /* dossier pas encore créé */ } };
 function lancer(cmd, args, { ignorer = false, env, cwd } = {}) {
   const r = spawnSync(cmd, args, { encoding: "utf8", env: env ?? process.env, cwd, windowsHide: true });
   if (r.status !== 0 && !ignorer) {
@@ -97,10 +106,20 @@ if (!miseAJour) {
   const mdp = { postgres: secret(), owner: secret(), app: secret(), backup: secret() };
 
   etape("Création de la base PostgreSQL privée");
-  const pw = join(D.config, "pw.tmp");
+  if (existsSync(join(D.pgdata, "PG_VERSION")))
+    throw new Error(`Une base existe déjà dans ${D.pgdata} mais sa configuration (${D.env}) est absente. Rien n'a été modifié : restaurez le fichier de configuration, ou déplacez ce dossier si la base n'est plus utile.`);
+  // Sous Windows, initdb lancé par un administrateur se relance avec des droits réduits (le groupe Administrateurs
+  // ne compte plus). Il ne garde que les droits du compte lui-même : le fichier du mot de passe est donc écrit dans le
+  // dossier temporaire de ce compte (privé), et le dossier de la base est ouvert explicitement à ce compte.
+  if (WIN) {
+    const sid = lancer("whoami", ["/user", "/fo", "csv", "/nh"]).stdout.trim().split(",").pop().replace(/"/g, "");
+    if (/^S-1-/.test(sid)) lancer("icacls", [D.pgdata, "/grant", `*${sid}:(OI)(CI)F`]);
+  }
+  const dossierPw = mkdtempSync(join(tmpdir(), "gc-installation-"));
+  const pw = join(dossierPw, "pw.tmp");
   writeFileSync(pw, mdp.postgres, { mode: 0o600 });
   try { lancer(exe("initdb"), ["-D", D.pgdata, "-U", "postgres", "-A", "scram-sha-256", `--pwfile=${pw}`, "-E", "UTF8", "--no-locale"]); }
-  finally { rmSync(pw, { force: true }); }
+  finally { rmSync(dossierPw, { recursive: true, force: true }); }
   appendFileSync(join(D.pgdata, "postgresql.conf"), [
     "", "# Gestionnaire Comptable", `port = ${portPg}`, "listen_addresses = 'localhost'",
     "log_min_error_statement = error", "logging_collector = on", "log_directory = 'log'", "log_rotation_age = 7d", "",

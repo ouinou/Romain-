@@ -55,3 +55,5 @@ Panneau de configuration, « Programmes », puis « Gestionnaire Comptable ». P
 - Le journal de l'installation se trouve dans `C:\ProgramData\GestionnaireComptable\journaux\installation.log`.
 - Les journaux du serveur sont dans le même dossier.
 - Services Windows : « Gestionnaire Comptable - serveur » (`GestionnaireComptable-Serveur`) et la base (`GestionnaireComptable-Base`).
+- **« Échec de initdb.exe … pw.tmp … Permission denied »** (setup 0.1.4 et antérieurs) : corrigé en 0.1.5. Windows relance l'outil de création de la base avec des droits réduits, qui ne permettaient pas de lire le fichier temporaire du mot de passe. Relancez simplement le setup 0.1.5 : aucune base n'avait été créée, rien n'est à nettoyer.
+- **« Une base existe déjà … mais sa configuration est absente »** : le dossier `base` contient une base alors que `config\serveur.env` a disparu. Le setup s'arrête sans rien toucher. Restaurez le fichier de configuration (copie de sauvegarde), ou, s'il s'agit d'une base d'essai sans valeur, déplacez le dossier `base` puis relancez le setup.

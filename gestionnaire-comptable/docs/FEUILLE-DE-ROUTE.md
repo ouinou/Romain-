@@ -57,7 +57,7 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Correction : les rafraîchissements automatiques ne prolongent plus la session
 - [x] 74 tests serveur, parcours navigateur de 25 étapes
 - [x] Setup Windows tout inclus (NSIS) : Node.js, PostgreSQL privé, services, HTTPS par autorité locale, pare-feu, sauvegardes planifiées ; assistant de première installation
-- [ ] Setup à éprouver sur un vrai Windows 10/11 et Windows Server (construit et vérifié sous Linux seulement)
+- [ ] Setup à éprouver sur un vrai Windows 10/11 et Windows Server. Premier essai réel (0.1.4) : échec à la création de la base (droits réduits d'initdb sur le fichier du mot de passe), corrigé en 0.1.5 ; l'installation complète reste à confirmer sur Windows
 - [ ] Signature numérique du setup (certificat de signature de code à acquérir)
 
 ## Fait (v0.1, étape 11 : interface de logiciel de bureau)
