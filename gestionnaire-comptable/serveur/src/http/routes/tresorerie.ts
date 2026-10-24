@@ -22,7 +22,7 @@ const exigerLecture = (ctx: Ctx) => {
 };
 
 /** Condition SQL (alias t) : comptes de trésorerie visibles par l'utilisateur ($1 = id utilisateur). */
-const visibles = (ctx: Ctx) => peutLireTout(ctx) ? "TRUE"
+export const visibles = (ctx: Ctx) => peutLireTout(ctx) ? "TRUE"
   : "(t.kind = 'cash' AND EXISTS (SELECT 1 FROM treasury_account_holders h WHERE h.treasury_account_id = t.id AND h.user_id = $1))";
 
 /** Compte de trésorerie utilisable en écriture par l'utilisateur, sinon refus tracé. */

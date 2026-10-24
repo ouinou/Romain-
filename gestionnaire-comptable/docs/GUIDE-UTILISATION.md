@@ -13,6 +13,7 @@ L'écran est organisé comme un logiciel de bureau :
 - **Menu latéral** : tous les écrans, par module ; cliquez sur un module pour le déplier.
 - **Onglets des documents** : chaque écran ouvert reste disponible au-dessus de la zone de travail ; la croix le ferme.
 - **Panneau de détail** (Écritures) : cliquez sur une ligne pour voir son détail à droite ; double-clic ou Entrée ouvre la fiche.
+- **Tableau de bord** : synthèse du jour, courbe des ventes et des encaissements sur six mois (survolez un mois pour voir les montants), trésorerie par compte, brouillards à valider par journal, documents récents et détail de la facture choisie. Chaque bloc n'apparaît qu'avec les droits correspondants.
 - **Barre d'état** (en bas) : entreprise, exercice, utilisateur, connexion au serveur, brouillards à valider, somme de la sélection, zoom de la zone de travail.
 
 **Raccourcis** : Alt+N nouvelle facture, Alt+R règlement, Alt+D dépense, Alt+T transfert, Alt+E saisie d'écriture, Alt+B balance, Alt+G grand livre, Alt+L ventes en direct, Alt+V vérifier une facture, F9 valider la sélection (Écritures), Ctrl+F rechercher, F1 aide, Échap fermer. Dans un tableau, les flèches passent d'une ligne à l'autre et Entrée ouvre la ligne.

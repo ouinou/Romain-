@@ -298,7 +298,7 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
     exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
     erreur: (s: number, code: string, message: string) => new E(s, code, message),
   });
-  if (mod === "tresorerie" || mod === "ventes") return traiterTresorerie(m, chemin, q, c, {
+  if (mod === "tresorerie" || mod === "ventes" || mod === "tableau-de-bord") return traiterTresorerie(m, chemin, q, c, {
     exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
     erreur: (s: number, code: string, message: string) => new E(s, code, message),
     utilisateurs: () => utilisateurs.map((u) => ({ id: u.id, nom: u.nom, actif: u.statut === "active", permissions: permsDe(u) })),
@@ -311,7 +311,9 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
 export function installer() {
   const ids = Object.fromEntries(utilisateurs.map((u) => [u.email, u.id]));
   initialiserComptabilite(ids);
-  initialiserTresorerie(ids);
+  initialiserTresorerie(ids, { raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone,
+    devise: entreprise.devise, email: entreprise.email, regimeFiscal: entreprise.regimeFiscal, patente: entreprise.patente, couleurs: { ...entreprise.couleurs },
+    logoId: null, logoUrl: null, code: entreprise.code });
   definirTransport(async (methode, url, corps) => {
     await new Promise((r) => setTimeout(r, 120));   // petite latence réaliste
     const u = new URL(url, location.href);

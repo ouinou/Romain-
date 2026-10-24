@@ -170,7 +170,7 @@ if (o.demo) {
   if (r.existe) etape("Entreprise de démonstration déjà présente");
   else {
     etape("Entreprise de démonstration (données fictives, pour évaluation)");
-    lancer(NODE, [join(SERVEUR, "dist", "src", "cli", "demo-initialiser.js")], { env: { ...process.env, ...env, GC_MODE_DEMO: "oui" }, cwd: SERVEUR });
+    lancer(NODE, [join(SERVEUR, "dist", "src", "cli", "demo-initialiser.js")], { env: { ...process.env, ...env, GC_MODE_DEMO: "oui", GC_DEMO_HISTORIQUE: "oui" }, cwd: SERVEUR });
     writeFileSync(join(DONNEES, "DEMONSTRATION.txt"), [
       "Installation d'ÉVALUATION : elle contient une entreprise fictive dont le mot de passe est connu.",
       "Ne saisissez pas de vraies données ici. Avant un usage réel : désinstallez en supprimant les données, puis réinstallez sans l'option de démonstration.",

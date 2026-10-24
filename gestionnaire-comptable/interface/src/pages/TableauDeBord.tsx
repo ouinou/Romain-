@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { api, qs } from "../api";
 import { useSession } from "../session";
 import { aller } from "../routeur";
 import { Chargement, dateHeure, useDonnees } from "../composants/ui";
 import { Icone } from "../assets/icons/Icone";
+import { Graphique } from "../composants/Graphique";
 import { libelleAction } from "../libelles";
 import { Montant, dateFr, formatMontant } from "./comptabilite/commun";
 import { BadgePaiement, type FactureResume } from "./ventes/commun";
 import { TYPES_TRESORERIE, comptesTresorerie } from "./tresorerie/commun";
 import type { Evenement, Page } from "../types";
+import type { EcritureResume } from "./comptabilite/commun";
+
+const JOURNAUX: Record<string, string> = { VT: "Ventes", AC: "Achats", BQ: "Banque", CA: "Caisse", OD: "Opérations diverses" };
 
 /**
  * Tableau de bord : synthèse du jour (ventes, encaissements, crédit, trésorerie, brouillards), trésorerie par compte,
@@ -32,7 +37,15 @@ export function TableauDeBord() {
     const [tableau, comptes] = await Promise.all([api.get<{ total: number; entreesJour: number; sortiesJour: number }>("/api/tresorerie/tableau"), comptesTresorerie()]);
     return { tableau, comptes };
   }, []);
-  const brouillards = useDonnees(() => (voitCompta ? api.get<Page<unknown>>("/api/comptabilite/ecritures?statut=brouillard&taille=1").then((r) => r.total) : Promise.resolve(null)), []);
+  const brouillardsListe = useDonnees(() => (voitCompta ? api.get<Page<EcritureResume>>("/api/comptabilite/ecritures?statut=brouillard&taille=100") : Promise.resolve(null)), []);
+  const brouillards = { donnees: brouillardsListe.donnees?.total ?? null };
+  // Brouillards regroupés par journal (comme « Brouillards à valider » de la référence) : nombre et montant.
+  const parJournal = Object.entries((brouillardsListe.donnees?.elements ?? []).reduce<Record<string, { n: number; montant: number }>>((acc, e) => {
+    const k = acc[e.journal] ?? (acc[e.journal] = { n: 0, montant: 0 }); k.n++; k.montant += e.totalDebit; return acc;
+  }, {}));
+  const evolution = useDonnees(() => (voitVentes || voitTreso
+    ? api.get<{ mois: string[]; ventes: number[] | null; encaissements: number[] | null }>("/api/tableau-de-bord/evolution?mois=6") : Promise.resolve(null)), []);
+  const [choix, setChoix] = useState<string | null>(null);
 
   const comptes = useDonnees(async () => {
     if (!a("users.read")) return null;
@@ -79,24 +92,16 @@ export function TableauDeBord() {
         </section>
       )}
 
-      {(voitTreso || voitVentes) && (
-        <div className="deux">
-          {voitVentes && (
-            <section className="panneau">
-              <div className="entete-panneau"><h3>Documents récents</h3><a className="btn btn-petit" href="#/ventes">Toutes les factures</a></div>
-              {ventes.erreur ? <div className="alerte alerte-erreur">{ventes.erreur}</div> : !ventes.donnees ? <Chargement /> : ventes.donnees.recents.length === 0
-                ? <div className="vide">Aucune facture pour l'instant.</div> : (
-                <div className="tableau-conteneur">
-                  <table>
-                    <thead><tr><th>Date</th><th>Référence</th><th>Client</th><th className="montant">Montant (FCFA)</th><th>Statut</th></tr></thead>
-                    <tbody>{ventes.donnees.recents.map((f) => (
-                      <tr key={f.id} className="cliquable" tabIndex={0} onClick={() => aller(`/ventes/factures/${f.id}`)} onKeyDown={(k) => k.key === "Enter" && aller(`/ventes/factures/${f.id}`)}>
-                        <td className="num">{dateFr(f.date)}</td><td className="num"><b>{f.numero}</b></td><td>{f.client}</td>
-                        <td className="montant"><Montant v={f.totalTtc} /></td><td><BadgePaiement s={f.statutPaiement} /></td>
-                      </tr>))}
-                    </tbody>
-                  </table>
-                </div>)}
+      {(voitTreso || voitVentes || voitCompta) && (
+        <div className="grille-tdb">
+          {(voitVentes || voitTreso) && (
+            <section className="panneau large">
+              <div className="entete-panneau"><h3>Évolution des ventes (6 derniers mois)</h3></div>
+              {evolution.erreur ? <div className="alerte alerte-erreur">{evolution.erreur}</div> : !evolution.donnees ? <Chargement /> : (
+                <Graphique titre="Évolution des ventes sur 6 mois" mois={evolution.donnees.mois} series={[
+                  ...(evolution.donnees.ventes ? [{ nom: "Ventes TTC", couleur: "var(--marine)", valeurs: evolution.donnees.ventes }] : []),
+                  ...(evolution.donnees.encaissements ? [{ nom: "Encaissements", couleur: "var(--accent)", valeurs: evolution.donnees.encaissements }] : []),
+                ]} />)}
             </section>
           )}
           {voitTreso && (
@@ -106,16 +111,72 @@ export function TableauDeBord() {
                 ? <div className="vide">Aucun compte de trésorerie accessible.</div> : (
                 <div className="tableau-conteneur">
                   <table>
-                    <thead><tr><th>Compte</th><th>Type</th><th className="montant">Solde (FCFA)</th><th className="montant">%</th></tr></thead>
+                    <thead><tr><th>Compte</th><th className="montant">Solde (FCFA)</th><th className="montant">%</th></tr></thead>
                     <tbody>{treso.donnees.comptes.map((c) => (
-                      <tr key={c.id}><td>{c.nom}</td><td>{TYPES_TRESORERIE[c.type]}</td><td className="montant"><Montant v={c.solde} /></td>
+                      <tr key={c.id}><td title={TYPES_TRESORERIE[c.type]}><Icone nom={c.type === "cash" ? "caisse" : c.type === "bank" ? "banque" : "mobile"} taille={16} className="en-ligne" /> {c.nom}</td>
+                        <td className="montant"><Montant v={c.solde} /></td>
                         <td className="montant">{totalComptes > 0 ? `${(c.solde * 100 / totalComptes).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : "—"}</td></tr>))}
                     </tbody>
-                    <tfoot><tr><th colSpan={2}>Total</th><th className="montant">{formatMontant(totalComptes)}</th><th className="montant">{totalComptes > 0 ? "100 %" : "—"}</th></tr></tfoot>
+                    <tfoot><tr><th>Total</th><th className="montant">{formatMontant(totalComptes)}</th><th className="montant">{totalComptes > 0 ? "100 %" : "—"}</th></tr></tfoot>
                   </table>
                 </div>)}
             </section>
           )}
+          {voitCompta && (
+            <section className="panneau">
+              <div className="entete-panneau"><h3>Brouillards à valider{brouillards.donnees ? <span className="badge badge-rouge" style={{ marginLeft: 8 }}>{brouillards.donnees}</span> : null}</h3></div>
+              {brouillardsListe.erreur ? <div className="alerte alerte-erreur">{brouillardsListe.erreur}</div> : !brouillardsListe.donnees ? <Chargement /> : parJournal.length === 0
+                ? <div className="vide">Aucun brouillard en attente.</div> : (
+                <div className="tableau-conteneur">
+                  <table>
+                    <thead><tr><th>Journal</th><th className="montant">Nombre</th><th className="montant">Montant (FCFA)</th></tr></thead>
+                    <tbody>{parJournal.map(([j, v]) => <tr key={j}><td>{JOURNAUX[j] ?? j}</td><td className="montant">{v.n}</td><td className="montant"><Montant v={v.montant} /></td></tr>)}</tbody>
+                  </table>
+                </div>)}
+              <div style={{ textAlign: "right", marginTop: 8 }}><a href="#/comptabilite/ecritures?statut=brouillard">Voir tout →</a></div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {voitVentes && (
+        <div className="grille-tdb bas">
+          <section className="panneau">
+            <div className="entete-panneau"><h3>Documents récents</h3><a className="btn btn-petit" href="#/ventes">Toutes les factures</a></div>
+            {ventes.erreur ? <div className="alerte alerte-erreur">{ventes.erreur}</div> : !ventes.donnees ? <Chargement /> : ventes.donnees.recents.length === 0
+              ? <div className="vide">Aucune facture pour l'instant.</div> : (
+              <div className="tableau-conteneur">
+                <table>
+                  <thead><tr><th>Date</th><th>Type</th><th>Référence</th><th>Client</th><th className="montant">Montant (FCFA)</th><th>Statut</th></tr></thead>
+                  <tbody>{ventes.donnees.recents.map((f) => (
+                    <tr key={f.id} className={"cliquable" + ((choix ?? ventes.donnees!.recents[0].id) === f.id ? " selectionnee" : "")} tabIndex={0}
+                      onClick={() => setChoix(f.id)} onFocus={() => setChoix(f.id)} onDoubleClick={() => aller(`/ventes/factures/${f.id}`)}
+                      onKeyDown={(k) => k.key === "Enter" && aller(`/ventes/factures/${f.id}`)}>
+                      <td className="num">{dateFr(f.date)}</td><td>Facture</td><td className="num"><b>{f.numero}</b></td><td>{f.client}</td>
+                      <td className="montant"><Montant v={f.totalTtc} /></td><td><BadgePaiement s={f.statutPaiement} /></td>
+                    </tr>))}
+                  </tbody>
+                </table>
+              </div>)}
+          </section>
+          {ventes.donnees && ventes.donnees.recents.length > 0 && (() => {
+            const f = ventes.donnees.recents.find((x) => x.id === choix) ?? ventes.donnees.recents[0];
+            return (
+              <section className="panneau detail-selection" aria-live="polite">
+                <div className="entete-panneau"><h3>Détail de la sélection</h3></div>
+                <dl>
+                  <dt>Facture n°</dt><dd className="num">{f.numero}</dd>
+                  <dt>Client</dt><dd>{f.client}</dd>
+                  <dt>Date</dt><dd className="num">{dateFr(f.date)}</dd>
+                  <dt>Montant HT</dt><dd className="num"><Montant v={f.totalHt} /></dd>
+                  <dt>TVA</dt><dd className="num"><Montant v={f.totalTva} /></dd>
+                  <dt>Reste dû</dt><dd className="num"><Montant v={f.reste} /></dd>
+                </dl>
+                <div className="net"><span>Net à payer</span><span className="num">{formatMontant(f.totalTtc)} FCFA</span></div>
+                <div style={{ marginTop: 8 }}><a className="btn btn-petit" href={`#/ventes/factures/${f.id}`}>Ouvrir la facture</a></div>
+              </section>
+            );
+          })()}
         </div>
       )}
 

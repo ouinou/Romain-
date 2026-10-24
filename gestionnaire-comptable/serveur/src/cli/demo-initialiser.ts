@@ -79,6 +79,9 @@ await executer(async () => {
          VALUES ($1, 'in', 'receipt', 100000, make_date($2, 1, 3), '', 'Fonds de caisse initial', 'apport', $3, $4) RETURNING id, reference`, [ids.cash.id, an, capital.id, ousmane]);
       await genererEcriture(c, { journalId: ids.cash.journal, date: `${an}-01-03`, piece: m.reference, libelle: "Fonds de caisse initial", auteur: ousmane,
         source: { type: "treasury_movement", id: m.id }, lignes: [{ compteId: ids.cash.compte, debit: 100000, credit: 0 }, { compteId: capital.id, debit: 0, credit: 100000 }] });
+      // Historique FICTIF de ventes sur les cinq mois précédents, pour que le tableau de bord d'une installation
+      // d'évaluation montre des courbes. Seulement avec GC_DEMO_HISTORIQUE=oui (option « démonstration » du setup).
+      if (process.env.GC_DEMO_HISTORIQUE === "oui") await historiqueVentes(c, { amina, ousmane, joseph, an, ids, entrepriseId: e.entrepriseId });
       // TVA de démonstration : 19,25 % (taux À VÉRIFIER dans la loi de finances en vigueur avant tout usage réel).
       // Profil fictif complet (en-tête des factures). Logo et couleurs : à choisir par l'entreprise dans « Entreprise ».
       await c.query(`UPDATE companies SET phone = '+237 600 00 00 00 (fictif)',
@@ -94,3 +97,57 @@ await executer(async () => {
     console.log("  Double authentification obligatoire : désactivée pour la démonstration (réactivable dans Entreprise).");
   } finally { await pool.end(); }
 });
+
+/** Ventes fictives des cinq mois précédents (dans l'exercice en cours), avec écritures validées et encaissements. */
+async function historiqueVentes(c: import("../db.js").Client, d: {
+  amina: string; ousmane: string; joseph: string; an: number; entrepriseId: string;
+  ids: Record<string, { id: string; compte: string; journal: string }>;
+}) {
+  const { rows: [ent] } = await c.query("SELECT legal_name, niu, rccm, address, phone FROM companies WHERE id = $1", [d.entrepriseId]);
+  const vendeur = { raisonSociale: ent.legal_name, niu: ent.niu, rccm: ent.rccm, adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)",
+    email: "contact@demo.cm", regimeFiscal: "Régime du réel (à vérifier)", patente: "PAT-DEMO-0000 (fictif)", logoId: null, couleurs: { principale: "#101d35", accent: "#ff6a00" } };
+  const compte = async (n: string) => (await c.query("SELECT id FROM accounts WHERE account_number = $1", [n])).rows[0].id as string;
+  const cpt = { "701": await compte("701"), "706": await compte("706"), "411": await compte("411"), "443": await compte("443") };
+  const { rows: [jv] } = await c.query("SELECT id FROM journals WHERE code = 'VT'");
+  const clients: string[] = [];
+  for (const [nom, tel] of [["Établissements Fictifs Mbarga", "+237 600 00 00 01"], ["Cabinet Démo Ndjamena", "+237 600 00 00 02"], ["Boutique Démo Akwa", "+237 600 00 00 03"]])
+    clients.push((await c.query("INSERT INTO customers (name, phone, address) VALUES ($1,$2,'Douala (fictif)') RETURNING id", [nom, tel])).rows[0].id);
+  // [jour, client, désignation, nature, quantité, prix HT, paiement] — montants fixes : l'historique est le même à chaque installation.
+  const MODELES: [number, number, string, "marchandise" | "service", number, number, "caisse" | "banque" | "credit"][][] = [
+    [[4, 0, "Ramettes de papier A4", "marchandise", 40, 3500, "caisse"], [12, 1, "Maintenance informatique", "service", 1, 120000, "banque"], [21, 2, "Cartouches d'encre", "marchandise", 12, 15000, "caisse"]],
+    [[3, 1, "Audit de caisse", "service", 1, 250000, "credit"], [10, 0, "Classeurs et chemises", "marchandise", 60, 1200, "caisse"], [18, 2, "Installation de poste", "service", 2, 35000, "banque"], [26, 0, "Cartouches d'encre", "marchandise", 8, 15000, "caisse"]],
+    [[5, 2, "Formation logiciel", "service", 1, 180000, "banque"], [11, 0, "Ramettes de papier A4", "marchandise", 50, 3500, "caisse"], [19, 1, "Maintenance informatique", "service", 1, 120000, "credit"], [27, 2, "Cartouches d'encre", "marchandise", 15, 15000, "caisse"]],
+    [[2, 0, "Imprimante laser", "marchandise", 2, 145000, "banque"], [9, 1, "Assistance comptable", "service", 1, 200000, "banque"], [16, 2, "Ramettes de papier A4", "marchandise", 70, 3500, "caisse"], [23, 0, "Cartouches d'encre", "marchandise", 10, 15000, "credit"], [28, 1, "Installation de poste", "service", 3, 35000, "caisse"]],
+    [[3, 2, "Maintenance informatique", "service", 1, 120000, "banque"], [8, 0, "Classeurs et chemises", "marchandise", 90, 1200, "caisse"], [15, 1, "Formation logiciel", "service", 1, 180000, "credit"], [22, 2, "Cartouches d'encre", "marchandise", 20, 15000, "caisse"], [27, 0, "Imprimante laser", "marchandise", 1, 145000, "banque"]],
+  ];
+  const maintenant = new Date();
+  for (let k = 5; k >= 1; k--) {
+    const debut = new Date(maintenant.getFullYear(), maintenant.getMonth() - k, 1);
+    if (debut.getFullYear() !== d.an) continue;   // l'exercice de démonstration couvre l'année civile en cours
+    for (const [jour, cl, designation, nature, qte, pu, paiement] of MODELES[5 - k]) {
+      const date = `${d.an}-${String(debut.getMonth() + 1).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
+      const ht = qte * pu, tva = Math.floor((ht * 1925 + 5000) / 10000), ttc = ht + tva;
+      const t = paiement === "caisse" ? d.ids.cash : paiement === "banque" ? d.ids.bank : null;
+      const auteur = paiement === "caisse" ? d.amina : d.ousmane;
+      const { rows: [nomClient] } = await c.query("SELECT name, phone FROM customers WHERE id = $1", [clients[cl]]);
+      const { rows: [inv] } = await c.query(
+        `INSERT INTO invoices (invoice_date, kind, customer_id, customer_name, customer_phone, seller, currency, tax_rate_bp, total_ht, total_tax, total_ttc, payment_mode, treasury_account_id, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,'XAF',1925,$7,$8,$9,$10,$11,$12) RETURNING id, number`,
+        [date, nature === "service" ? "services" : "goods", clients[cl], nomClient.name, nomClient.phone, JSON.stringify(vendeur), ht, tva, ttc, t ? "immediate" : "credit", t?.id ?? null, auteur]);
+      const revenu = nature === "service" ? cpt["706"] : cpt["701"];
+      await c.query("INSERT INTO invoice_lines (invoice_id, line_no, description, quantity, unit_price, amount, revenue_account_id) VALUES ($1,1,$2,$3,$4,$5,$6)", [inv.id, designation, qte, pu, ht, revenu]);
+      const libelle = `Facture ${inv.number} : ${nomClient.name}`;
+      const valider = async (ecriture: string) => c.query("UPDATE journal_entries SET status = 'validated', validated_by = $2 WHERE id = $1", [ecriture, auteur === d.ousmane ? d.joseph : d.ousmane]);
+      await valider(await genererEcriture(c, { journalId: jv.id, date, piece: inv.number, libelle, auteur, source: { type: "invoice", id: inv.id },
+        lignes: [{ compteId: cpt["411"], debit: ttc, credit: 0 }, { compteId: revenu, debit: 0, credit: ht }, { compteId: cpt["443"], debit: 0, credit: tva }] }));
+      // Encaissement : immédiat, ou pour une vente à crédit, un acompte de la moitié par la banque dix jours plus tard.
+      const reglement = t ? { compte: t, montant: ttc, date } : { compte: d.ids.bank, montant: Math.floor(ttc / 2), date: date.slice(0, 8) + String(Math.min(jour + 10, 28)).padStart(2, "0") };
+      const { rows: [m] } = await c.query(
+        `INSERT INTO treasury_movements (treasury_account_id, direction, kind, amount, movement_date, reference, label, category, counterpart_account_id, invoice_id, created_by)
+         VALUES ($1,'in','invoice_payment',$2,$3,$4,$5,'encaissement_client',$6,$7,$8) RETURNING id`,
+        [reglement.compte.id, reglement.montant, reglement.date, inv.number, `Règlement ${libelle}`.slice(0, 200), cpt["411"], inv.id, auteur]);
+      await valider(await genererEcriture(c, { journalId: reglement.compte.journal, date: reglement.date, piece: inv.number, libelle: `Règlement ${libelle}`, auteur,
+        source: { type: "treasury_movement", id: m.id }, lignes: [{ compteId: reglement.compte.compte, debit: reglement.montant, credit: 0 }, { compteId: cpt["411"], debit: 0, credit: reglement.montant }] }));
+    }
+  }
+}

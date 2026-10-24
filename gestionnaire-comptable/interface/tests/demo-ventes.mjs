@@ -38,13 +38,16 @@ try {
   await page.getByLabel("Nature de la ligne 2").selectOption("service");
   await page.getByLabel("Prix unitaire de la ligne 2").fill("10000");
   await page.getByRole("button", { name: /Émettre la facture/ }).click();
-  await page.getByRole("heading", { name: new RegExp(`Facture FAC-${new Date().getFullYear()}-00001`) }).waitFor();
+  // La démonstration contient un historique fictif de cinq mois : la nouvelle facture prend le numéro suivant.
+  const titre = page.getByRole("heading", { name: new RegExp(`Facture FAC-${new Date().getFullYear()}-\\d{5}`) });
+  await titre.waitFor();
+  const numero = (await titre.innerText()).replace("Facture ", "").trim();
   await page.getByText("Soixante-cinq mille cinq cent quatre-vingt-huit francs CFA").waitFor();
   await page.screenshot({ path: `${DOSSIER}/demo-facture.png` });
-  etape("caissière : vente comptant, facture n° 1, 65 588 FCFA en lettres");
+  etape(`caissière : vente comptant, facture ${numero}, 65 588 FCFA en lettres`);
   await page.locator(".apercu-facture svg.qr").waitFor();
   await menu("Ventes en direct").click();
-  await page.locator("tbody").getByText(new RegExp(`FAC-${new Date().getFullYear()}-00001`)).waitFor();
+  await page.locator("tbody").getByText(numero).waitFor();
   etape("facture avec code QR ; visible dans « Ventes en direct »");
   await menu("Caisses et banques").click();
   await page.getByRole("button", { name: "− Dépense" }).click();
@@ -63,6 +66,9 @@ try {
   etape("caissière : dépense, solde 160 588 ; caisse jamais négative");
   await page.getByRole("button", { name: "Déconnexion" }).click();
   await connexion("ousmane.djibrine@demo.cm");
+  await page.getByRole("img", { name: /Évolution des ventes/ }).waitFor();
+  await page.screenshot({ path: `${DOSSIER}/demo-tableau-de-bord.png` });
+  etape("DAF : tableau de bord avec la courbe des ventes et des encaissements sur 6 mois");
   await menu("Écritures").click();
   await page.getByLabel("Origine").selectOption({ label: "Ventes et trésorerie" });
   await page.getByLabel("État", { exact: true }).selectOption({ label: "Brouillards" });

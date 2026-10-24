@@ -240,6 +240,8 @@ try {
   const f = await nouvellePage();
   await connexion(f, "ousmane.djibrine@demo.cm");
   await f.getByRole("heading", { name: /Bonjour Ousmane/ }).waitFor();
+  await f.getByRole("img", { name: /Évolution des ventes/ }).waitFor();
+  await f.getByText("Brouillards à valider").first().waitFor();
   await f.goto(urlEcriture);
   await f.getByRole("button", { name: "Valider" }).click();
   await f.getByRole("dialog").getByRole("button", { name: "Valider" }).click();

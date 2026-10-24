@@ -16,6 +16,7 @@ import { routesEtatsComptables } from "./routes/comptabilite-etats.js";
 import { routesTresorerie } from "./routes/tresorerie.js";
 import { routesVentes } from "./routes/ventes.js";
 import { routesInstallation } from "./routes/installation.js";
+import { routesTableauDeBord } from "./routes/tableau-de-bord.js";
 
 export function construireApp(deps: Dependances, options: FastifyServerOptions = {}, dossierInterface?: string) {
   const app = Fastify({ bodyLimit: 1_048_576, trustProxy: false, ...options });
@@ -57,7 +58,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
 
   app.get("/api/sante", async () => {
     await deps.pool.query("SELECT 1");
-    return { statut: "ok", version: "0.1.2" };
+    return { statut: "ok", version: "0.1.3" };
   });
 
   routesAuth(app, deps);
@@ -72,6 +73,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   routesTresorerie(app, deps);
   routesVentes(app, deps);
   routesInstallation(app, deps);
+  routesTableauDeBord(app, deps);
   if (dossierInterface) servirInterface(app, dossierInterface);
   return app;
 }

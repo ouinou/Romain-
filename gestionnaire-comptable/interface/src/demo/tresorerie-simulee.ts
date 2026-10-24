@@ -3,7 +3,7 @@
  * Reprend les règles visibles du vrai serveur (caisse jamais négative, caisse attitrée, numérotation des factures,
  * écritures générées en brouillard), en mémoire et sans aucune garantie. Les vraies règles sont dans PostgreSQL (migration 005).
  */
-import { brouillonsGeneres, comptesProtegesPour, etatEcriture, genererEcriture, lignesEcriture } from "./comptabilite-simulee";
+import { brouillonsGeneres, comptesProtegesPour, etatEcriture, genererEcriture, lignesEcriture, validerEcritureDemo } from "./comptabilite-simulee";
 
 type Q = URLSearchParams;
 interface Outils {
@@ -81,7 +81,7 @@ const codeDemo = (code: string, f: { numero: string; date: string; totalTtc: num
 };
 const tva = (ht: number, pdm: number) => Number((BigInt(ht) * BigInt(pdm) + 5000n) / 10000n);
 
-export function initialiserTresorerie(ids: Record<string, string>) {
+export function initialiserTresorerie(ids: Record<string, string>, vendeur: Fac["vendeur"]) {
   if (comptesT.length) return;
   const caisse: CompteT = { id: uid(), type: "cash", nom: "Caisse principale", banque: null, referenceBancaire: null, actif: true, numero: "5711", journal: "CA", caissiers: [ids["amina.mahamat@demo.cm"]] };
   comptesT.push(caisse,
@@ -92,6 +92,47 @@ export function initialiserTresorerie(ids: Record<string, string>) {
     libelle: "Fonds de caisse initial", categorie: "apport", contrepartie: "101", factureId: null, annulationDe: null, motif: null, auteur: ousmane, creeLe: `${AN}-01-03T08:00:00Z`, ecritureId: null, groupe: null };
   m.ecritureId = genererEcriture("CA", m.date, m.reference, m.libelle, ousmane, { type: "mouvement", id: m.id, reference: m.reference }, [["5711", 100000, 0], ["101", 0, 100000]]);
   mouvements.push(m);
+  historiqueVentes(ousmane, ids["joseph.atangana@demo.cm"], comptesT[1], vendeur);
+}
+
+/**
+ * Historique FICTIF des cinq mois précédents (mêmes ventes que l'option de démonstration du setup), pour que le
+ * graphique du tableau de bord ait des courbes. Encaissements sur la banque : la caisse de démonstration reste intacte.
+ */
+function historiqueVentes(auteur: string, validateur: string, banque: CompteT, vendeur: Fac["vendeur"]) {
+  const MODELES: [number, number, string, "marchandise" | "service", number, number, boolean][][] = [
+    [[4, 0, "Ramettes de papier A4", "marchandise", 40, 3500, true], [12, 1, "Maintenance informatique", "service", 1, 120000, true], [21, 0, "Cartouches d'encre", "marchandise", 12, 15000, true]],
+    [[3, 1, "Audit de caisse", "service", 1, 250000, false], [10, 0, "Classeurs et chemises", "marchandise", 60, 1200, true], [18, 1, "Installation de poste", "service", 2, 35000, true], [26, 0, "Cartouches d'encre", "marchandise", 8, 15000, true]],
+    [[5, 1, "Formation logiciel", "service", 1, 180000, true], [11, 0, "Ramettes de papier A4", "marchandise", 50, 3500, true], [19, 1, "Maintenance informatique", "service", 1, 120000, false], [27, 0, "Cartouches d'encre", "marchandise", 15, 15000, true]],
+    [[2, 0, "Imprimante laser", "marchandise", 2, 145000, true], [9, 1, "Assistance comptable", "service", 1, 200000, true], [16, 0, "Ramettes de papier A4", "marchandise", 70, 3500, true], [23, 0, "Cartouches d'encre", "marchandise", 10, 15000, false], [28, 1, "Installation de poste", "service", 3, 35000, true]],
+    [[3, 1, "Maintenance informatique", "service", 1, 120000, true], [8, 0, "Classeurs et chemises", "marchandise", 90, 1200, true], [15, 1, "Formation logiciel", "service", 1, 180000, false], [22, 0, "Cartouches d'encre", "marchandise", 20, 15000, true], [27, 0, "Imprimante laser", "marchandise", 1, 145000, true]],
+  ];
+  const maintenant = new Date();
+  for (let k = 5; k >= 1; k--) {
+    const d0 = new Date(maintenant.getFullYear(), maintenant.getMonth() - k, 1);
+    if (d0.getFullYear() !== AN) continue;
+    for (const [jour, cl, designation, nature, qte, pu, paye] of MODELES[5 - k]) {
+      const date = `${AN}-${String(d0.getMonth() + 1).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
+      const ht = qte * pu, totalTva = tva(ht, 1925), ttc = ht + totalTva;
+      const client = clients[cl];
+      const f: Fac = { id: uid(), numero: `FAC-${AN}-${String(++seqFac).padStart(5, "0")}`, date, type: nature === "service" ? "services" : "goods",
+        client: { id: client.id, nom: client.nom, niu: client.niu, adresse: client.adresse, telephone: client.telephone }, vendeur: { ...vendeur }, devise: "XAF", tauxTvaPdm: 1925,
+        lignes: [{ ordre: 1, designation, quantite: qte, prixUnitaire: pu, montant: ht, nature }], totalHt: ht, totalTva, totalTtc: ttc,
+        paiement: paye ? "comptant" : "credit", tresorerie: paye ? banque.nom : null, note: null, auteur, creeLe: `${date}T10:00:00Z`, ecritureId: null };
+      const libelle = `Facture ${f.numero} : ${client.nom}`;
+      f.ecritureId = genererEcriture("VT", date, f.numero, libelle, auteur, { type: "facture", id: f.id, reference: f.numero },
+        [["411", ttc, 0], [nature === "service" ? "706" : "701", 0, ht], ["443", 0, totalTva]]);
+      validerEcritureDemo(f.ecritureId, validateur);
+      factures.push(f);
+      const montant = paye ? ttc : Math.floor(ttc / 2);
+      const dateReg = paye ? date : `${date.slice(0, 8)}${String(Math.min(jour + 10, 28)).padStart(2, "0")}`;
+      const mv: Mvt = { id: uid(), compteId: banque.id, sens: "entree", nature: "invoice_payment", montant, tva: 0, date: dateReg, reference: f.numero, libelle: `Règlement ${libelle}`,
+        categorie: "encaissement_client", contrepartie: "411", factureId: f.id, annulationDe: null, motif: null, auteur, creeLe: `${dateReg}T11:00:00Z`, ecritureId: null, groupe: null };
+      mv.ecritureId = genererEcriture("BQ", dateReg, f.numero, `Règlement ${libelle}`, auteur, { type: "mouvement", id: mv.id, reference: mv.reference }, [["5211", montant, 0], ["411", 0, montant]]);
+      validerEcritureDemo(mv.ecritureId, validateur);
+      mouvements.push(mv);
+    }
+  }
 }
 
 export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Outils): unknown {
@@ -135,6 +176,21 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
       ecriture: etatEcriture(f.ecritureId), auteur: o.nomDe(f.auteur), creeLe: f.creeLe, codeVerification: codeDemo(o.entreprise().code, f) };
   };
   const montantOk = (v: unknown) => { if (!Number.isInteger(v) || (v as number) <= 0) throw o.erreur(400, "donnees_invalides", "Montant entier positif attendu (FCFA)."); return v as number; };
+
+  if (mod === "tableau-de-bord" && r1 === "evolution") {
+    const voitVentes = a("sales.read"), voitTreso = a("treasury.read") || a("cash.read");
+    if (!voitVentes && !voitTreso) { o.exiger("sales.read"); }
+    const n = Math.min(24, Math.max(2, Number(q.get("mois") ?? 6) || 6)), maintenant = new Date();
+    const mois = Array.from({ length: n }, (_, i) => { const d = new Date(maintenant.getFullYear(), maintenant.getMonth() - (n - 1 - i), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+    const serie = (lignes: [string, number][]) => mois.map((m) => lignes.filter(([d]) => d.startsWith(m)).reduce((t, [, v]) => t + v, 0));
+    const ventes = voitVentes ? serie(factures.map((f) => [f.date, f.totalTtc])) : null;
+    const encaissements = voitTreso ? serie(mouvements.filter((x) => visible(comptesT.find((t) => t.id === x.compteId)!)).map((x) => {
+      if (x.sens === "entree" && (x.nature === "receipt" || x.nature === "invoice_payment")) return [x.date, x.montant] as [string, number];
+      const o2 = x.nature === "reversal" ? mouvements.find((y) => y.id === x.annulationDe) : null;
+      return [x.date, x.sens === "sortie" && o2 && (o2.nature === "receipt" || o2.nature === "invoice_payment") ? -x.montant : 0] as [string, number];
+    })) : null;
+    return { mois, ventes, encaissements };
+  }
 
   if (mod === "ventes") {
     if (r1 === "parametres") {

@@ -77,6 +77,8 @@ export function genererEcriture(journal: string, date: string, piece: string, li
   ecritures.push(e);
   return e.id;
 }
+/** Historique de démonstration : écriture générée puis validée par une autre personne que son auteur. */
+export function validerEcritureDemo(id: string, par: string) { const e = ecritures.find((x) => x.id === id); if (e) valider(e, par); }
 export const lignesEcriture = (id: string) => ecritures.find((e) => e.id === id)?.lignes.map((l) => [comptes.find((c) => c.id === l.compteId)!.numero, l.debit, l.credit] as [string, number, number]) ?? [];
 export function etatEcriture(id: string | null) {
   const e = id ? ecritures.find((x) => x.id === id) : null;

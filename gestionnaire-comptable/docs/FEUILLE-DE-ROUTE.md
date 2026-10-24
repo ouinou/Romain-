@@ -68,6 +68,7 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Tableau de bord : synthèse du jour, trésorerie par compte, documents récents (données réelles, selon les droits)
 - [x] Raccourcis clavier, navigation au clavier dans les tableaux, impression sans le cadre du logiciel
 - [x] Parcours navigateur de 27 étapes, test de la démonstration
+- [x] Courbe des ventes et des encaissements sur six mois, brouillards par journal, détail de la sélection ; historique fictif dans l'option de démonstration
 
 ## À faire ensuite
 

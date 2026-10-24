@@ -135,3 +135,9 @@ Lecture : `treasury.read` (tous les comptes) ou `cash.read` (seulement les caiss
 Chaque facture renvoyée par `GET /factures/:id` porte `codeVerification` : `GC1;<code entreprise>;<numéro>;<date>;<TTC>;<devise>;<signature Ed25519>`, imprimé en QR sur le PDF.
 
 **En-tête `x-gc-automatique: 1`** : à envoyer sur les lectures déclenchées par une minuterie (notifications, ventes en direct). La requête est servie, mais elle ne compte pas comme une activité : la session se ferme quand même après la période d'inactivité.
+
+## Tableau de bord
+
+| Méthode | Route | Permission | Remarques |
+|---|---|---|---|
+| GET | `/api/tableau-de-bord/evolution?mois=6` | sales.read et/ou treasury.read ou cash.read | `{ mois: ["AAAA-MM"…], ventes: number[] \| null, encaissements: number[] \| null }`. Ventes TTC par mois de facture ; encaissements clients et autres recettes, nets de leurs annulations, transferts exclus, limités aux caisses du caissier. 2 à 24 mois. |
