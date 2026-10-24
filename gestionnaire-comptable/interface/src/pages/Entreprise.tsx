@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FINEXA } from "../jetons";
 import { api } from "../api";
 import { useSession } from "../session";
 import { Champ, Chargement, Modale, SecretUnique, dateHeure, messageErreur, useDonnees, useToast } from "../composants/ui";
@@ -191,10 +192,10 @@ function LogoEtCouleurs({ ent, modifiable, onFin }: { ent: Ent; modifiable: bool
           </div>))}
       </div>
       <div className="apercu-couleurs" aria-label="Aperçu">
-        <span style={{ background: v["--marine"], color: "#fff" }}>Menu</span>
+        <span style={{ background: v["--marine"], color: FINEXA.white }}>Menu</span>
         <span style={{ background: v["--accent"], color: v["--accent-texte"] }}>Bouton</span>
-        <span style={{ color: v["--lien"], background: "#fff", border: "1px solid var(--ligne)" }}>Lien</span>
-        <span style={{ background: c.principale, color: contraste(c.principale, "#ffffff") >= 4.5 ? "#fff" : "#17263b" }}>En-tête de facture</span>
+        <span style={{ color: v["--lien"], background: FINEXA.white, border: "1px solid var(--ligne)" }}>Lien</span>
+        <span style={{ background: c.principale, color: contraste(c.principale, FINEXA.white) >= 4.5 ? FINEXA.white : FINEXA.text }}>En-tête de facture</span>
       </div>
       {ajuste && <p className="aide" style={{ margin: "6px 0 0" }}>Certaines teintes sont légèrement assombries à l'écran pour que les textes restent lisibles.</p>}
       {modifiable && (

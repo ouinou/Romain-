@@ -139,11 +139,11 @@ try {
   // Profil : régime fiscal, patente, e-mail ; logo (image fictive dessinée pour le test) ; couleurs de l'entreprise.
   await p.getByLabel("Régime fiscal").fill("Régime du réel");
   await p.getByLabel("N° de patente").fill("PAT-2026-DEMO");
-  await p.getByLabel("Adresse e-mail").fill("contact@iti-demo.cm");
+  await p.getByLabel("Adresse e-mail").fill("contact@entreprise-demo.cm");
   await p.getByRole("button", { name: "Enregistrer", exact: true }).first().click();
   await p.getByText(/Informations enregistrées/).waitFor();
   const dessin = await nouvellePage(200, 200);
-  await dessin.setContent(`<div id="l" style="width:160px;height:160px;border-radius:24px;background:#0b5d3b;color:#f2c200;font:900 64px sans-serif;display:grid;place-items:center">ITI</div>`);
+  await dessin.setContent(`<div id="l" style="width:160px;height:160px;border-radius:24px;background:#0b5d3b;color:#f2c200;font:900 64px sans-serif;display:grid;place-items:center">EDS</div>`);
   const fichierLogo = `${DOSSIER}/logo-test.png`;
   await dessin.locator("#l").screenshot({ path: fichierLogo });
   await dessin.context().close();

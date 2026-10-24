@@ -27,7 +27,7 @@ export function FicheEcriture({ id }: { id: string }) {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {brouillard && !x.origine && a("accounting.update") && x.exercice.ouvert && <button className="btn" onClick={() => aller(`/comptabilite/ecritures/${id}/modifier`)}>Modifier</button>}
           {brouillard && !x.origine && a("accounting.update") && <button className="btn btn-danger" onClick={() => setAction("supprimer")}>Supprimer</button>}
-          {brouillard && a("accounting.approve") && <button className="btn btn-principal" disabled={!x.equilibree} title={x.equilibree ? "" : "Écriture déséquilibrée"} onClick={() => setAction("valider")}>Valider</button>}
+          {brouillard && a("accounting.approve") && <button className="btn btn-succes" disabled={!x.equilibree} title={x.equilibree ? "" : "Écriture déséquilibrée"} onClick={() => setAction("valider")}>Valider</button>}
           {!brouillard && !x.extourneDe && !x.extourneePar && a("accounting.cancel") && <button className="btn btn-danger" onClick={() => setAction("extourner")}>Extourner</button>}
         </div>
       </div>

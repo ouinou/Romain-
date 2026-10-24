@@ -60,7 +60,7 @@ const utilisateurs: Util[] = [
   util("Rachel Ewane", "rachel.ewane@demo.cm", "hr_manager", "invited", null),
   util("Auditeur externe", "audit@demo.cm", "auditor", "disabled", 60 * 24 * 12),
 ];
-const entreprise = { id: id(), code: CODE, raisonSociale: "ITI Démonstration SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)" as string | null,
+const entreprise = { id: id(), code: CODE, raisonSociale: "Entreprise Démo SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)" as string | null,
   email: "contact@demo.cm" as string | null, regimeFiscal: "Régime du réel (à vérifier)" as string | null, patente: "PAT-DEMO-0000 (fictif)" as string | null,
   couleurs: { principale: "#062b68", accent: "#0647a9" }, logoId: null as string | null, logoUrl: null as string | null,
   parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };

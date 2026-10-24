@@ -84,6 +84,10 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Nom FINEXA ERP, éditeur ITI, logo et slogan (connexion, barre de titre, setup, PDF, documentation)
 - [x] Identité visuelle officielle : bleu marine #062B68 (structure), bleu #0647A9 (actions), cyan #00B8F0 (focus), vert #08752D (validations), fond #F4F7FB, police Arial, cartes arrondies ; remplace la palette bleu nuit et orange et la police Lato des versions 0.1
 - [x] Une entreprise cliente peut toujours appliquer ses propres couleurs (profil d'entreprise)
+- [x] Jetons de design centralisés : `interface/src/jetons.css` est le seul fichier qui contient des codes couleur de l'interface (`jetons.ts` pour les rares besoins en TypeScript, `serveur/src/domaine/marque.ts` pour les PDF). Changer une couleur de la charte = modifier une ligne
+- [x] États communs : survol, sélection, focus clavier visible (cyan doublé d'un liseré marine), chargement (`aria-busy`, indicateur rotatif désactivé si l'utilisateur réduit les animations), erreurs
+- [x] Écran « À propos » (menu Fichier) : version, slogan et mention de l'éditeur ITI ; ITI n'apparaît plus ailleurs dans l'interface
+- [x] Contrastes vérifiés (WCAG AA) : texte secondaire foncé à #5A697D, courbe verte des graphiques en vert foncé #08752D (le vert vif #65C900 reste réservé au voyant « connecté »)
 
 ## À faire ensuite
 

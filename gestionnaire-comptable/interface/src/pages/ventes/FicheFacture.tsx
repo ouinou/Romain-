@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FINEXA } from "../../jetons";
 import { api } from "../../api";
 import { useSession } from "../../session";
 import { Chargement, dateHeure, useDonnees, useToast } from "../../composants/ui";
@@ -95,8 +96,8 @@ export function ApercuFacture({ f, avoir }: { f: Facture; avoir?: { facture: str
   const v = f.vendeur;
   // Couleurs figées sur la facture (celles de l'entreprise le jour de l'émission), comme sur le PDF.
   const c = v.couleurs ?? COULEURS_DEFAUT;
-  const titre = assombrirPour(c.principale, "#ffffff", 4.5), numero = assombrirPour(c.accent, "#ffffff", 4.5);
-  const surEntete = contraste(c.principale, "#ffffff") >= contraste(c.principale, "#17263b") ? "#ffffff" : "#17263b";
+  const titre = assombrirPour(c.principale, FINEXA.white, 4.5), numero = assombrirPour(c.accent, FINEXA.white, 4.5);
+  const surEntete = contraste(c.principale, FINEXA.white) >= contraste(c.principale, FINEXA.text) ? FINEXA.white : FINEXA.text;
   return (
     <article className="panneau apercu-facture" aria-label={`Aperçu ${avoir ? "de l'avoir" : "de la facture"} ${f.numero}`}
       style={{ borderTop: `6px solid ${c.accent}`, display: "grid", gap: 16, ["--entete-facture" as string]: c.principale, ["--texte-entete-facture" as string]: surEntete }}>

@@ -28,7 +28,7 @@ await executer(async () => {
   const pool = poolProprietaire();
   try {
     const e = await creerEntreprise(pool, {
-      code: "GC-DEMO-2026", raisonSociale: "ITI Démonstration SARL", adminEmail: "mariam.saleh@demo.cm", adminNom: "Mariam Saleh",
+      code: "GC-DEMO-2026", raisonSociale: "Entreprise Démo SARL", adminEmail: "mariam.saleh@demo.cm", adminNom: "Mariam Saleh",
       rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)",
     });
     const hash = await hacherMotDePasse(motDePasse);

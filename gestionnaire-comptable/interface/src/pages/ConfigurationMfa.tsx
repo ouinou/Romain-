@@ -63,9 +63,9 @@ export function ConfigurationMfa({ obligatoire = false, onTermine }: { obligatoi
   return (
     <main className="ecran-accueil">
       <div style={{ display: "grid", gap: 12, width: "min(660px, 100%)" }}>
-        <div className="marque" style={{ color: "#fff" }}>
+        <div className="marque" style={{ color: "var(--blanc)" }}>
           <EmblemeFinexa taille={36} />
-          <div><h1>Double authentification</h1><p style={{ color: "#c9d8e6" }}>{moi.utilisateur.nom} · {moi.entreprise.raisonSociale}</p></div>
+          <div><h1>Double authentification</h1><p style={{ color: "var(--structure-texte)" }}>{moi.utilisateur.nom} · {moi.entreprise.raisonSociale}</p></div>
         </div>
         {contenu}
         <div><button className="btn" onClick={deconnecter}>Se déconnecter</button></div>

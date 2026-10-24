@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { FINEXA } from "../jetons";
 import QR from "qrcode";
 
 /** QR code dessiné en SVG (pas d'image externe, compatible avec la politique de sécurité du serveur). */
@@ -11,8 +12,8 @@ export function QrCode({ texte, titre }: { texte: string; titre: string }) {
   }, [texte]);
   return (
     <svg className="qr" viewBox={`-2 -2 ${taille + 4} ${taille + 4}`} role="img" aria-label={titre} shapeRendering="crispEdges">
-      <rect x="-2" y="-2" width={taille + 4} height={taille + 4} fill="#fff" />
-      <path d={carres} fill="#10243a" />
+      <rect x="-2" y="-2" width={taille + 4} height={taille + 4} fill={FINEXA.white} />
+      <path d={carres} fill={FINEXA.navy} />
     </svg>
   );
 }

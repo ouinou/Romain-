@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { COULEURS_DEFAUT, FINEXA, NOM_LOGICIEL } from "../marque.js";
 import QRCode from "qrcode";
 import { montantEnLettres } from "./lettres.js";
 
@@ -22,7 +23,8 @@ export interface FacturePdf {
   avoir?: { facture: string; dateFacture: string; motif: string };
 }
 
-const GRIS = "#5d6d80", LIGNE = "#dfe5ec", ENCRE = "#17263b";
+// Couleurs du document : identité FINEXA ERP (domaine/marque.ts) ; le bandeau et les titres prennent celles de l'entreprise.
+const GRIS = FINEXA.textMuted, LIGNE = FINEXA.border, ENCRE = FINEXA.text, BLANC = FINEXA.white, FOND = FINEXA.background;
 /** Luminance relative (WCAG) d'une couleur #RRGGBB. */
 export function luminance(hex: string) {
   const [r, g, b] = [1, 3, 5].map((i) => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
@@ -36,7 +38,7 @@ export function lisibleSurBlanc(hex: string) {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 /** Texte blanc ou foncé, selon ce qui se lit le mieux sur le fond donné. */
-export const texteSur = (fond: string) => (contraste(fond, "#ffffff") >= contraste(fond, ENCRE) ? "#ffffff" : ENCRE);
+export const texteSur = (fond: string) => (contraste(fond, BLANC) >= contraste(fond, ENCRE) ? BLANC : ENCRE);
 // Espace fine ordinaire : les polices standard du PDF ne contiennent pas l'espace insécable fine.
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(n).replace(/[  ]/g, " ");
 const dateFr = (d: string) => d.split("-").reverse().join("/");
@@ -44,11 +46,11 @@ const taux = (pdm: number) => (pdm / 100).toLocaleString("fr-FR", { maximumFract
 
 export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
   const qr = f.codeVerification ? await QRCode.toBuffer(f.codeVerification, { errorCorrectionLevel: "M", margin: 1, width: 300 }) : null;
-  const PRINC = f.vendeur.couleurs?.principale ?? "#062b68", ACCENT = f.vendeur.couleurs?.accent ?? "#0647a9";
+  const PRINC = f.vendeur.couleurs?.principale ?? COULEURS_DEFAUT.principale, ACCENT = f.vendeur.couleurs?.accent ?? COULEURS_DEFAUT.accent;
   const NUIT = lisibleSurBlanc(PRINC), ORANGE_TXT = lisibleSurBlanc(ACCENT), SUR_PRINC = texteSur(PRINC);
   return new Promise((ok, ko) => {
     const nom = f.avoir ? "Avoir" : "Facture";
-    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `${nom} ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: "FINEXA ERP" } });
+    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `${nom} ${f.numero}`, Author: f.vendeur.raisonSociale, Producer: NOM_LOGICIEL } });
     const morceaux: Buffer[] = [];
     doc.on("data", (b: Buffer) => morceaux.push(b));
     doc.on("end", () => ok(Buffer.concat(morceaux)));
@@ -101,7 +103,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     for (const [i, l] of f.lignes.entries()) {
       const h = Math.max(20, doc.heightOfString(l.designation, { width: W * 0.53 - 8 }) + 10);
       if (y + h > doc.page.height - 200) { doc.addPage(); y = entete(48); doc.font("Helvetica").fontSize(9.5); }
-      if (i % 2) doc.rect(L, y, W, h).fill("#f7f9fb");
+      if (i % 2) doc.rect(L, y, W, h).fill(FOND);
       doc.fillColor(NUIT).text(l.designation, col.des, y + 5, { width: W * 0.53 - 8 })
         .text(l.quantite, col.qte, y + 5, { width: W * 0.12, align: "right" })
         .text(fmt(l.prixUnitaire), col.pu, y + 5, { width: W * 0.15, align: "right" })
@@ -126,7 +128,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     };
     total("Total hors taxes", fmt(f.totalHt));
     total(f.tauxTvaPdm ? `TVA (${taux(f.tauxTvaPdm)})` : "TVA", f.tauxTvaPdm ? fmt(f.totalTva) : "Non applicable");
-    doc.rect(L + W * 0.5, y - 3, W * 0.5, 24).fill("#f3f5f8");
+    doc.rect(L + W * 0.5, y - 3, W * 0.5, 24).fill(FOND);
     total(f.avoir ? `Montant de l'avoir (${f.devise})` : `Net à payer (${f.devise})`, fmt(f.totalTtc), true);
 
     y = Math.max(y, yQr) + 10;
@@ -146,7 +148,7 @@ export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
     const bas = doc.page.height - 40;
     doc.moveTo(L, bas - 8).lineTo(R, bas - 8).lineWidth(0.5).strokeColor(LIGNE).stroke();
     doc.font("Helvetica").fontSize(7.5).fillColor(GRIS)
-      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · ${nom} ${f.numero} · Document émis par FINEXA ERP`,
+      .text(`${f.vendeur.raisonSociale}${f.vendeur.niu ? ` · NIU ${f.vendeur.niu}` : ""}${f.vendeur.rccm ? ` · RCCM ${f.vendeur.rccm}` : ""} · ${nom} ${f.numero} · Document émis par ${NOM_LOGICIEL}`,
         L, bas, { width: W, align: "center", lineBreak: false });
     doc.end();
   });

@@ -4,11 +4,12 @@
  * la lisibilité (contrastes WCAG) : une couleur trop claire est assombrie là où elle porte du texte.
  */
 import { api } from "./api";
+import { FINEXA } from "./jetons";
 
 export interface Couleurs { principale: string; accent: string }
 export interface Apparence { raisonSociale: string; couleurs: Couleurs; logoId: string | null; logoUrl: string | null }
 /** Couleurs de FINEXA ERP (identité visuelle officielle) : bleu marine et bleu. */
-export const COULEURS_DEFAUT: Couleurs = { principale: "#062b68", accent: "#0647a9" };
+export const COULEURS_DEFAUT: Couleurs = { principale: FINEXA.navy, accent: FINEXA.blue };
 
 type RGB = [number, number, number];
 const versRgb = (h: string): RGB => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as RGB;

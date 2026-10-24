@@ -39,7 +39,7 @@ Rien ne dépend d'Internet. Le même serveur peut plus tard être installé sur 
 | Mots de passe | Argon2id (19 Mio, 2 itérations) | Recommandation OWASP actuelle. |
 | Validation | Zod | Chaque entrée de l'API est validée avant usage. |
 | Double authentification | TOTP (RFC 6238), implémenté sans service externe | Fonctionne hors ligne avec Google Authenticator, Microsoft Authenticator, FreeOTP, etc. |
-| Interface | À construire (étape suivante) | La maquette HTML existante sert de référence visuelle. Elle n'est pas l'application. |
+| Interface | React 18 + Vite, sans bibliothèque de composants | Servie par le même serveur, aucune ressource externe. Les couleurs, ombres, rayons et la police sont des jetons CSS définis dans `interface/src/jetons.css` (charte FINEXA) ; les composants n'utilisent que ces variables, ce qui permet aussi d'appliquer les couleurs propres à une entreprise. |
 
 ## Organisation du code (`serveur/`)
 

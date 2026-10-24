@@ -4,7 +4,7 @@
  * onglets des documents ouverts, zone de travail, panneau de détail rétractable et barre d'état.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { EDITEUR, EmblemeFinexa, LogoFinexa, NOM_LOGICIEL } from "../Marque";
+import { EDITEUR, EmblemeFinexa, LogoFinexa, NOM_LOGICIEL, SLOGAN } from "../Marque";
 import { api } from "../../api";
 import { aller } from "../../routeur";
 import { useSession } from "../../session";
@@ -26,7 +26,7 @@ export function Cadre(props: {
 }) {
   const { moi, a, deconnecter } = useSession();
   const [menuMobile, setMenuMobile] = useState(false);
-  const [fichier, setFichier] = useState<null | "infos" | "sauvegardes" | "raccourcis" | "aide">(null);
+  const [fichier, setFichier] = useState<null | "infos" | "sauvegardes" | "raccourcis" | "aide" | "a-propos">(null);
   const [ongletRuban, setOngletRuban] = useState(() => moduleDe(props.route));
   const [zoom, setZoom] = useState(() => Number(lireStockage("gc.zoom")) || 100);
   const recherche = useRef<HTMLInputElement>(null);
@@ -181,7 +181,7 @@ function MenuLateral({ route, code }: { route: string; code: string }) {
           );
         })}
       </nav>
-      <div className="bas">Espace {code}<br />Réseau local · version 0.1</div>
+      <div className="bas">Espace {code}<br />Réseau local</div>
     </aside>
   );
 }
@@ -273,7 +273,7 @@ function BarreEtat({ zoom, setZoom }: { zoom: number; setZoom: (z: number) => vo
   );
 }
 
-function MenuFichier({ vue, setVue }: { vue: "infos" | "sauvegardes" | "raccourcis" | "aide"; setVue: (v: null | "infos" | "sauvegardes" | "raccourcis" | "aide") => void }) {
+function MenuFichier({ vue, setVue }: { vue: "infos" | "sauvegardes" | "raccourcis" | "aide" | "a-propos"; setVue: (v: null | "infos" | "sauvegardes" | "raccourcis" | "aide" | "a-propos") => void }) {
   const { moi, a, deconnecter } = useSession();
   const tuile = (chemin: string, icone: string, titre: string, texte: string) =>
     <a className="tuile" href={"#" + chemin} onClick={() => setVue(null)}><Icone nom={icone} taille={28} /><div><b>{titre}</b><span>{texte}</span></div></a>;
@@ -286,6 +286,7 @@ function MenuFichier({ vue, setVue }: { vue: "infos" | "sauvegardes" | "raccourc
         <button aria-current={vue === "sauvegardes"} onClick={() => setVue("sauvegardes")}><Icone nom="sauvegarde" taille={18} />Sauvegardes</button>
         <button aria-current={vue === "raccourcis"} onClick={() => setVue("raccourcis")}><Icone nom="parametres" taille={18} />Raccourcis clavier</button>
         <button aria-current={vue === "aide"} onClick={() => setVue("aide")}><Icone nom="aide" taille={18} />Aide</button>
+        <button aria-current={vue === "a-propos"} onClick={() => setVue("a-propos")}><Icone nom="entreprise" taille={18} />À propos de {NOM_LOGICIEL}</button>
         <button onClick={deconnecter}><Icone nom="quitter" taille={18} />Déconnexion</button>
       </nav>
       <section>
@@ -330,9 +331,9 @@ function MenuFichier({ vue, setVue }: { vue: "infos" | "sauvegardes" | "raccourc
             <p style={{ margin: 0 }}>Une facture émise, un mouvement de caisse ou une écriture validée ne se modifient pas : ils se corrigent par une opération inverse, motivée et tracée.</p>
             <p style={{ margin: 0 }}>Le guide complet (« Guide d'utilisation ») est installé avec le logiciel et accessible depuis le menu Démarrer de Windows, dossier « {NOM_LOGICIEL} ».</p>
             <p style={{ margin: 0 }}>Un problème d'accès : adressez-vous à l'administrateur de votre entreprise. Mot de passe oublié : il vous remettra un code de réinitialisation.</p>
-            <div className="a-propos"><LogoFinexa largeur={180} /><p style={{ margin: 0 }}><b>{NOM_LOGICIEL}</b>, gestion intégrée des entreprises de l'espace OHADA.<br />Éditeur : {EDITEUR}.</p></div>
           </div>
         </>}
+        {vue === "a-propos" && <APropos />}
       </section>
     </div>
   );
@@ -365,5 +366,26 @@ function Notifications() {
         </div>
       )}
     </div>
+  );
+}
+
+/** « À propos » : le produit FINEXA ERP ; l'éditeur ITI y figure, discrètement, avec les mentions légales. */
+function APropos() {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => { api.getAuto<{ version: string }>("/api/sante").then((r) => setVersion(r.version)).catch(() => {}); }, []);
+  return (
+    <>
+      <h2>À propos de {NOM_LOGICIEL}</h2>
+      <div className="a-propos">
+        <LogoFinexa largeur={220} />
+        <div style={{ display: "grid", gap: 6 }}>
+          <p style={{ margin: 0 }}><b>{NOM_LOGICIEL}</b>{version && <> · version {version}</>}</p>
+          <p style={{ margin: 0 }}>Gestion intégrée des entreprises de l'espace OHADA.</p>
+          <p style={{ margin: 0 }} className="discret">{SLOGAN}</p>
+          <p style={{ margin: 0 }} className="discret">Édité par {EDITEUR}.</p>
+          <p style={{ margin: 0 }} className="discret">Composants tiers et licences : fichier LICENCES.txt du dossier d'installation.</p>
+        </div>
+      </div>
+    </>
   );
 }

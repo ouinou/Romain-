@@ -59,7 +59,7 @@ export function Graphique({ mois, series, titre }: { mois: string[]; series: Ser
         {series.map((s) => (
           <g key={s.nom}>
             <polyline points={s.valeurs.map((v, i) => `${x(i)},${y(v)}`).join(" ")} fill="none" stroke={s.couleur} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-            {s.valeurs.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={survol === i ? 5.5 : 4} fill={s.couleur} stroke="#fff" strokeWidth="1.5" />)}
+            {s.valeurs.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={survol === i ? 5.5 : 4} fill={s.couleur} stroke="var(--blanc)" strokeWidth="1.5" />)}
           </g>
         ))}
         {/* Zones de survol, une par mois. */}
