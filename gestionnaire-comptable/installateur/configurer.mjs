@@ -2,6 +2,7 @@
  * GESTIONNAIRE COMPTABLE : configuration après installation (lancée par le setup Windows, avec le Node.js fourni).
  *
  *   node configurer.mjs --app <dossier du programme> --donnees <dossier des données>          installation ou mise à jour
+ *   node configurer.mjs --app … --donnees … --demo                                              + entreprise fictive d'évaluation
  *   node configurer.mjs --app … --donnees … --desinstaller [--supprimer-donnees]              désinstallation
  *
  * Installation : base PostgreSQL privée (port local dédié), rôles et mots de passe aléatoires, clés de chiffrement,
@@ -23,7 +24,7 @@ import { parseArgs } from "node:util";
 
 const { values: o } = parseArgs({ options: {
   app: { type: "string" }, donnees: { type: "string" }, "pg-bin": { type: "string" }, "port-pg": { type: "string" },
-  desinstaller: { type: "boolean" }, "supprimer-donnees": { type: "boolean" },
+  desinstaller: { type: "boolean" }, "supprimer-donnees": { type: "boolean" }, demo: { type: "boolean" },
 } });
 if (!o.app || !o.donnees) { console.error("Usage : node configurer.mjs --app <dossier> --donnees <dossier>"); process.exit(2); }
 
@@ -159,6 +160,26 @@ if (!miseAJour) {
 
 etape("Schéma de la base (migrations)");
 lancer(NODE, [join(SERVEUR, "dist", "src", "cli", "migrer.js")], { env: { ...process.env, ...env }, cwd: SERVEUR });
+
+if (o.demo) {
+  // Entreprise FICTIVE pour évaluer le logiciel (option du setup, décochée par défaut). Mot de passe connu de tous :
+  // jamais sur une installation qui recevra de vraies données.
+  const c = await connexion(env.GC_BASE_PROPRIETAIRE);
+  const { rows: [r] } = await c.query("SELECT EXISTS (SELECT 1 FROM companies WHERE company_code = 'GC-DEMO-2026') AS existe");
+  await c.end();
+  if (r.existe) etape("Entreprise de démonstration déjà présente");
+  else {
+    etape("Entreprise de démonstration (données fictives, pour évaluation)");
+    lancer(NODE, [join(SERVEUR, "dist", "src", "cli", "demo-initialiser.js")], { env: { ...process.env, ...env, GC_MODE_DEMO: "oui" }, cwd: SERVEUR });
+    writeFileSync(join(DONNEES, "DEMONSTRATION.txt"), [
+      "Installation d'ÉVALUATION : elle contient une entreprise fictive dont le mot de passe est connu.",
+      "Ne saisissez pas de vraies données ici. Avant un usage réel : désinstallez en supprimant les données, puis réinstallez sans l'option de démonstration.",
+      "", "Code entreprise : GC-DEMO-2026", "Mot de passe de tous les comptes : Demonstration-2026!",
+      "Comptes : mariam.saleh@demo.cm (administratrice), ousmane.djibrine@demo.cm (DAF), paul.ngaro@demo.cm (comptable),",
+      "          amina.mahamat@demo.cm (caissière), joseph.atangana@demo.cm (DG)", "",
+    ].join("\r\n"));
+  }
+}
 
 if (WIN) {
   etape("Service Windows du serveur applicatif");

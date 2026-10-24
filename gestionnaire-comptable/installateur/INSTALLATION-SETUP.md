@@ -1,5 +1,20 @@
 # Gestionnaire Comptable : installation avec le setup Windows
 
+## Pour évaluer le logiciel (installation d'essai)
+
+Faites l'essai sur un PC de test ou une machine virtuelle Windows 10/11, pas sur un poste qui contient des données importantes.
+
+1. Lancez le setup. À l'écran « Choisir les composants », cochez **Données de démonstration (évaluation)**.
+2. À la fin, le logiciel s'ouvre dans sa propre fenêtre (Microsoft Edge en mode application, sans barre d'adresse). Un raccourci « Gestionnaire Comptable » est aussi posé sur le bureau.
+3. Connectez-vous avec le code entreprise `GC-DEMO-2026` et le mot de passe `Demonstration-2026!`, en changeant de compte pour voir chaque rôle :
+   - `amina.mahamat@demo.cm` (caissière) : faites une vente, imprimez la facture, enregistrez une dépense ;
+   - `ousmane.djibrine@demo.cm` (DAF) : suivez les ventes en direct, validez les écritures par lots, vérifiez une facture ;
+   - `paul.ngaro@demo.cm` (comptable), `joseph.atangana@demo.cm` (DG), `mariam.saleh@demo.cm` (administratrice : logo, couleurs, utilisateurs).
+   La liste est aussi dans le menu Démarrer, « Comptes de démonstration ».
+4. Pour essayer depuis un autre poste du réseau, voir « Brancher un autre poste » plus bas.
+
+**Après l'essai** : désinstallez en acceptant la suppression des données. Le mot de passe de démonstration étant connu, cette installation ne doit jamais recevoir de vraies données.
+
 ## Sur le poste serveur (une seule fois)
 
 1. Choisissez le poste qui servira de serveur : allumé pendant les heures de travail, Windows 10/11 ou Windows Server 64 bits, 8 Go de mémoire, adresse IP fixe sur le réseau local (réservation sur la box ou le routeur).
