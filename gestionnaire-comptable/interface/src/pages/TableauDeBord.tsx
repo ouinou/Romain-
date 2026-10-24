@@ -99,8 +99,8 @@ export function TableauDeBord() {
               <div className="entete-panneau"><h3>Évolution des ventes (6 derniers mois)</h3></div>
               {evolution.erreur ? <div className="alerte alerte-erreur">{evolution.erreur}</div> : !evolution.donnees ? <Chargement /> : (
                 <Graphique titre="Évolution des ventes sur 6 mois" mois={evolution.donnees.mois} series={[
-                  ...(evolution.donnees.ventes ? [{ nom: "Ventes TTC", couleur: "var(--marine)", valeurs: evolution.donnees.ventes }] : []),
-                  ...(evolution.donnees.encaissements ? [{ nom: "Encaissements", couleur: "var(--accent)", valeurs: evolution.donnees.encaissements }] : []),
+                  ...(evolution.donnees.ventes ? [{ nom: "Ventes TTC", couleur: "var(--graphique-1)", valeurs: evolution.donnees.ventes }] : []),
+                  ...(evolution.donnees.encaissements ? [{ nom: "Encaissements", couleur: "var(--graphique-2)", valeurs: evolution.donnees.encaissements }] : []),
                 ]} />)}
             </section>
           )}

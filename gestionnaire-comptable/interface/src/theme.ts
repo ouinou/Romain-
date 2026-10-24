@@ -7,7 +7,8 @@ import { api } from "./api";
 
 export interface Couleurs { principale: string; accent: string }
 export interface Apparence { raisonSociale: string; couleurs: Couleurs; logoId: string | null; logoUrl: string | null }
-export const COULEURS_DEFAUT: Couleurs = { principale: "#101d35", accent: "#ff6a00" };
+/** Couleurs de FINEXA ERP (identité visuelle officielle) : bleu marine et bleu. */
+export const COULEURS_DEFAUT: Couleurs = { principale: "#062b68", accent: "#0647a9" };
 
 type RGB = [number, number, number];
 const versRgb = (h: string): RGB => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as RGB;

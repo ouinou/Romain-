@@ -79,6 +79,12 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] 9 tests serveur dédiés (dont des écritures directes en base), étape d'avoir dans le parcours navigateur et dans le test de la démonstration
 - [ ] Imputation comptable des avoirs (701/706 ou 709) et mentions obligatoires à valider par l'expert-comptable
 
+## Fait (v0.2 : identité FINEXA ERP)
+
+- [x] Nom FINEXA ERP, éditeur ITI, logo et slogan (connexion, barre de titre, setup, PDF, documentation)
+- [x] Identité visuelle officielle : bleu marine #062B68 (structure), bleu #0647A9 (actions), cyan #00B8F0 (focus), vert #08752D (validations), fond #F4F7FB, police Arial, cartes arrondies ; remplace la palette bleu nuit et orange et la police Lato des versions 0.1
+- [x] Une entreprise cliente peut toujours appliquer ses propres couleurs (profil d'entreprise)
+
 ## À faire ensuite
 
 **Ventes et trésorerie (suite).** Rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.

@@ -8,7 +8,7 @@ import { UUID } from "../../db.js";
 import { ErreurHttp } from "../erreurs.js";
 
 /** Couleurs par défaut du logiciel (bleu nuit, orange vif) ; chaque entreprise peut choisir les siennes. */
-export const COULEURS_DEFAUT = { principale: "#101d35", accent: "#ff6a00" };
+export const COULEURS_DEFAUT = { principale: "#062b68", accent: "#0647a9" };   // FINEXA ERP : bleu marine, bleu
 const COULEUR = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Couleur au format #RRGGBB.");
 export const profilDe = (settings: any) => {
   const p = settings?.profil ?? {};

@@ -105,7 +105,7 @@ async function historiqueVentes(c: import("../db.js").Client, d: {
 }) {
   const { rows: [ent] } = await c.query("SELECT legal_name, niu, rccm, address, phone FROM companies WHERE id = $1", [d.entrepriseId]);
   const vendeur = { raisonSociale: ent.legal_name, niu: ent.niu, rccm: ent.rccm, adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)",
-    email: "contact@demo.cm", regimeFiscal: "Régime du réel (à vérifier)", patente: "PAT-DEMO-0000 (fictif)", logoId: null, couleurs: { principale: "#101d35", accent: "#ff6a00" } };
+    email: "contact@demo.cm", regimeFiscal: "Régime du réel (à vérifier)", patente: "PAT-DEMO-0000 (fictif)", logoId: null, couleurs: { principale: "#062b68", accent: "#0647a9" } };
   const compte = async (n: string) => (await c.query("SELECT id FROM accounts WHERE account_number = $1", [n])).rows[0].id as string;
   const cpt = { "701": await compte("701"), "706": await compte("706"), "411": await compte("411"), "443": await compte("443") };
   const { rows: [jv] } = await c.query("SELECT id FROM journals WHERE code = 'VT'");

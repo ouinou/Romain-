@@ -44,7 +44,7 @@ const taux = (pdm: number) => (pdm / 100).toLocaleString("fr-FR", { maximumFract
 
 export async function genererFacturePdf(f: FacturePdf): Promise<Buffer> {
   const qr = f.codeVerification ? await QRCode.toBuffer(f.codeVerification, { errorCorrectionLevel: "M", margin: 1, width: 300 }) : null;
-  const PRINC = f.vendeur.couleurs?.principale ?? "#101d35", ACCENT = f.vendeur.couleurs?.accent ?? "#ff6a00";
+  const PRINC = f.vendeur.couleurs?.principale ?? "#062b68", ACCENT = f.vendeur.couleurs?.accent ?? "#0647a9";
   const NUIT = lisibleSurBlanc(PRINC), ORANGE_TXT = lisibleSurBlanc(ACCENT), SUR_PRINC = texteSur(PRINC);
   return new Promise((ok, ko) => {
     const nom = f.avoir ? "Avoir" : "Facture";

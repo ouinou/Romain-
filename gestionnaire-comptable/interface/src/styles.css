@@ -1,62 +1,75 @@
 /* FINEXA ERP : présentation de logiciel de bureau (barre de titre, accès rapide, ruban, menu latéral,
    onglets de documents, barre d'état), d'après les images de référence de src/assets/reference/.
-   Zone de travail blanche, texte noir, bleu nuit pour la structure, orange pour les actions et les sélections. */
-/* Police Lato (licence SIL OFL 1.1, voir src/polices/LICENCE-OFL.txt), intégrée à l'application :
-   aucun chargement depuis Internet, le logiciel fonctionne en réseau local. */
-@font-face { font-family: "Lato"; font-style: normal; font-weight: 400; font-display: swap; src: url("./polices/lato-latin-400-normal.woff2") format("woff2"); }
-@font-face { font-family: "Lato"; font-style: italic; font-weight: 400; font-display: swap; src: url("./polices/lato-latin-400-italic.woff2") format("woff2"); }
-@font-face { font-family: "Lato"; font-style: normal; font-weight: 500 700; font-display: swap; src: url("./polices/lato-latin-700-normal.woff2") format("woff2"); }
-@font-face { font-family: "Lato"; font-style: normal; font-weight: 800 900; font-display: swap; src: url("./polices/lato-latin-900-normal.woff2") format("woff2"); }
-
+   Couleurs et police : identité visuelle officielle FINEXA ERP (éditeur : Incubateur Technologique de l'Innovation).
+   Bleu marine pour la structure, bleu pour les actions et la sélection, cyan pour le focus, vert pour les validations. */
 
 :root {
-  /* Palette de la charte (mission « amélioration professionnelle de l'interface »). */
-  --blanc: #ffffff;
-  --noir: #000000;
-  --marine: #101d35;          /* structure : barre de titre, menu latéral, barre d'état */
-  --marine-2: #1b2b49;        /* survol dans le menu latéral */
-  --marine-3: #273b5f;        /* module ouvert */
-  --marine-fin: #0b1527;
-  --accent: #ff6a00;          /* orange : actions importantes, sélection, repères */
-  --accent-texte: #101d35;    /* texte posé sur l'orange (contraste 6,3:1) */
-  --accent-fonce: #e05d00;
-  --accent-doux: #fff0e5;     /* ligne sélectionnée */
-  --lien: #a84300;            /* orange lisible sur blanc (5,6:1) */
-  --gris: #f2f2f2;            /* en-têtes de tableaux, barres d'outils */
-  --bordure: #c8cdd4;
-  --rouge: #c62828;           /* montants négatifs, erreurs */
-  --vert: #167447;            /* validations réussies */
+  /* Identité visuelle officielle FINEXA ERP. */
+  --finexa-navy: #062B68;
+  --finexa-blue: #0647A9;
+  --finexa-cyan: #00B8F0;
+  --finexa-green: #65C900;
+  --finexa-green-dark: #08752D;
+  --finexa-white: #FFFFFF;
+  --finexa-background: #F4F7FB;
+  --finexa-surface: #FFFFFF;
+  --finexa-text: #263449;
+  --finexa-text-muted: #64748B;
+  --finexa-border: #DCE5EF;
+
+  /* Rôles dans l'interface (une entreprise cliente peut remplacer marine et accent par ses couleurs : theme.ts). */
+  --blanc: var(--finexa-white);
+  --noir: var(--finexa-text);
+  --marine: var(--finexa-navy);   /* structure : barre de titre, menu latéral, barre d'état */
+  --marine-2: #12387a;            /* survol dans le menu latéral */
+  --marine-3: #1d4589;            /* module ouvert */
+  --marine-fin: #041e49;
+  --accent: var(--finexa-blue);   /* actions principales, sélection, élément actif du menu */
+  --accent-texte: #ffffff;        /* texte sur le bleu (contraste 8,7:1) */
+  --accent-fonce: var(--finexa-navy);   /* survol des boutons principaux */
+  --accent-doux: #e6eef9;         /* ligne sélectionnée */
+  --lien: var(--finexa-blue);
+  --focus: var(--finexa-cyan);
+  --gris: var(--finexa-background);     /* en-têtes de tableaux, barres d'outils */
+  --bordure: var(--finexa-border);
+  --rouge: #c62828;               /* montants négatifs, erreurs */
+  --vert: var(--finexa-green-dark);     /* validations réussies */
+  --graphique-1: var(--finexa-blue);
+  --graphique-2: var(--finexa-green);
+  --graphique-3: var(--finexa-cyan);
+  --rayon-carte: 10px;
   /* Anciens noms, conservés pour les pages existantes. */
   --bleu: var(--accent);
   --bleu-fonce: var(--accent-fonce);
-  --cyan: var(--accent);
+  --cyan: var(--finexa-cyan);
   --orange-doux: var(--accent-doux);
-  --fond: #ffffff;
-  --carte: #ffffff;
-  --texte: #000000;
-  --discret: #3d4450;         /* texte secondaire : gris foncé, jamais gris clair (10:1) */
+  --fond: var(--finexa-background);
+  --carte: var(--finexa-surface);
+  --texte: var(--finexa-text);
+  --discret: var(--finexa-text-muted);
   --ligne: var(--bordure);
-  --ligne-2: #dde1e6;
+  --ligne-2: #e6ecf3;
   --doux: var(--gris);
   --entete: var(--gris);
-  --vert-fond: #e7f3ec;
+  --vert-fond: #e6f4ea;
   --orange: #8a3d00;
   --orange-fond: #fff3e8;
   --rouge-fond: #fcecec;
-  --info-fond: #eef2f8;
-  --info-ligne: #c8d3e4;
-  --info-texte: #101d35;
-  --police: "Lato", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --info-fond: #eaf2fc;
+  --info-ligne: #c7d8f0;
+  --info-texte: var(--finexa-navy);
+  --police: Arial, "Helvetica Neue", Helvetica, sans-serif;
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { font-family: var(--police); font-size: 13px; background: var(--blanc); color: var(--noir); line-height: 1.4; }
+body { font-family: var(--police); font-size: 13px; background: var(--fond); color: var(--texte); line-height: 1.4; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--lien); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+input:focus, select:focus, textarea:focus { border-color: var(--focus); outline-color: var(--focus); }
 h1, h2, h3 { text-wrap: balance; }
 .num { font-variant-numeric: tabular-nums; }
 .mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
@@ -114,7 +127,7 @@ h1, h2, h3 { text-wrap: balance; }
 
 /* ------------------------------------------------------------------ Écran de connexion */
 .ecran-accueil { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--marine); }
-.boite-accueil { width: min(440px, 100%); background: var(--blanc); border-radius: 4px; padding: 0 24px 22px; box-shadow: 0 12px 40px #0007; display: grid; gap: 12px; overflow: hidden; }
+.boite-accueil { width: min(440px, 100%); background: var(--blanc); border-radius: var(--rayon-carte); padding: 0 24px 22px; box-shadow: 0 12px 40px #0007; display: grid; gap: 12px; overflow: hidden; }
 .boite-accueil > .marque { margin: 0 -24px 4px; padding: 14px 24px; background: var(--marine); color: var(--blanc); border-bottom: 3px solid var(--accent); }
 .boite-accueil > .marque p { color: #d6dbe3; }
 .marque { display: flex; align-items: center; gap: 12px; }
@@ -211,7 +224,7 @@ h1, h2, h3 { text-wrap: balance; }
 .module-nav li a[aria-current="page"] { background: var(--accent); color: var(--accent-texte); font-weight: 700; }
 .laterale .bas { margin-top: auto; font-size: 11px; color: #b9c2d0; padding: 10px 14px; border-top: 1px solid #2a3b5b; line-height: 1.6; }
 
-.espace-travail { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--blanc); }
+.espace-travail { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--fond); }
 .onglets-docs { display: flex; align-items: flex-end; gap: 2px; height: 34px; padding: 4px 8px 0; background: var(--gris); border-bottom: 1px solid var(--bordure); overflow-x: auto; scrollbar-width: thin; flex-shrink: 0; }
 .onglet-doc { display: flex; align-items: center; gap: 6px; height: 29px; padding: 0 6px 0 10px; border: 1px solid var(--bordure); border-bottom: 0; background: #e9ebee; font-size: 12.5px; white-space: nowrap; max-width: 220px; }
 .onglet-doc > a { color: var(--noir); text-decoration: none; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
@@ -259,12 +272,12 @@ h1, h2, h3 { text-wrap: balance; }
 .notif p { margin: 0; font-size: 12px; color: var(--discret); }
 
 /* ------------------------------------------------------------------ Panneaux, indicateurs */
-.panneau { background: var(--blanc); border: 1px solid var(--bordure); border-radius: 2px; padding: 10px 12px; min-width: 0; }
+.panneau { background: var(--carte); border: 1px solid var(--bordure); border-radius: var(--rayon-carte); padding: 10px 12px; min-width: 0; }
 .panneau h3 { margin: 0; font-size: 14px; font-weight: 700; }
 .entete-panneau { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: -10px -12px 10px; padding: 7px 12px; border-bottom: 1px solid var(--bordure); background: var(--blanc); }
 .entete-panneau p { margin: 2px 0 0; font-size: 12px; color: var(--discret); }
 .indicateurs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.indicateur { background: var(--blanc); border: 1px solid var(--bordure); border-radius: 2px; padding: 10px 12px; border-left: 4px solid var(--marine); }
+.indicateur { background: var(--carte); border: 1px solid var(--bordure); border-radius: var(--rayon-carte); padding: 10px 12px; border-left: 4px solid var(--marine); }
 .indicateur:has(> .icone-ind) { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
 .indicateur > .icone-ind { grid-row: 1 / span 3; color: var(--marine); }
 .indicateur .lib { font-size: 12.5px; font-weight: 700; color: var(--noir); }

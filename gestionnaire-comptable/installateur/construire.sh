@@ -44,7 +44,6 @@ cp "$RACINE/docs/GUIDE-UTILISATION.md" "$ETAPE/docs/GUIDE-UTILISATION.txt"; cp "
   echo "== PostgreSQL (licence PostgreSQL) =="; cat "$ETAPE/runtime/pgsql/server_license.txt"; echo
   echo "== Node.js (licence MIT et autres, voir runtime/node/LICENSE) =="; head -25 "$ETAPE/runtime/node/LICENSE"; echo
   echo "== WinSW (licence MIT) : https://github.com/winsw/winsw =="; echo
-  echo "== Police Lato (SIL Open Font License 1.1) =="; cat "$RACINE/interface/src/polices/LICENCE-OFL.txt"
   echo "== Microsoft Visual C++ Redistributable : licence Microsoft, installé tel quel =="; } > "$ETAPE/LICENCES.txt"
 
 echo "» Setup NSIS"

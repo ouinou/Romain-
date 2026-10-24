@@ -62,7 +62,7 @@ const utilisateurs: Util[] = [
 ];
 const entreprise = { id: id(), code: CODE, raisonSociale: "ITI Démonstration SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)" as string | null,
   email: "contact@demo.cm" as string | null, regimeFiscal: "Régime du réel (à vérifier)" as string | null, patente: "PAT-DEMO-0000 (fictif)" as string | null,
-  couleurs: { principale: "#101d35", accent: "#ff6a00" }, logoId: null as string | null, logoUrl: null as string | null,
+  couleurs: { principale: "#062b68", accent: "#0647a9" }, logoId: null as string | null, logoUrl: null as string | null,
   parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };
 const journal: Evt[] = [];
 const notifications: { id: string; type: "info" | "warning" | "security"; titre: string; texte: string; date: string; lus: Set<string>; pour: string | null; permission: string | null }[] = [];
