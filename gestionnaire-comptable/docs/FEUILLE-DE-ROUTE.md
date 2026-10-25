@@ -101,6 +101,9 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 
 ## À faire ensuite
 
+**Gamme FINEXA Suite.** État de l'ERP, éléments réutilisables et plan de FINEXA PHARMA : voir `FINEXA-SUITE.md`. Décisions attendues avant de commencer (§ 7).
+
+
 **Ventes et trésorerie (suite).** Rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.
 
 
