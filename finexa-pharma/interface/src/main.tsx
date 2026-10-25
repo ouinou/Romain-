@@ -5,7 +5,8 @@ import "./styles.css";
 import { App } from "./App";
 import { FournisseurToasts } from "./composants/ui";
 
-function demarrer() {
+async function demarrer() {
+  if (__DEMO__) (await import("./demo/serveur-simule")).installer();
   createRoot(document.getElementById("racine")!).render(
     <StrictMode><FournisseurToasts><App /></FournisseurToasts></StrictMode>,
   );

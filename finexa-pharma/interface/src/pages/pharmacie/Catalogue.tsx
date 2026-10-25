@@ -24,7 +24,7 @@ export function ImportProduits() {
     const octets = new Uint8Array(await f.arrayBuffer());
     // Excel en français enregistre souvent en Windows-1252 ; on essaie l'UTF-8 d'abord.
     let contenu = new TextDecoder("utf-8").decode(octets);
-    if (contenu.includes("�")) contenu = new TextDecoder("windows-1252").decode(octets);
+    if (contenu.includes("\uFFFD")) contenu = new TextDecoder("windows-1252").decode(octets);
     setFichier({ nom: f.name, contenu }); setRes(null);
   };
   const envoyer = async (verifier: boolean) => {

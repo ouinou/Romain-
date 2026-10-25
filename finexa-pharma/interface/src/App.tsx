@@ -66,7 +66,16 @@ export function App() {
 }
 
 /** Pas de démonstration « serveur simulé » pour FINEXA PHARMA (l'évaluation se fait avec l'officine fictive du setup). */
-function Bandeau() { return null; }
+function Bandeau() {
+  if (!__DEMO__) return null;
+  return (
+    <div className="bandeau-demo" role="note">
+      Démonstration : serveur simulé dans le navigateur, données fictives, aucune sécurité réelle (le vrai logiciel s'installe sur le serveur de la pharmacie).
+      Code <b>PH-DEMO-2026</b>, mot de passe <b>Demonstration-2026!</b>. Comptes : <b>aissatou.bello@demo.cm</b> (pharmacienne titulaire, administratrice),
+      {" "}<b>esther.ngobassa@demo.cm</b> (gestionnaire de stock), <b>clarisse.mbarga@demo.cm</b> (vendeuse), <b>marc.eyinga@demo.cm</b> (adjoint), <b>hamadou.bouba@demo.cm</b> (caissier).
+    </div>
+  );
+}
 
 function Coquille() {
   const route = useRoute();

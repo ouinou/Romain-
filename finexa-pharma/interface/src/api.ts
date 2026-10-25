@@ -71,6 +71,8 @@ export const api = {
 
 /** Téléchargement d'un fichier produit par le serveur (export CSV), avec la même gestion de confirmation. */
 export async function telecharger(url: string, nomParDefaut: string) {
+  // Démonstration en ligne : la page hébergée bloque les téléchargements ; on le dit plutôt que de ne rien faire.
+  if (__DEMO__) throw new ApiErreur(0, "demo", "Démonstration en ligne : le téléchargement est bloqué par la page. Dans le logiciel installé, le fichier CSV est téléchargé et l'export est tracé.");
   const texte = await appel<string>("GET", url);
   const blob = new Blob([texte], { type: "text/csv;charset=utf-8" });
   const lien = document.createElement("a");

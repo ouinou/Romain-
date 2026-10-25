@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build:demo": "tsc --noEmit -p . && vite build --mode demo && node scripts/page-unique.mjs dist-demo finexa-pharma-demo.html",
     "build": "tsc --noEmit -p . && vite build",
     "typecheck": "tsc --noEmit -p .",
     "test:parcours": "node tests/parcours.mjs"

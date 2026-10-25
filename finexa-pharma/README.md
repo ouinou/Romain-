@@ -42,6 +42,8 @@ cd interface && GC_URL=http://localhost:8444 node tests/parcours.mjs captures
 
 Setup Windows (construit sous Linux avec NSIS) : `installateur/construire.sh`.
 
+Démonstration en ligne (vraie interface, serveur simulé dans le navigateur, données fictives, aucune sécurité réelle) : `cd interface && npm run build:demo` produit `finexa-pharma-demo.html`, un fichier unique. Le simulateur (`interface/src/demo/`) reprend les règles des routes du serveur ; chaque onglet a sa propre mémoire, perdue au rechargement.
+
 ## État des vérifications (version 0.1)
 
 - Tests du serveur : 62 sur 62 réussis (catalogue, stock, inventaires, sécurité, rôles, sauvegarde et restauration).
