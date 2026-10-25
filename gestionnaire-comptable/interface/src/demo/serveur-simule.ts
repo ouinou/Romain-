@@ -19,7 +19,10 @@ const ACTIONS: [string, string][] = [["read", "Consulter"], ["create", "Créer"]
 
 let seq = 0;
 const id = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${++seq}-${Math.random().toString(16).slice(2)}`);
-const jeton = () => Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, "0")).join("");
+// Même forme que les codes du vrai serveur : 5 groupes de 4 caractères sans 0, O, 1, I ni L.
+const ALPHABET_CODE = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+const jeton = () => Array.from({ length: 5 }, () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => ALPHABET_CODE[b % 31]).join("")).join("-");
+const canon = (v: unknown) => String(v ?? "").toUpperCase().replace(/[\s-]/g, "");
 const ilYa = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
 
 interface Role { id: string; cle: string; libelle: string; description: string | null; systeme: boolean; mfaRequise: boolean; archiveLe: string | null; permissions: string[] }
@@ -153,8 +156,9 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
       return { utilisateur: { id: u.id, email: u.email, nom: u.nom }, mfaAConfigurer: false };
     }
     if (a1 === "invitation" || a1 === "reinitialisation") {
-      const u = utilisateurs.find((x) => x.jeton && x.jeton === String(c.jeton).trim());
-      if (!u || String(c.codeEntreprise).toUpperCase() !== CODE) throw new E(400, "jeton_invalide", "Ce lien n'est pas valide ou a expiré. Demandez-en un nouveau à votre administrateur.");
+      const u = utilisateurs.find((x) => x.jeton && canon(x.jeton) === canon(c.jeton));
+      if (!u || String(c.codeEntreprise).trim().toUpperCase() !== CODE)
+        throw new E(400, "jeton_invalide", "Code refusé par le serveur « démonstration ». Vérifiez le code entreprise et le code (copiez-les plutôt que de les retaper), et que ce poste ouvre bien l'adresse du serveur de votre entreprise.");
       if (String(c.motDePasse ?? "").length < 12) throw new E(400, "mot_de_passe_faible", "Le mot de passe doit contenir au moins 12 caractères.");
       u.jeton = undefined; if (u.statut === "invited") u.statut = "active";
       tracer({ type: "auth", action: a1 === "invitation" ? "invitation_accept" : "password_reset", acteurId: u.id });

@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { UUID, type Client } from "../../db.js";
 import { revoquerSessions } from "../../domaine/sessions.js";
-import { empreinteJeton, genererJeton } from "../../securite/jetons.js";
+import { empreinteCodeAcces, genererCodeAcces } from "../../securite/jetons.js";
 import { exiger, exigerConfirmation, pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
 import { ErreurHttp, nonTrouve } from "../erreurs.js";
 
@@ -65,13 +65,13 @@ function pasSurSoiMeme(ctx: Ctx, id: string, action: string) {
 }
 
 async function creerJeton(ctx: Ctx, utilisateurId: string, objet: "invitation" | "password_reset") {
-  const jeton = genererJeton();
+  const jeton = genererCodeAcces();
   await ctx.c.query("UPDATE user_tokens SET used_at = now() WHERE user_id = $1 AND purpose = $2 AND used_at IS NULL", [utilisateurId, objet]);
   const duree = objet === "invitation" ? "72 hours" : "30 minutes";
   const { rows: [t] } = await ctx.c.query(
     `INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at, created_by)
      VALUES ($1, $2, $3, now() + $4::interval, $5) RETURNING expires_at`,
-    [utilisateurId, objet, empreinteJeton(jeton), duree, ctx.utilisateur.id]);
+    [utilisateurId, objet, empreinteCodeAcces(jeton), duree, ctx.utilisateur.id]);
   return { jeton, expireLe: t.expires_at as Date };
 }
 

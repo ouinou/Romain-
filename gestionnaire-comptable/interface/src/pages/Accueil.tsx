@@ -10,18 +10,36 @@ const CLE_CODE = "gc.codeEntreprise";
 const codeMemorise = () => { try { return localStorage.getItem(CLE_CODE) ?? ""; } catch { return ""; } };
 const memoriserCode = (c: string) => { try { localStorage.setItem(CLE_CODE, c); } catch { /* navigation privée */ } };
 
+/**
+ * Lien d'activation remis par l'administrateur : #/activation?entreprise=…&code=… (ou #/reinitialisation?…).
+ * Lu une fois, puis retiré de la barre d'adresse et de l'historique (le code est secret).
+ */
+let lienLu: { mode: Mode; entreprise: string; code: string } | null | undefined;
+function lienActivation(): { mode: Mode; entreprise: string; code: string } | null {
+  if (lienLu !== undefined) return lienLu;   // lu une seule fois (le mode strict de React appelle deux fois l'initialisation)
+  const m = /^#\/(activation|reinitialisation)\?(.*)$/.exec(location.hash);
+  if (!m) return (lienLu = null);
+  const p = new URLSearchParams(m[2]);
+  history.replaceState(null, "", location.pathname + location.search);
+  return (lienLu = { mode: m[1] === "activation" ? "invitation" : "reinitialisation", entreprise: (p.get("entreprise") ?? "").toUpperCase(), code: p.get("code") ?? "" });
+}
+
 export function Accueil({ onConnecte, message }: { onConnecte: () => void; message?: string | null }) {
-  const [mode, setMode] = useState<Mode>("connexion");
-  const [code, setCode] = useState(codeMemorise);
+  const [lien] = useState(lienActivation);
+  const [mode, setMode] = useState<Mode>(lien?.mode ?? "connexion");
+  const [code, setCode] = useState(() => lien?.entreprise || codeMemorise());
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
   const [mdp2, setMdp2] = useState("");
   const [codeMfa, setCodeMfa] = useState("");
   const [demandeMfa, setDemandeMfa] = useState(false);
-  const [jeton, setJeton] = useState("");
+  const [jeton, setJeton] = useState(lien?.code ?? "");
   const [codeMaitre, setCodeMaitre] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(message ?? null);
+  const [info, setInfo] = useState<string | null>(message ?? (lien ? "Code entreprise et code remplis depuis votre lien : choisissez votre mot de passe." : null));
+  // Nom du poste serveur : chacun voit à quelle installation son poste est relié.
+  const [serveur, setServeur] = useState<string | null>(null);
+  useEffect(() => { api.get<{ serveur?: string }>("/api/sante").then((r) => setServeur(r.serveur ?? null)).catch(() => {}); }, []);
   const [envoi, setEnvoi] = useState(false);
   const [jetonRecupere, setJetonRecupere] = useState<{ jeton: string; expireLe: string } | null>(null);
 
@@ -48,6 +66,7 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
         await api.post(mode === "invitation" ? "/api/auth/invitation/acceptation" : "/api/auth/reinitialisation",
           { codeEntreprise: code, jeton: jeton.trim(), motDePasse: mdp });
         memoriserCode(code.trim().toUpperCase());
+        lienLu = null;
         changer("connexion");
         setInfo(mode === "invitation" ? "Compte activé. Connectez-vous avec votre nouveau mot de passe." : "Mot de passe modifié. Connectez-vous.");
         return;
@@ -96,7 +115,8 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
             {mode === "connexion" && demandeMfa &&
               <Champ label="Code de vérification (6 chiffres)" valeur={codeMfa} onChange={(v) => setCodeMfa(v.replace(/\D/g, "").slice(0, 6))} requis inputMode="numeric" autoComplete="one-time-code" autoFocus aide="Code affiché par votre application d'authentification." />}
             {(mode === "invitation" || mode === "reinitialisation") && <>
-              <Champ label={mode === "invitation" ? "Code d'invitation" : "Code de réinitialisation"} valeur={jeton} onChange={setJeton} requis />
+              <Champ label={mode === "invitation" ? "Code d'invitation" : "Code de réinitialisation"} valeur={jeton} onChange={setJeton} requis
+                placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autoComplete="one-time-code" aide="Tel qu'il figure sur la fiche remise par votre administrateur. Majuscules, minuscules et espaces sont acceptés." />
               <Champ label="Nouveau mot de passe" type="password" valeur={mdp} onChange={setMdp} requis autoComplete="new-password" aide="12 caractères minimum. Une phrase de plusieurs mots est plus sûre et plus facile à retenir." />
               <Champ label="Confirmer le mot de passe" type="password" valeur={mdp2} onChange={setMdp2} requis autoComplete="new-password" />
             </>}
@@ -115,6 +135,17 @@ export function Accueil({ onConnecte, message }: { onConnecte: () => void; messa
           {mode !== "recuperation" && <button className="btn-lien" onClick={() => changer("recuperation")}>Administrateur bloqué : utiliser le code maître</button>}
         </div>
         <p className="pied-accueil">Mot de passe oublié ? Demandez un code de réinitialisation à votre administrateur.</p>
+        <details className="aide-postes">
+          <summary>Utiliser FINEXA ERP depuis un autre poste</summary>
+          <p>FINEXA ERP s'installe sur <b>un seul</b> ordinateur, le serveur de l'entreprise, qui garde toutes les données. Les autres postes n'installent rien :</p>
+          <ol>
+            <li>l'administrateur crée votre compte et vous remet une fiche d'accès ;</li>
+            <li>sur votre poste, ouvrez Edge ou Chrome à l'adresse du serveur indiquée sur la fiche (par exemple https://NOM-DU-SERVEUR:8443) ;</li>
+            <li>choisissez « J'ai reçu un code d'invitation ».</li>
+          </ol>
+          <p>Si FINEXA ERP a aussi été installé sur votre poste, cette installation a sa propre base, vide : elle ne connaît ni votre entreprise ni vos codes.</p>
+        </details>
+        {serveur && <p className="serveur-accueil">Serveur : <b>{serveur}</b> · {location.host}</p>}
       </div>
     </main>
   );
@@ -145,6 +176,11 @@ function PremiereInstallation({ onFin }: { onFin: (code: string, jeton: string) 
           <form onSubmit={creer} style={{ display: "grid", gap: 12 }}>
             <div><h2>Créer votre entreprise</h2>
               <p className="discret" style={{ margin: "6px 0 0" }}>Le logiciel est installé. Indiquez l'entreprise et la personne qui l'administrera. Cet écran n'apparaît que sur ce serveur, une seule fois.</p></div>
+            <div className="alerte">
+              <b>Ce poste devient le serveur de l'entreprise</b> : il garde les données de tous les utilisateurs et doit rester allumé pendant les heures de travail.
+              Les collaborateurs (direction, comptable, caisse…) <b>n'installent pas</b> FINEXA ERP : l'administrateur leur crée un compte, puis ils ouvrent l'adresse de ce serveur dans leur navigateur.
+            </div>
+            <RejoindreServeur />
             <Champ label="Raison sociale" valeur={f.raisonSociale} onChange={set("raisonSociale")} requis autoFocus />
             <Champ label="Code entreprise" valeur={f.code} onChange={set("code")} requis placeholder="Ex. GC-MONENTREPRISE" aide="Saisi par chaque utilisateur à la connexion. 4 à 32 lettres, chiffres ou tirets." />
             <div className="grille-champs">
@@ -177,5 +213,36 @@ function PremiereInstallation({ onFin }: { onFin: (code: string, jeton: string) 
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * Pour qui a installé FINEXA ERP sur un poste de travail alors que l'entreprise a déjà son serveur : ne rien créer ici,
+ * ouvrir l'adresse du serveur. (Une entreprise créée ici aurait sa propre base, séparée de celle du serveur.)
+ */
+function RejoindreServeur() {
+  const [adresse, setAdresse] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const ouvrir = () => {
+    const brut = adresse.trim();
+    if (!brut) { setErreur("Indiquez le nom ou l'adresse IP du serveur."); return; }
+    try {
+      // « PC-COMPTA » ou « 192.168.1.10 » : on complète avec https:// et le port par défaut du setup.
+      const u = new URL(/^https?:\/\//i.test(brut) ? brut : `https://${brut}`);
+      if (!/^https?:\/\//i.test(brut) && !u.port) u.port = location.port || "8443";
+      location.href = u.origin + "/";
+    } catch { setErreur("Adresse invalide. Exemple : PC-COMPTA ou 192.168.1.10"); }
+  };
+  return (
+    <details className="aide-postes">
+      <summary>Votre entreprise a déjà un serveur FINEXA ERP ? Ne créez rien ici</summary>
+      <p>Ouvrez plutôt l'adresse de ce serveur (elle figure sur la fiche d'accès remise par l'administrateur). Vous pourrez ensuite désinstaller FINEXA ERP de ce poste depuis les paramètres de Windows.</p>
+      <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+        <input aria-label="Nom ou adresse du serveur" placeholder="Ex. PC-COMPTA ou 192.168.1.10" value={adresse} onChange={(e) => { setAdresse(e.target.value); setErreur(null); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); ouvrir(); } }} style={{ flex: "1 1 200px" }} />
+        <button type="button" className="btn" onClick={ouvrir}>Ouvrir le serveur</button>
+      </div>
+      {erreur && <p className="erreur-champ" role="alert">{erreur}</p>}
+    </details>
   );
 }

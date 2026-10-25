@@ -97,12 +97,14 @@ try {
   await p.getByLabel("Adresse e-mail professionnelle").fill("brigitte.essomba@demo.cm");
   await p.getByRole("dialog").getByLabel("Caissier").check();
   await p.getByRole("button", { name: "Créer et générer l'invitation" }).click();
-  await p.getByRole("dialog", { name: /Code d'invitation de Brigitte/ }).waitFor();
-  const codeInvitation = (await p.locator(".secret").innerText()).trim();
-  assert.ok(codeInvitation.length > 20);
-  await capture(p, "code-invitation");
+  await p.getByRole("dialog", { name: /Fiche d'accès de Brigitte/ }).waitFor();
+  const codeInvitation = (await p.locator(".fiche-acces .code-fiche").innerText()).trim();
+  assert.match(codeInvitation, /^[2-9A-HJ-NP-Z]{4}(-[2-9A-HJ-NP-Z]{4}){4}$/, "code lisible en 5 groupes de 4");
+  const fiche = await p.locator(".fiche-acces").innerText();
+  assert.ok(fiche.includes("GC-DEMO-2026") && fiche.includes("brigitte.essomba@demo.cm") && /https?:\/\/[^\s]+:8450/.test(fiche), `fiche d'accès incomplète : ${fiche}`);
+  await capture(p, "fiche-acces");
   await p.getByRole("button", { name: "J'ai remis le code" }).click();
-  etape("création d'un compte et code d'invitation");
+  etape("création d'un compte : fiche d'accès (adresse du serveur, code entreprise, e-mail, code lisible)");
 
   // Rôle personnalisé copié du Caissier, puis modification de la grille
   await ouvrir(p, "Rôles et permissions");
@@ -193,18 +195,28 @@ try {
   etape("caissière : menus filtrés, page interdite, API refusée par le serveur (403)");
 
   // --- Activation du compte invité depuis l'écran d'accueil
+  // Par le lien d'activation de la fiche : code entreprise et code préremplis, puis retirés de la barre d'adresse.
   const b = await nouvellePage();
-  await b.goto(URL_BASE + "/");
-  await b.getByRole("button", { name: "J'ai reçu un code d'invitation" }).click();
-  await b.getByLabel("Code entreprise").fill("GC-DEMO-2026");
-  await b.getByLabel("Code d'invitation").fill(codeInvitation);
+  await b.goto(URL_BASE + `/#/activation?entreprise=GC-DEMO-2026&code=${encodeURIComponent(codeInvitation)}`);
+  await b.getByRole("heading", { name: "Activer mon compte" }).waitFor();
+  assert.equal(await b.getByLabel("Code d'invitation").inputValue(), codeInvitation);
+  assert.ok(!b.url().includes(codeInvitation), "code retiré de la barre d'adresse");
+  await b.getByText(/^Serveur : /).waitFor();
   await b.getByLabel("Nouveau mot de passe").fill("Caisse-Akwa-Lundi-Matin-26");
   await b.getByLabel("Confirmer le mot de passe").fill("Caisse-Akwa-Lundi-Matin-26");
   await b.getByRole("button", { name: "Enregistrer mon mot de passe" }).click();
   await b.getByText("Compte activé.").waitFor();
+  // Même code une seconde fois : le message dit que le compte est déjà actif (au lieu de « lien non valide »).
+  await b.getByRole("button", { name: "J'ai reçu un code d'invitation" }).click();
+  await b.getByLabel("Code d'invitation").fill(codeInvitation.toLowerCase().replace(/-/g, " "));
+  await b.getByLabel("Nouveau mot de passe").fill("Caisse-Akwa-Lundi-Matin-26");
+  await b.getByLabel("Confirmer le mot de passe").fill("Caisse-Akwa-Lundi-Matin-26");
+  await b.getByRole("button", { name: "Enregistrer mon mot de passe" }).click();
+  await b.getByText(/Ce code a déjà servi : votre compte est actif/).waitFor();
+  await capture(b, "code-deja-utilise");
   await connexion(b, "brigitte.essomba@demo.cm", "Caisse-Akwa-Lundi-Matin-26");
   await b.getByRole("heading", { name: /Bonjour Brigitte/ }).waitFor();
-  etape("activation d'un compte par invitation puis connexion");
+  etape("activation par le lien de la fiche (champs préremplis), nom du serveur affiché, code réutilisé expliqué, puis connexion");
 
   // Le refus côté caissière est bien tracé (vu par l'administratrice)
   await ouvrir(p, "Journal d'audit");
@@ -407,7 +419,7 @@ try {
 
   const csp = erreursConsole.filter((e) => /Content Security Policy|Refused to/.test(e));
   assert.deepEqual(csp, [], "violations de la politique de sécurité du contenu");
-  const autres = erreursConsole.filter((e) => !/status of 40[13]/.test(e));
+  const autres = erreursConsole.filter((e) => !/status of 40[013]/.test(e));
   assert.deepEqual(autres, [], "erreurs JavaScript dans la console");
   etape(`aucune erreur JavaScript ni violation CSP (${n} captures dans ${DOSSIER}/)`);
 } catch (e) {

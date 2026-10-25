@@ -45,7 +45,7 @@ Var LANCEUR
 !define MUI_WELCOMEPAGE_TITLE "Installation de ${NOM}"
 !define MUI_WELCOMEPAGE_TEXT "Ce programme installe ${NOM} sur ce poste, qui deviendra le serveur de l'entreprise :$\r$\n$\r$\n  • le logiciel et son interface web ;$\r$\n  • une base de données PostgreSQL privée ;$\r$\n  • les services Windows, le certificat HTTPS et les sauvegardes du soir.$\r$\n$\r$\nLes autres postes n'installent rien : ils utilisent un navigateur.$\r$\n$\r$\nChoisissez un poste allumé pendant les heures de travail, avec une adresse IP fixe sur le réseau local."
 !define MUI_FINISHPAGE_TITLE "${NOM} est installé"
-!define MUI_FINISHPAGE_TEXT "Le serveur fonctionne. Le logiciel s'ouvre dans sa propre fenêtre.$\r$\n$\r$\nInstallation normale : créez votre entreprise et son administrateur à la première ouverture.$\r$\nAvec les données de démonstration : connectez-vous avec les comptes indiqués dans « Comptes de démonstration » (menu Démarrer).$\r$\n$\r$\nAutres postes : voir « Brancher un autre poste » dans le menu Démarrer."
+!define MUI_FINISHPAGE_TEXT "Le serveur fonctionne. Le logiciel s'ouvre dans sa propre fenêtre.$\r$\n$\r$\nInstallation normale : créez votre entreprise et son administrateur à la première ouverture.$\r$\nAvec les données de démonstration : connectez-vous avec les comptes indiqués dans « Comptes de démonstration » (menu Démarrer).$\r$\n$\r$\nAutres postes : n'installez rien. Créez chaque compte dans « Utilisateurs » et imprimez la fiche d'accès affichée (adresse du serveur et code d'invitation)."
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Ouvrir ${NOM} maintenant"
 !define MUI_FINISHPAGE_RUN_FUNCTION OuvrirLogiciel
@@ -75,6 +75,13 @@ Function .onInit
   ReadRegStr $0 HKLM "${CLE_DESINSTALL}" "InstallLocation"
   ${If} $0 != ""
     StrCpy $INSTDIR $0
+  ${ElseIfNot} ${Silent}
+    ; Première installation sur ce poste : FINEXA ERP ne s'installe que sur le serveur de l'entreprise.
+    ; Un poste de travail qui l'installerait aurait sa propre base, vide, séparée de celle des collègues.
+    MessageBox MB_YESNO|MB_ICONQUESTION "Ce poste doit-il devenir le SERVEUR de l'entreprise ?$\r$\n$\r$\nLe serveur est l'ordinateur unique qui garde les données de tous les utilisateurs. Il reste allumé pendant les heures de travail.$\r$\n$\r$\nOui : installer le serveur sur ce poste.$\r$\nNon : ce poste est un poste de travail (direction, comptabilité, caisse...)." IDYES serveur
+    MessageBox MB_ICONINFORMATION "Rien à installer sur un poste de travail.$\r$\n$\r$\n1. L'administrateur crée votre compte sur le serveur et vous remet une fiche d'accès.$\r$\n2. Sur ce poste, ouvrez Edge ou Chrome à l'adresse du serveur indiquée sur la fiche (exemple : https://NOM-DU-SERVEUR:8443).$\r$\n3. Choisissez « J'ai reçu un code d'invitation ».$\r$\n$\r$\nAucune base de données n'a été créée sur ce poste."
+    Abort
+    serveur:
   ${EndIf}
 FunctionEnd
 

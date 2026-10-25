@@ -46,7 +46,8 @@ En cas de perte du téléphone, un autre administrateur ou le code maître perme
 
 Menu **Utilisateurs** :
 
-- **Ajouter** : nom, e-mail, rôles, et une date de fin d'accès si besoin (stagiaire, auditeur externe). Un code d'invitation s'affiche **une seule fois** : remettez-le en main propre.
+- **Ajouter** : nom, e-mail, rôles, et une date de fin d'accès si besoin (stagiaire, auditeur externe). Une **fiche d'accès** s'affiche **une seule fois** : adresse du serveur à ouvrir sur le poste du collaborateur, code entreprise, e-mail, code d'invitation (5 groupes de 4 caractères, sans 0, O, 1, I ni L) et date limite (72 heures). Imprimez-la ou recopiez-la et remettez-la en main propre. Le collaborateur n'installe rien sur son poste : il ouvre l'adresse du serveur dans son navigateur et choisit « J'ai reçu un code d'invitation ».
+- Si le code est refusé, le message en donne la raison (déjà utilisé, remplacé par un code plus récent, expiré, code de réinitialisation saisi à la place) ou rappelle quoi vérifier, avec le nom du serveur interrogé.
 - Cliquez sur une personne pour **modifier**, changer ses **rôles**, la **désactiver** ou la **réactiver**, **réinitialiser** son mot de passe, **fermer ses sessions** ou consulter son **historique de connexions**.
 - Les opérations sensibles demandent un **motif**, conservé dans le journal, puis la **ressaisie de votre mot de passe**. Celle-ci reste valable 5 minutes.
 - Vous ne pouvez pas modifier vos propres rôles ni désactiver votre propre compte : c'est volontaire, un autre administrateur doit le faire.

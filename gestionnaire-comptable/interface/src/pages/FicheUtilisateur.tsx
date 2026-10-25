@@ -1,7 +1,8 @@
+import { FicheAcces } from "../composants/FicheAcces";
 import { useState } from "react";
 import { api, qs } from "../api";
 import { useSession } from "../session";
-import { Champ, Chargement, Modale, Pagination, SecretUnique, date, dateHeure, initiales, messageErreur, useDonnees, useToast } from "../composants/ui";
+import { Champ, Chargement, Modale, Pagination, date, dateHeure, initiales, messageErreur, useDonnees, useToast } from "../composants/ui";
 import { ConfirmerAction } from "../composants/Confirmations";
 import { RESULTATS, libelleAction } from "../libelles";
 import { badgeStatut } from "./Utilisateurs";
@@ -106,8 +107,8 @@ export function FicheUtilisateur({ id }: { id: string }) {
           setSecret({ titre: "Nouveau code d'invitation", texte: "Valable 72 heures, une seule fois.", ...r.invitation });
         }} onFermer={() => setAction(null)} />}
       {secret && (
-        <Modale titre={secret.titre} onFermer={() => setSecret(null)}>
-          <SecretUnique valeur={secret.jeton} explication={<>{secret.texte} Ce code ne sera plus affiché. Expire le {dateHeure(secret.expireLe)}.</>} />
+        <Modale titre={secret.titre} onFermer={() => setSecret(null)} large>
+          <FicheAcces nom={util.nom} email={util.email} jeton={secret.jeton} expireLe={secret.expireLe} type={secret.titre.includes("réinitialisation") ? "reinitialisation" : "invitation"} />
           <div className="actions-form"><button className="btn btn-principal" onClick={() => setSecret(null)}>J'ai remis le code</button></div>
         </Modale>
       )}

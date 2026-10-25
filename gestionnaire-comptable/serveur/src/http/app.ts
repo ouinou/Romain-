@@ -1,6 +1,7 @@
 import Fastify, { type FastifyServerOptions } from "fastify";
 import cookie from "@fastify/cookie";
 import { ZodError } from "zod";
+import { hostname } from "node:os";
 import type { Dependances } from "./contexte.js";
 import { ErreurHttp } from "./erreurs.js";
 import { routesAuth } from "./routes/auth.js";
@@ -59,7 +60,8 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
 
   app.get("/api/sante", async () => {
     await deps.pool.query("SELECT 1");
-    return { statut: "ok", version: "0.3.0" };
+    // Nom du poste serveur : affiché sur l'écran de connexion, pour qu'on voie à quelle installation on est relié.
+    return { statut: "ok", version: "0.3.0", serveur: hostname() };
   });
 
   routesAuth(app, deps);

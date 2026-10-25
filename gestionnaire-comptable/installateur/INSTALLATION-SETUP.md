@@ -34,19 +34,36 @@ Faites l'essai sur un PC de test ou une machine virtuelle Windows 10/11, pas sur
 - **Copier les sauvegardes ailleurs.** Elles sont créées chaque soir dans `C:\ProgramData\GestionnaireComptable\sauvegardes`. Copiez-les régulièrement sur un disque externe ou un NAS.
 - Ne donnez à personne d'autre que l'administrateur technique l'accès au dossier `C:\ProgramData\GestionnaireComptable`.
 
+## Utiliser le logiciel à plusieurs
+
+FINEXA ERP fonctionne comme un site interne à l'entreprise :
+
+- **un seul poste installe FINEXA ERP** : le serveur. Il garde la base de données de toute l'entreprise ;
+- **les autres postes n'installent rien** : chaque collaborateur ouvre l'adresse du serveur dans Edge ou Chrome et se connecte avec son propre compte ;
+- les droits de chacun dépendent des rôles que l'administrateur lui attribue (caisse, comptabilité, direction…).
+
+Si le setup est lancé sur un poste de travail, il le demande dès le début (« Ce poste doit-il devenir le SERVEUR ? ») : répondez **Non**, rien n'est installé. Un poste qui a déjà installé FINEXA ERP par erreur a sa propre base, vide : elle ne connaît ni l'entreprise du serveur ni ses codes d'invitation. Le message « Code refusé par le serveur « NOM » » donne le nom du poste interrogé, pour repérer ce cas. Désinstallez FINEXA ERP de ce poste et utilisez l'adresse du serveur.
+
+**Créer le compte d'un collaborateur** : *Administration › Utilisateurs › Ajouter un utilisateur*. Le logiciel affiche une **fiche d'accès** à imprimer ou à recopier : adresse du serveur, code entreprise, adresse e-mail, code d'invitation (5 groupes de 4 caractères, sans 0, O, 1, I ni L), date limite (72 heures). Rien n'est envoyé par e-mail : le logiciel fonctionne sans Internet. La fiche se remet en main propre. Le bouton « Copier le lien d'activation » donne un lien qui préremplit l'écran d'activation, à transmettre par une messagerie interne de confiance.
+
+**Si le code est refusé**, le message dit pourquoi : code déjà utilisé (le compte est actif, il suffit de se connecter), remplacé par un code plus récent, expiré (avec la date), ou code de réinitialisation saisi à la place d'un code d'invitation. Sinon, vérifiez le code entreprise, le code, et que le poste ouvre bien l'adresse du serveur.
+
+**Mot de passe oublié** : l'administrateur génère un code de réinitialisation depuis la fiche de l'utilisateur (valable 30 minutes). Administrateur bloqué : code maître, depuis l'écran de connexion.
+
 ## Brancher un autre poste
 
 Rien à installer, il suffit d'un navigateur (Edge, Chrome ou Firefox).
 
 1. Sur l'autre poste, ouvrez `https://NOM-DU-SERVEUR:8443/certificat-autorite.crt` (remplacez NOM-DU-SERVEUR par le nom ou l'adresse IP du serveur). Le navigateur prévient que la connexion n'est pas encore sécurisée : c'est normal, cette page sert justement à la sécuriser.
 2. Ouvrez le fichier téléchargé, puis choisissez « Installer le certificat… », « Ordinateur local », « Placer tous les certificats dans le magasin suivant », puis « Autorités de certification racines de confiance ».
-3. Fermez et rouvrez le navigateur, puis allez sur `https://NOM-DU-SERVEUR:8443/` et ajoutez la page aux favoris.
+3. Fermez et rouvrez le navigateur, puis allez sur `https://NOM-DU-SERVEUR:8443/` et ajoutez la page aux favoris. Dans Edge, « Applications › Installer ce site en tant qu'application » crée un raccourci qui ouvre FINEXA ERP dans sa propre fenêtre.
+4. En bas de l'écran de connexion, « Serveur : NOM » confirme le poste auquel vous êtes relié.
 
 Le port est indiqué dans `C:\ProgramData\GestionnaireComptable\adresse.txt` sur le serveur (8443, sauf s'il était déjà pris).
 
 ## Mise à jour
 
-Lancez le setup de la nouvelle version sur le serveur. Il arrête les services, remplace le programme, met la base à niveau et redémarre. Les données et la configuration sont conservées. Faites une sauvegarde avant, par précaution.
+Lancez le setup de la nouvelle version sur le serveur. Il arrête les services, fait une **sauvegarde chiffrée de la base** (depuis la version 0.3 ; la mise à jour s'arrête si elle échoue), remplace le programme, met la base à niveau et redémarre. Les données et la configuration sont conservées.
 
 ## Désinstallation
 

@@ -4,7 +4,8 @@ import { transaction, UUID, type Client } from "../../db.js";
 import { journaliser, journaliserSysteme, notifier } from "../../domaine/audit.js";
 import { creerSession, revoquerSessions, chargerPermissions } from "../../domaine/sessions.js";
 import { hacherMotDePasse, politiqueMotDePasse, verifierMotDePasse } from "../../securite/motdepasse.js";
-import { empreinteJeton, genererJeton } from "../../securite/jetons.js";
+import { empreinteCodeAcces, empreintesCandidates, genererCodeAcces } from "../../securite/jetons.js";
+import { hostname } from "node:os";
 import { genererSecretTotp, uriOtpauth, verifierTotp } from "../../securite/totp.js";
 import { chiffrer, dechiffrer } from "../../securite/chiffrement.js";
 import { Limiteur } from "../../securite/limiteur.js";
@@ -196,20 +197,43 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
     limiter(ip);
     const d = schemaJeton.parse(body);
     const entrepriseId = await entrepriseParCode(d.codeEntreprise, ip, objet);
-    const invalide = new ErreurHttp(400, "jeton_invalide", "Ce lien n'est pas valide ou a expiré. Demandez-en un nouveau à votre administrateur.");
+    // Code introuvable : message identique que l'entreprise existe ou non (pas de découverte des codes entreprise),
+    // mais qui dit quoi vérifier, avec le nom du serveur interrogé : un poste qui a sa propre installation de
+    // FINEXA ERP a sa propre base, qui ne connaît ni l'entreprise ni ses codes.
+    const invalide = new ErreurHttp(400, "jeton_invalide",
+      `Code refusé par le serveur « ${hostname()} ». Vérifiez le code entreprise et le code ${objet === "invitation" ? "d'invitation" : "de réinitialisation"} (copiez-les plutôt que de les retaper), ` +
+      "et que ce poste ouvre bien l'adresse du serveur de votre entreprise : si FINEXA ERP a aussi été installé sur ce poste, cette installation a sa propre base et ne connaît pas vos codes.");
     if (!entrepriseId) throw invalide;
+    const empreintes = empreintesCandidates(d.jeton);
     const sortie = await transaction(pool, entrepriseId, async (c) => {
       const { rows: [t] } = await c.query(
         `SELECT t.id, t.user_id, u.email, u.full_name, u.status
            FROM user_tokens t JOIN app_users u ON u.id = t.user_id
-          WHERE t.token_hash = $1 AND t.purpose = $2 AND t.used_at IS NULL AND t.expires_at > now()
-          FOR UPDATE OF t`, [empreinteJeton(d.jeton), objet]);
+          WHERE t.token_hash = ANY($1) AND t.purpose = $2 AND t.used_at IS NULL AND t.expires_at > now()
+          FOR UPDATE OF t`, [empreintes, objet]);
       if (!t) {
-        await journaliser(c, { type: "auth", action: objet === "invitation" ? "invitation_accept" : "password_reset", resultat: "failure", ip, details: { raison: "jeton_invalide" } });
-        return { erreur: invalide };
+        // Le code existe-t-il dans un autre état ? Seule une personne qui détient un vrai code reçoit ce détail.
+        const { rows: [x] } = await c.query(
+          `SELECT t.purpose, t.used_at, t.expires_at, u.status,
+                  EXISTS (SELECT 1 FROM user_tokens n WHERE n.user_id = t.user_id AND n.purpose = t.purpose AND n.created_at > t.created_at) AS remplace
+             FROM user_tokens t JOIN app_users u ON u.id = t.user_id WHERE t.token_hash = ANY($1) ORDER BY t.created_at DESC LIMIT 1`, [empreintes]);
+        const quand = (v: Date) => new Date(v).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+        const raison = !x ? "jeton_inconnu" : x.purpose !== objet ? "autre_type" : x.remplace ? "remplace" : x.used_at ? "deja_utilise" : "expire";
+        await journaliser(c, { type: "auth", action: objet === "invitation" ? "invitation_accept" : "password_reset", resultat: "failure", ip, details: { raison } });
+        const message: Record<string, string> = {
+          autre_type: x?.purpose === "password_reset"
+            ? "C'est un code de réinitialisation de mot de passe : choisissez plutôt « J'ai reçu un code de réinitialisation »."
+            : "C'est un code d'invitation : choisissez plutôt « J'ai reçu un code d'invitation ».",
+          remplace: "Un code plus récent a été créé pour ce compte : celui-ci ne vaut plus. Utilisez le dernier code remis par votre administrateur.",
+          deja_utilise: x?.status === "active" && objet === "invitation"
+            ? "Ce code a déjà servi : votre compte est actif. Connectez-vous avec votre adresse e-mail et votre mot de passe."
+            : "Ce code a déjà servi. Demandez-en un nouveau à votre administrateur.",
+          expire: x ? `Ce code a expiré le ${quand(x.expires_at)}. Demandez-en un nouveau à votre administrateur.` : "",
+        };
+        return { erreur: raison === "jeton_inconnu" ? invalide : new ErreurHttp(400, "jeton_invalide", message[raison]) };
       }
-      if (objet === "password_reset" && t.status !== "active") return { erreur: invalide };
-      if (objet === "invitation" && t.status !== "invited") return { erreur: invalide };
+      if (objet === "password_reset" && t.status !== "active") return { erreur: new ErreurHttp(400, "jeton_invalide", "Ce compte n'est pas actif : adressez-vous à votre administrateur.") };
+      if (objet === "invitation" && t.status !== "invited") return { erreur: new ErreurHttp(400, "jeton_invalide", "Ce compte n'attend plus d'activation : connectez-vous, ou adressez-vous à votre administrateur.") };
       const faible = politiqueMotDePasse(d.motDePasse, t.email, t.full_name);
       if (faible) return { erreur: new ErreurHttp(400, "mot_de_passe_faible", faible) };
       await c.query("UPDATE user_tokens SET used_at = now() WHERE id = $1", [t.id]);
@@ -346,10 +370,10 @@ export function routesAuth(app: FastifyInstance, deps: Dependances) {
                               failed_login_count = 0, locked_until = NULL WHERE id = $1`, [u.id]);
       const fermees = await revoquerSessions(c, u.id, "recuperation_code_maitre");
       await c.query("UPDATE user_tokens SET used_at = now() WHERE user_id = $1 AND purpose = 'password_reset' AND used_at IS NULL", [u.id]);
-      const jeton = genererJeton();
+      const jeton = genererCodeAcces();
       const { rows: [t] } = await c.query(
         `INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at) VALUES ($1, 'password_reset', $2, now() + interval '30 minutes') RETURNING expires_at`,
-        [u.id, empreinteJeton(jeton)]);
+        [u.id, empreinteCodeAcces(jeton)]);
       await trace("success", { sessionsFermees: fermees, mfaReinitialisee: true }, u.id);
       await notifier(c, { permission: "users.admin", type: "security", titre: "Code maître utilisé",
         corps: `Le code maître a servi à rétablir l'accès de ${u.full_name}. Il n'est plus valable : un administrateur doit en générer un nouveau. Si cette opération n'était pas prévue, réagissez immédiatement.` });

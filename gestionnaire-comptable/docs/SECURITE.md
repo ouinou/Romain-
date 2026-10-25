@@ -11,6 +11,7 @@ Ce document dit ce que le logiciel protège réellement, et où sont les limites
 | Tentatives répétées | 5 échecs consécutifs → compte bloqué 15 min, trace et notification aux administrateurs. 30 essais par adresse IP sur 10 min, tous comptes confondus. |
 | Double authentification | TOTP à 6 chiffres. Obligatoire par défaut pour les rôles sensibles (administrateur, DG, DAF, auditeur, RH). Un code déjà utilisé est refusé. Le secret est chiffré en AES-256-GCM. |
 | Sessions | Jeton aléatoire de 256 bits dans un cookie HttpOnly et SameSite=Strict ; seule son empreinte est stockée. Fermeture après 15 min d'inactivité ou 10 h au total. |
+| Codes d'invitation et de réinitialisation | 20 caractères tirés parmi 31 (environ 99 bits), présentés en 5 groupes de 4, sans caractères ambigus, pour être recopiés à la main. Usage unique, 72 h (invitation) ou 30 min (réinitialisation), tentatives limitées par adresse ; seule l'empreinte est stockée. Un code refusé n'indique jamais si l'entreprise existe ; le détail (déjà utilisé, remplacé, expiré, mauvais type) n'est donné qu'à qui présente un vrai code. |
 | Révocation | Immédiate lors d'une désactivation, d'un changement ou d'une réinitialisation de mot de passe, ou sur demande d'un administrateur. |
 | Invitations et réinitialisations | Codes à usage unique (72 h pour une invitation, 30 min pour une réinitialisation), remis en main propre. Aucun serveur de messagerie n'est nécessaire. |
 | Accès temporaires | Date de fin d'accès par utilisateur (stagiaire, auditeur externe). |

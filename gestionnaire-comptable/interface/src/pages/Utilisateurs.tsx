@@ -1,9 +1,10 @@
+import { FicheAcces } from "../composants/FicheAcces";
 import { useEffect, useState } from "react";
 import { api, qs } from "../api";
 import { useSession } from "../session";
 import { aller, effacerParametres, useParametres } from "../routeur";
 import { STATUTS } from "../libelles";
-import { Champ, Chargement, Modale, Pagination, SecretUnique, dateHeure, initiales, messageErreur, useDonnees, useRetarde, useToast } from "../composants/ui";
+import { Champ, Chargement, Modale, Pagination, dateHeure, initiales, messageErreur, useDonnees, useRetarde, useToast } from "../composants/ui";
 import type { Page, Role, Utilisateur } from "../types";
 
 export const badgeStatut = (u: Pick<Utilisateur, "statut" | "verrouille">) =>
@@ -85,7 +86,7 @@ function CreationUtilisateur({ roles, onFermer, onCree }: { roles: Role[]; onFer
   const [fin, setFin] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const [resultat, setResultat] = useState<{ nom: string; jeton: string; expireLe: string } | null>(null);
+  const [resultat, setResultat] = useState<{ nom: string; email: string; jeton: string; expireLe: string } | null>(null);
   const peutRoles = a("users.admin") && roles.length > 0;
 
   const creer = async (e: React.FormEvent) => {
@@ -93,7 +94,7 @@ function CreationUtilisateur({ roles, onFermer, onCree }: { roles: Role[]; onFer
     try {
       const r = await api.post<{ utilisateur: Utilisateur; invitation: { jeton: string; expireLe: string } }>("/api/utilisateurs",
         { nom, email, roles: peutRoles ? choix : [], accesExpireLe: fin ? new Date(fin + "T23:59:59").toISOString() : null });
-      setResultat({ nom: r.utilisateur.nom, ...r.invitation });
+      setResultat({ nom: r.utilisateur.nom, email: r.utilisateur.email, ...r.invitation });
       toast("Compte créé.");
       onCree();
     } catch (err) { setErreur(messageErreur(err)); }
@@ -101,8 +102,8 @@ function CreationUtilisateur({ roles, onFermer, onCree }: { roles: Role[]; onFer
   };
 
   if (resultat) return (
-    <Modale titre={`Code d'invitation de ${resultat.nom}`} onFermer={onFermer}>
-      <SecretUnique valeur={resultat.jeton} explication={<>Ce code ne sera <b>plus jamais affiché</b>. Remettez-le en main propre à la personne, avec le code entreprise. Il est valable jusqu'au {dateHeure(resultat.expireLe)}. Ne l'envoyez pas par un canal public.</>} />
+    <Modale titre={`Fiche d'accès de ${resultat.nom}`} onFermer={onFermer} large>
+      <FicheAcces nom={resultat.nom} email={resultat.email} jeton={resultat.jeton} expireLe={resultat.expireLe} type="invitation" />
       <div className="actions-form"><button className="btn btn-principal" onClick={onFermer}>J'ai remis le code</button></div>
     </Modale>
   );

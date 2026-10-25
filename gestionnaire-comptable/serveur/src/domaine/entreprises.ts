@@ -4,7 +4,7 @@ import type { Pool } from "../db.js";
 import { transaction } from "../db.js";
 import { ROLES_SYSTEME } from "./roles-systeme.js";
 import { journaliser, journaliserSysteme } from "./audit.js";
-import { empreinteJeton, genererJeton } from "../securite/jetons.js";
+import { empreinteCodeAcces, genererCodeAcces } from "../securite/jetons.js";
 import { genererCodeMaitre, normaliserCodeMaitre } from "../securite/code-maitre.js";
 import { hacherMotDePasse } from "../securite/motdepasse.js";
 
@@ -23,7 +23,7 @@ export async function creerEntreprise(poolProprietaire: Pool, n: NouvelleEntrepr
   const code = n.code.trim().toUpperCase();
   if (!/^[A-Z0-9][A-Z0-9-]{3,31}$/.test(code)) throw new Error("Code entreprise invalide : 4 à 32 caractères, lettres majuscules, chiffres et tirets.");
   const id = randomUUID();
-  const jeton = genererJeton();
+  const jeton = genererCodeAcces();
   const codeMaitre = genererCodeMaitre();
   const hashCodeMaitre = await hacherMotDePasse(normaliserCodeMaitre(codeMaitre));
   const res = await transaction(poolProprietaire, id, async (c) => {
@@ -47,7 +47,7 @@ export async function creerEntreprise(poolProprietaire: Pool, n: NouvelleEntrepr
     await c.query("INSERT INTO user_roles (user_id, role_id) VALUES ($1,$2)", [admin.id, roleAdminId]);
     const { rows: [tok] } = await c.query(
       "INSERT INTO user_tokens (user_id, purpose, token_hash, expires_at) VALUES ($1,'invitation',$2, now() + interval '72 hours') RETURNING expires_at",
-      [admin.id, empreinteJeton(jeton)]);
+      [admin.id, empreinteCodeAcces(jeton)]);
     // Comptabilité : plan de référence, journaux, exercice de l'année civile, comptes protégés.
     await c.query("SELECT accounting_initialize($1)", [new Date().getFullYear()]);
     await memoriserIdentite(c, id);   // identité imprimée sur les documents (reçus compris)

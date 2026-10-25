@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import type { Dependances } from "../contexte.js";
+import { existsSync } from "node:fs";
+import { hostname, networkInterfaces } from "node:os";
+import { proteger, type Dependances } from "../contexte.js";
 import { ErreurHttp } from "../erreurs.js";
 import { creerEntreprise } from "../../domaine/entreprises.js";
 import { journaliserSysteme } from "../../domaine/audit.js";
@@ -18,7 +20,25 @@ import { journaliserSysteme } from "../../domaine/audit.js";
 const LOCAL = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const estLocal = (req: FastifyRequest) => LOCAL.has(req.socket.remoteAddress ?? req.ip);
 
+/**
+ * Adresses auxquelles les autres postes du réseau joignent ce serveur (nom du poste, puis adresses IPv4).
+ * Imprimées sur la fiche d'accès remise à un collaborateur avec son code d'invitation.
+ */
+export function adressesServeur(deps: Dependances) {
+  const proto = deps.cfg.tls ? "https" : "http", port = deps.cfg.port;
+  const suffixe = (proto === "https" && port === 443) || (proto === "http" && port === 80) ? "" : `:${port}`;
+  const ips = Object.values(networkInterfaces()).flat().filter((i) => i && i.family === "IPv4" && !i.internal).map((i) => i!.address);
+  return {
+    nom: hostname(),
+    adresses: [hostname(), ...ips].map((h) => `${proto}://${h}${suffixe}`),
+    // Certificat de l'autorité locale (installé par le setup) : à installer sur chaque poste pour un HTTPS sans alerte.
+    certificat: proto === "https" && !!process.env.GC_TLS_AUTORITE && existsSync(process.env.GC_TLS_AUTORITE) ? "/certificat-autorite.crt" : null,
+  };
+}
+
 export function routesInstallation(app: FastifyInstance, deps: Dependances) {
+  app.get("/api/reseau", proteger(deps, { permission: "users.create" }, async () => adressesServeur(deps)));
+
   const aucuneEntreprise = async () => {
     if (!deps.poolProprietaire) return false;
     const { rows: [r] } = await deps.poolProprietaire.query("SELECT NOT EXISTS (SELECT 1 FROM companies) AS vide");
