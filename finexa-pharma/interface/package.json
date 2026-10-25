@@ -1,0 +1,29 @@
+{
+  "name": "finexa-pharma-interface",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interface web de FINEXA PHARMA (servie par le serveur applicatif)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:demo": "tsc --noEmit -p . && vite build --mode demo && node scripts/page-unique.mjs dist-demo finexa-pharma-demo.html",
+    "build": "tsc --noEmit -p . && vite build",
+    "typecheck": "tsc --noEmit -p .",
+    "test:parcours": "node tests/parcours.mjs"
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "playwright": "^1.56.1",
+    "typescript": "5.6",
+    "vite": "^6.4.4"
+  }
+}
