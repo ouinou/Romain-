@@ -1,3 +1,4 @@
+import { BlocIdentite, CachetDocument, PiedIdentite } from "../../composants/IdentiteEntreprise";
 import { useEffect, useRef, useState } from "react";
 import { FINEXA } from "../../jetons";
 import { api } from "../../api";
@@ -80,7 +81,8 @@ export function FicheFacture({ id }: { id: string }) {
           {x.avoirs.length === 0 ? <p className="discret" style={{ margin: 0 }}>Aucun avoir.</p> : (
             <ul style={{ margin: 0, paddingLeft: 18 }}>{x.avoirs.map((v) => <li key={v.id}><a href={`#/ventes/avoirs/${v.id}`} className="num">{v.numero}</a> · {dateFr(v.date)} · <b><Montant v={v.totalTtc} /></b> FCFA · {v.motif}</li>)}</ul>
           )}
-          <p className="discret" style={{ margin: 0 }}>Une facture émise ne se modifie pas. Une erreur se corrige par un avoir{a("sales.cancel") ? "" : " (réservé aux personnes autorisées, en général le directeur financier)"}.</p>
+          <p className="discret" style={{ margin: 0 }}>Une facture émise ne se modifie pas. Une erreur se corrige par un avoir{a("sales.cancel") ? "" : " (réservé aux personnes autorisées, en général le directeur financier)"}.
+            L'en-tête reprend le profil de l'entreprise au jour de l'émission : le modifier ensuite ne change pas cette facture, seulement les suivantes.</p>
         </section>
       </div>
       {avoir && <ModaleAvoir facture={x} onFermer={() => setAvoir(false)} onFin={(r) => { setAvoir(false); aller(`/ventes/avoirs/${r.id}`); }} />}
@@ -102,16 +104,7 @@ export function ApercuFacture({ f, avoir }: { f: Facture; avoir?: { facture: str
     <article className="panneau apercu-facture" aria-label={`Aperçu ${avoir ? "de l'avoir" : "de la facture"} ${f.numero}`}
       style={{ borderTop: `6px solid ${c.accent}`, display: "grid", gap: 16, ["--entete-facture" as string]: c.principale, ["--texte-entete-facture" as string]: surEntete }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0, display: "flex", gap: 12, alignItems: "flex-start" }}>
-          {v.logoUrl && <img src={v.logoUrl} alt="" style={{ width: 72, height: 72, objectFit: "contain", flexShrink: 0 }} />}
-          <div style={{ minWidth: 0 }}>
-            <b style={{ fontSize: 16, color: titre }}>{v.raisonSociale}</b>
-            <div className="discret" style={{ fontSize: 12, display: "grid" }}>
-              {[v.adresse, v.telephone && `Tél. : ${v.telephone}`, v.email, v.niu && `NIU : ${v.niu}`, v.rccm && `RCCM : ${v.rccm}`,
-                v.regimeFiscal && `Régime fiscal : ${v.regimeFiscal}`, v.patente && `Patente : ${v.patente}`].filter(Boolean).map((l) => <span key={String(l)}>{l}</span>)}
-            </div>
-          </div>
-        </div>
+        <BlocIdentite v={v} couleurTitre={titre} couleurSousTitre={numero} />
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: titre }}>{nom.toUpperCase()}</div>
           <div style={{ fontWeight: 800, color: numero }}>N° {f.numero}</div>
@@ -149,6 +142,8 @@ export function ApercuFacture({ f, avoir }: { f: Facture; avoir?: { facture: str
         <p style={{ margin: 0 }}><b>Motif : {avoir.motif}</b></p>
         <p className="discret" style={{ margin: 0 }}>Traitement : {avoir.traitement}</p>
       </> : <p className="discret" style={{ margin: 0 }}>Règlement : {f.paiement === "comptant" ? `comptant${f.tresorerie ? ` (${f.tresorerie})` : ""}` : f.reste <= 0 ? "réglée" : "à crédit"}{f.note ? ` · Observation : ${f.note}` : ""}</p>}
+      <CachetDocument v={v} />
+      <PiedIdentite v={v} />
     </article>
   );
 }

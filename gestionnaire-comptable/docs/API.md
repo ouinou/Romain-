@@ -66,10 +66,10 @@ Les listes acceptent `page` (à partir de 1) et `taille` (1 à 100, 25 par défa
 | Méthode | Route | Permission | Remarques |
 |---|---|---|---|
 | GET | `/api/entreprise` | company.read | |
-| PATCH | `/api/entreprise` | company.update (+ company.admin et confirmation pour `parametres`) | `{ raisonSociale?, rccm?, niu?, adresse?, telephone?, email?, regimeFiscal?, patente?, couleurs?: { principale, accent } (#RRGGBB), parametres?: { mfaObligatoire, inactiviteJours } }`. |
-| GET | `/api/entreprise/apparence` | connecté | Nom, couleurs et logo, pour afficher l'interface aux couleurs de l'entreprise. |
-| POST / DELETE | `/api/entreprise/logo` | company.update | `{ image }` PNG ou JPEG en base64, 512 Kio au plus (type contrôlé sur les octets, SVG refusé). Chaque logo est conservé : les factures déjà émises gardent le leur. |
-| GET | `/api/entreprise/logos/:id` | connecté | Image du logo (mise en cache). |
+| PATCH | `/api/entreprise` | company.update (+ company.admin et confirmation pour `parametres`) | Identité : `raisonSociale, nomCommercial, sigle, slogan, formeJuridique, capitalSocial, dateCreation` ; coordonnées : `adresse, boitePostale, quartier, commune, ville, region, telephone, telephone2, email, siteWeb` ; juridique et fiscal : `rccm, niu, numeroContribuable, numeroTva, autresIdentifiants: [{ libelle, valeur }] (4 au plus), regimeFiscal, patente, referentiel (syscohada_normal \| syscohada_smt \| autre)` ; banque : `banque: { nom, titulaire, references } \| null, moyensPaiement: [especes \| virement \| cheque \| mobile_money \| carte]` ; documents : `enTete, piedDePage, formatPapier (A4 \| LETTER), affichage: { telephone, email, siteWeb, slogan, banque, moyensPaiement, cachet }, couleurs: { principale, accent }` ; sécurité : `parametres: { mfaObligatoire, inactiviteJours }`. Tout est facultatif ; `null` ou `""` efface un champ. Erreurs : `donnees_invalides` (avec `champs`), `profil_incoherent` (ex. n° de TVA sans TVA appliquée). Un champ renvoyé inchangé n'est pas revalidé. Réponse : le profil, l'exercice en cours, les paramètres de TVA et `identiteDocument` (identité telle qu'imprimée). |
+| GET | `/api/entreprise/apparence` | connecté | Nom, couleurs, logo et `etat` (identité courte imprimée en tête des états comptables). |
+| POST / DELETE | `/api/entreprise/logo`, `/api/entreprise/cachet` | company.update | `{ image }` PNG ou JPEG en base64, 512 Kio au plus (type contrôlé sur les octets, SVG refusé). Chaque image est conservée : les documents déjà émis gardent la leur. |
+| GET | `/api/entreprise/logos/:id` | connecté | Image du logo ou du cachet (mise en cache). Une entreprise ne lit pas les images d'une autre. |
 | POST | `/api/entreprise/code-maitre` | company.admin + confirmation | Génère un nouveau code maître, affiché une seule fois ; l'ancien cesse d'être valable. |
 | GET | `/api/notifications` | connecté | Avec le nombre de notifications non lues. |
 | POST | `/api/notifications/:id/lecture` | connecté | |
@@ -116,6 +116,7 @@ Lecture : `treasury.read` (tous les comptes) ou `cash.read` (seulement les caiss
 | GET | `/mouvements`, `/mouvements/:id` | lecture | Filtres `compte`, `sens`, `du`, `au`, `recherche`, pagination. |
 | POST | `/mouvements` | saisie | `{ compteTresorerieId, sens: entree\|sortie, montant, date, libelle, reference?, categorie? \| compteId?, tva?, factureId? }`. Numéro `MVT-AAAA-NNNNN` si pas de référence. Caisse jamais négative (contrôle en base). |
 | POST | `/transferts` | saisie sur les deux comptes | `{ de, vers, montant, date, libelle, reference? }`. Deux mouvements, une écriture. |
+| GET | `/mouvements/:id/recu` | lecture | PDF : reçu (encaissement) ou bon de décaissement, avec l'identité de l'entreprise figée le jour de l'opération (`emetteur`). Génération tracée. |
 | POST | `/mouvements/:id/annulation` | treasury.cancel + confirmation | `{ motif, date? }`. Mouvement inverse et écriture inverse ; l'original reste. |
 | GET | `/tableau` | lecture | Totaux, entrées et sorties du jour, écritures générées à valider. |
 

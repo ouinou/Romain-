@@ -1,3 +1,4 @@
+import { usePeriodeImpression } from "../../composants/cadre/etat";
 import { Fragment, useState } from "react";
 import { api, telecharger } from "../../api";
 import { useSession } from "../../session";
@@ -20,6 +21,7 @@ export function Balance() {
   const compte = useRetarde(f.compte);
   const params = paramsEtats({ ...f, compte });
   const b = useDonnees(() => api.get<BalanceT>(`/api/comptabilite/balance${params}`), [params]);
+  usePeriodeImpression(b.donnees ? `Exercice ${b.donnees.exercice.code} · du ${dateFr(b.donnees.du)} au ${dateFr(b.donnees.au)}${b.donnees.brouillonsInclus ? " · brouillards inclus (document de travail)" : ""}` : null);
   const exporter = async () => {
     if (__DEMO__) return toast("Démonstration : le téléchargement n'est pas disponible dans l'aperçu.");
     try { await telecharger(`/api/comptabilite/balance/export${params}`, "balance.csv"); toast("Balance exportée ; l'export est tracé."); }

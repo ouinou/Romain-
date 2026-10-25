@@ -1,3 +1,4 @@
+import type { Identite } from "../../composants/IdentiteEntreprise";
 import { api } from "../../api";
 
 export interface CompteTresorerie {
@@ -9,6 +10,8 @@ export interface Mouvement {
   reference: string; libelle: string; categorie: string | null; contrepartie: { numero: string; libelle: string }; factureId: string | null; facture: string | null;
   annulationDe: string | null; annuleePar: string | null; motif: string | null; auteur: string; creeLe: string;
   ecriture: { id: string; statut: "brouillard" | "validee"; numero: number | null } | null;
+  /** Identité de l'entreprise figée le jour de l'opération (null : mouvement antérieur à la version 0.3). */
+  emetteur: Identite | null;
 }
 export interface Categorie { code: string; libelle: string; compte: string; tva: boolean }
 

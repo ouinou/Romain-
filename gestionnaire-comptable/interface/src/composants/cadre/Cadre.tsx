@@ -22,6 +22,8 @@ export interface Onglet { chemin: string; titre: string }
 
 export function Cadre(props: {
   route: string; titre: string; page: ReactNode; logoUrl: string | null; cle: number;
+  /** Identité courte de l'entreprise (profil), imprimée en tête des pages de travail. */
+  etat?: EnteteEtat | null;
   onActualiser: () => void; onglets: Onglet[]; onFermerOnglet: (chemin: string) => void;
 }) {
   const { moi, a, deconnecter } = useSession();
@@ -107,7 +109,7 @@ export function Cadre(props: {
             ))}
           </nav>
           <div className="zone-travail">
-            <main className="contenu" id="contenu" key={props.cle} style={zoom !== 100 ? { zoom: zoom / 100 } : undefined} onKeyDown={naviguerLignes}>{props.page}</main>
+            <main className="contenu" id="contenu" key={props.cle} style={zoom !== 100 ? { zoom: zoom / 100 } : undefined} onKeyDown={naviguerLignes}><EnTeteImpression etat={props.etat ?? null} titre={props.titre} />{props.page}</main>
             <div id="emplacement-detail" />
           </div>
         </div>
@@ -227,6 +229,37 @@ function Recherche({ champ }: { champ: React.RefObject<HTMLInputElement> }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+export interface EnteteEtat { raisonSociale: string; sousTitre: string | null; lignes: string[] }
+
+/**
+ * En-tête des pages imprimées (journal, grand livre, balance, listes) : identité de l'entreprise tirée du profil,
+ * titre du document, période et date d'édition. Invisible à l'écran. Les factures, avoirs et reçus ont leur propre en-tête.
+ */
+function EnTeteImpression({ etat, titre }: { etat: EnteteEtat | null; titre: string }) {
+  const { moi } = useSession();
+  const { periode } = useEtatCadre();
+  const [maintenant, setMaintenant] = useState(() => new Date());
+  useEffect(() => {
+    const f = () => setMaintenant(new Date());
+    addEventListener("beforeprint", f);
+    return () => removeEventListener("beforeprint", f);
+  }, []);
+  return (
+    <div className="entete-impression" aria-hidden="true">
+      <div>
+        <div className="nom">{etat?.raisonSociale ?? moi.entreprise.raisonSociale}</div>
+        {etat?.sousTitre && <div>{etat.sousTitre}</div>}
+        {etat?.lignes.map((l) => <div key={l}>{l}</div>)}
+      </div>
+      <div className="droite">
+        <div className="titre">{titre}</div>
+        {periode && <div>{periode}</div>}
+        <div>Édité le {maintenant.toLocaleDateString("fr-FR")} à {maintenant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} par {moi.utilisateur.nom}</div>
+      </div>
     </div>
   );
 }

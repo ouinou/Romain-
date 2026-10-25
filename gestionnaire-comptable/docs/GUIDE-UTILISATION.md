@@ -1,4 +1,4 @@
-# Guide d'utilisation de FINEXA ERP (version 0.2)
+# Guide d'utilisation de FINEXA ERP (version 0.3)
 
 Ce guide couvre ce qui existe aujourd'hui : l'accès, les utilisateurs, les rôles, le journal et les réglages de l'entreprise. Les modules de gestion (trésorerie, comptabilité, stocks…) auront leur propre chapitre quand ils seront livrés.
 
@@ -73,11 +73,26 @@ Personne ne peut modifier ou supprimer un événement depuis le logiciel.
 
 ## 6. Entreprise : profil, logo, couleurs et code maître
 
-Menu **Entreprise** (administrateur). Renseignez la raison sociale, le NIU, le RCCM, le régime fiscal, le numéro de patente, l'adresse, le téléphone et l'e-mail : tout ce qui est rempli est imprimé dans l'en-tête des factures.
+Menu **Entreprise** (administrateur). Le profil est la **seule source** des informations de l'entreprise : en-tête des factures, avoirs et reçus, en-tête des états imprimés (journal, grand livre, balance), barre de titre. Rien n'est écrit en dur ailleurs dans le logiciel.
 
-**Logo et couleurs** : *Ajouter un logo* (PNG ou JPEG, de préférence carré ; il est réduit automatiquement). Choisissez une couleur principale (barre latérale, en-têtes des tableaux de facture) et une couleur d'accent (boutons, liens, bandeau des factures). L'écran change en direct ; *Enregistrer les couleurs* les applique à tous les utilisateurs. Si une teinte est trop claire pour un texte, le logiciel l'assombrit légèrement là où c'est nécessaire. Les factures déjà émises gardent le logo et les couleurs du jour de leur émission.
+Les informations sont réparties en rubriques :
 
-Menu **Entreprise** : raison sociale, RCCM, NIU, adresse et téléphone. Les réglages de sécurité (double authentification obligatoire, délai d'inactivité) demandent une confirmation.
+- **Identité** : raison sociale (obligatoire), nom commercial, sigle, slogan, forme juridique, capital social, date de création.
+- **Coordonnées** : adresse, quartier, arrondissement ou commune, ville, boîte postale, région, téléphones, e-mail, site web. Le pays est fixé à la création de l'espace.
+- **Juridique et fiscal** : RCCM, NIU, numéro de contribuable, patente, autres identifiants (CNPS…), régime fiscal, numéro de TVA, référentiel comptable. La rubrique rappelle aussi la devise, le taux de TVA et l'exercice en cours, qui se règlent dans *Comptabilité › Exercices et paramètres*.
+- **Banque et paiement** (facultatif) : banque, titulaire, RIB ou IBAN, moyens de paiement acceptés.
+- **Documents** : logo, cachet ou signature scannée, couleurs, mention d'en-tête, pied de page, format de papier (A4 ou Lettre US), et ce qu'il faut imprimer (téléphones, e-mail, site, slogan, banque, moyens de paiement, cachet). La raison sociale, le NIU et le RCCM s'impriment toujours lorsqu'ils sont renseignés.
+- **Sécurité** : double authentification obligatoire, délai d'inactivité, code maître.
+
+Tous les champs sauf la raison sociale sont facultatifs. Un champ vide n'est pas imprimé : le logiciel n'invente jamais de numéro ni de lien. Les formats sont contrôlés à l'enregistrement (e-mail, téléphone de 6 à 15 chiffres, site web) ; le champ en erreur est signalé en rouge et sa rubrique s'ouvre.
+
+Un seul bouton **Enregistrer le profil** enregistre toutes les rubriques. Si la raison sociale, le NIU, le RCCM ou la forme juridique changent, le logiciel demande une confirmation. À droite, l'**aperçu** montre l'en-tête et le pied d'un document émis aujourd'hui.
+
+Le **logo** et le **cachet** sont enregistrés dès leur envoi (PNG ou JPEG, réduits automatiquement à 300 pixels). Ils sont conservés dans la base de l'entreprise : ils restent après la fermeture du logiciel ou un redémarrage de l'ordinateur.
+
+**Documents déjà émis.** Chaque facture, avoir ou reçu garde l'identité de l'entreprise du jour de son émission (nom, coordonnées, logo, couleurs). Modifier le profil ne change donc que les **nouveaux** documents ; réimprimer une ancienne facture reproduit l'ancien en-tête. C'est voulu : un document remis à un client ou à l'administration ne doit pas changer après coup.
+
+Les autres utilisateurs voient le nouveau nom dès qu'ils changent d'écran, sans se reconnecter.
 
 Le **code maître** sert uniquement à rétablir l'accès d'un administrateur bloqué, depuis l'écran de connexion (« Administrateur bloqué : utiliser le code maître »). Il est à usage unique : générez-en un nouveau après chaque utilisation. Conservez-le imprimé, sous enveloppe scellée, chez le dirigeant.
 

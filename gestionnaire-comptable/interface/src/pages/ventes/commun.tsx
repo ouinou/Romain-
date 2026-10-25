@@ -1,8 +1,9 @@
+import type { Identite } from "../../composants/IdentiteEntreprise";
 export interface Facture {
   id: string; numero: string; date: string; type: string; typeLibelle: string;
   client: { id: string | null; nom: string; niu: string | null; adresse: string | null; telephone: string | null };
-  vendeur: { raisonSociale: string; niu: string | null; rccm: string | null; adresse: string | null; telephone: string | null;
-    email?: string | null; regimeFiscal?: string | null; patente?: string | null; logoUrl?: string | null; couleurs?: { principale: string; accent: string } };
+  /** Identité de l'entreprise figée le jour de l'émission (profil de l'entreprise à cette date). */
+  vendeur: Identite;
   /** Contenu du code QR : code de vérification signé par le serveur. */
   codeVerification?: string;
   devise: string; tauxTvaPdm: number;

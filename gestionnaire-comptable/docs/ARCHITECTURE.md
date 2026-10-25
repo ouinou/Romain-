@@ -44,7 +44,7 @@ Rien ne dépend d'Internet. Le même serveur peut plus tard être installé sur 
 ## Organisation du code (`serveur/`)
 
 ```
-migrations/      001 = schéma fourni par le porteur du projet ; 002 = corrections et sécurité
+migrations/      001 = schéma fourni par le porteur du projet ; 002 = corrections et sécurité ; … ; 008 = identité figée sur les reçus
 sql/             préparation de PostgreSQL (rôles, base) à exécuter une fois
 src/config.ts    lecture et contrôle de la configuration
 src/db.ts        pool de connexions, transaction avec contexte d'entreprise
@@ -54,6 +54,18 @@ src/http/        application Fastify, enveloppe de sécurité commune, routes pa
 src/cli/         outils d'exploitation : migrer, créer une entreprise, vérifier le journal, sauvegarder, restaurer
 test/            tests d'intégration sur un vrai PostgreSQL
 ```
+
+## Profil de l'entreprise : une seule source
+
+`src/domaine/profil-entreprise.ts` est le seul endroit qui lit et assemble l'identité de l'entreprise :
+
+- **Stockage** : la base PostgreSQL de l'entreprise (colonnes de `companies` pour la raison sociale, le RCCM, le NIU, l'adresse, le téléphone, le pays et la devise ; `companies.settings.profil` pour le reste ; images dans `company_logos`, en ajout seul). Rien dans le navigateur.
+- **Validation** : schéma zod commun (formats, longueurs) et contrôle de cohérence avec les paramètres fiscaux.
+- **Identité imprimée** (`identiteDocument`) : calculée à partir du profil, options d'affichage déjà appliquées. Les factures et avoirs la copient dans `seller` à l'émission ; les mouvements de trésorerie la reçoivent dans `issuer` par un déclencheur (migration 008), qui lit la copie tenue à jour dans `companies.settings.identiteDocument`. Ces tables sont en ajout seul : un document émis ne change jamais, même si le profil change.
+- **Mise en page** : `lignesIdentite()` donne les lignes d'en-tête et de pied dans l'ordre d'impression, pour les PDF (`domaine/ventes/pdf.ts`). L'aperçu à l'écran (`interface/src/composants/IdentiteEntreprise.tsx`) reprend la même logique : les deux fichiers doivent rester alignés.
+- **États imprimés** : `/api/entreprise/apparence` fournit une identité courte (`enteteEtat`) que le cadre de l'interface imprime en tête de chaque page de travail, avec la période publiée par l'écran et la date d'édition.
+
+Un module futur (achats, stocks, paie, états financiers) doit utiliser `identiteActuelle()` pour un nouveau document et figer le résultat avec le document.
 
 ## Séparation des entreprises : comment elle est garantie
 

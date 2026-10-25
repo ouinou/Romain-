@@ -5,9 +5,9 @@ import { compteParNumero, genererEcriture } from "../../domaine/comptabilite/gen
 import { versEntier } from "../../domaine/comptabilite/montants.js";
 import { avecReglesBase } from "../../domaine/comptabilite/erreurs.js";
 import { montantLigne, montantTva, quantiteEnMilliemes } from "../../domaine/ventes/calculs.js";
-import { genererFacturePdf } from "../../domaine/ventes/pdf.js";
+import { genererFacturePdf, imagesDocument } from "../../domaine/ventes/pdf.js";
 import { COMPTE_CLIENTS, COMPTE_TVA_FACTUREE } from "../../domaine/tresorerie/categories.js";
-import { profilDe } from "./entreprise.js";
+import { avecUrls, identiteActuelle } from "../../domaine/profil-entreprise.js";
 import { compteUtilisable, resteDu } from "./tresorerie.js";
 import { avecCode, chargerFacture, quantiteTexte } from "./ventes.js";
 import { pagination, proteger, type Dependances } from "../contexte.js";
@@ -39,7 +39,7 @@ async function chargerAvoir(c: Client, id: string) {
     id: a.id, numero: a.number, date: a.date, motif: a.reason,
     facture: { id: a.invoice_id, numero: a.facture_numero, date: a.facture_date },
     client: { id: a.customer_id, nom: a.customer_name, niu: a.customer_niu, adresse: a.customer_address, telephone: a.customer_phone },
-    vendeur: { ...a.seller, logoUrl: a.seller?.logoId ? `/api/entreprise/logos/${a.seller.logoId}` : null }, devise: a.currency, tauxTvaPdm: a.tax_rate_bp,
+    vendeur: avecUrls(a.seller), devise: a.currency, tauxTvaPdm: a.tax_rate_bp,
     lignes: lignes.map((l) => ({ ordre: l.line_no, ligneFacture: l.invoice_line_no, designation: l.description, quantite: Number(l.quantite), prixUnitaire: versEntier(l.unit_price), montant: versEntier(l.amount) })),
     totalHt: versEntier(a.total_ht), totalTva: versEntier(a.total_tax), totalTtc: versEntier(a.total_ttc),
     remboursement: r ? { mouvementId: r.id, montant: versEntier(r.amount), reference: r.reference, compte: r.compte } : null,
@@ -126,10 +126,7 @@ export function routesAvoirs(app: FastifyInstance, deps: Dependances) {
     if (tresorerie && tropPercu <= 0)
       throw new ErreurHttp(409, "rien_a_rembourser", `Le client n'a rien payé au-delà de ce qu'il doit encore sur la facture ${f.numero} : l'avoir réduit simplement sa dette.`);
 
-    const { rows: [e] } = await ctx.c.query("SELECT legal_name, niu, rccm, address, phone, settings FROM companies WHERE id = $1", [ctx.entrepriseId]);
-    const p = profilDe(e.settings);
-    const vendeur = { raisonSociale: e.legal_name, niu: e.niu, rccm: e.rccm, adresse: e.address, telephone: e.phone,
-      email: p.email, regimeFiscal: p.regimeFiscal, patente: p.patente, logoId: p.logoId, couleurs: p.couleurs };
+    const vendeur = await identiteActuelle(ctx.c, ctx.entrepriseId);   // logoUrl et cachetUrl sont recalculés à la lecture
 
     const { rows: [av] } = await avecReglesBase(() => ctx.c.query(
       `INSERT INTO credit_notes (invoice_id, credit_date, reason, seller, currency, tax_rate_bp, total_ht, total_tax, total_ttc, created_by)
@@ -176,10 +173,9 @@ export function routesAvoirs(app: FastifyInstance, deps: Dependances) {
     const a = await chargerAvoir(ctx.c, id);
     if (!a) throw nonTrouve("Avoir");
     const { codeVerification: code } = await avecCode(ctx, deps, a);
-    const logo = a.vendeur.logoId ? (await ctx.c.query("SELECT data FROM company_logos WHERE id = $1", [a.vendeur.logoId])).rows[0]?.data as Buffer | undefined : undefined;
     const devise = a.devise === "XAF" ? "FCFA" : a.devise;
     const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n).replace(/[  ]/g, " ");
-    const pdf = await genererFacturePdf({ codeVerification: code, logo,
+    const pdf = await genererFacturePdf({ codeVerification: code, ...await imagesDocument(ctx.c, a.vendeur),
       numero: a.numero, date: a.date, type: "Facture d'avoir", vendeur: a.vendeur, client: a.client,
       lignes: a.lignes.map((l) => ({ designation: l.designation, quantite: quantiteTexte(l.quantite), prixUnitaire: l.prixUnitaire, montant: l.montant })),
       totalHt: a.totalHt, tauxTvaPdm: a.tauxTvaPdm, totalTva: a.totalTva, totalTtc: a.totalTtc, devise,

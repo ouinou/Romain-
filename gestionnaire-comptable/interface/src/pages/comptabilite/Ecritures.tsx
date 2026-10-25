@@ -1,3 +1,4 @@
+import { usePeriodeImpression } from "../../composants/cadre/etat";
 import { useCallback, useEffect, useState } from "react";
 import { api, qs } from "../../api";
 import { useSession } from "../../session";
@@ -25,6 +26,10 @@ export function Ecritures() {
   const [validerLot, setValiderLot] = useState(false);
   const toast = useToast();
   const rech = useRetarde(recherche);
+  // Imprimé en tête de la liste (les filtres ne s'impriment pas).
+  const xSel = exercices.find((x) => x.id === exercice), jSel = journaux.find((j) => j.id === journal);
+  usePeriodeImpression([jSel ? `Journal ${jSel.code} · ${jSel.libelle}` : "Tous les journaux", xSel ? `Exercice ${xSel.code}` : "Tous les exercices",
+    statut === "brouillard" ? "brouillards seulement" : statut === "validee" ? "écritures validées" : null].filter(Boolean).join(" · "));
   const liste = useDonnees(() => api.get<Page<EcritureResume>>(`/api/comptabilite/ecritures${qs({ exercice, journal, statut, origine, recherche: rech, page, taille: 25 })}`), [exercice, journal, statut, origine, rech, page]);
   const selectionnables = (liste.donnees?.elements ?? []).filter((e) => e.statut === "brouillard" && e.equilibree);
   const peutValider = a("accounting.approve");

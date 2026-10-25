@@ -5,13 +5,21 @@ import { createPortal } from "react-dom";
  * Informations que les écrans publient dans le cadre : la somme de la sélection (barre d'état)
  * et le panneau de détail rétractable affiché à droite de la zone de travail.
  */
-interface EtatCadre { somme: string | null; setSomme: (s: string | null) => void }
-const Ctx = createContext<EtatCadre>({ somme: null, setSomme: () => {} });
+interface EtatCadre { somme: string | null; setSomme: (s: string | null) => void; periode: string | null; setPeriode: (s: string | null) => void }
+const Ctx = createContext<EtatCadre>({ somme: null, setSomme: () => {}, periode: null, setPeriode: () => {} });
 export const useEtatCadre = () => useContext(Ctx);
 
 export function FournisseurEtatCadre({ children }: { children: ReactNode }) {
   const [somme, setSomme] = useState<string | null>(null);
-  return <Ctx.Provider value={{ somme, setSomme }}>{children}</Ctx.Provider>;
+  const [periode, setPeriode] = useState<string | null>(null);
+  return <Ctx.Provider value={{ somme, setSomme, periode, setPeriode }}>{children}</Ctx.Provider>;
+}
+
+/** Période imprimée dans l'en-tête de la page (ex. « Exercice 2026 · du 01/01/2026 au 31/12/2026 »), tant que l'écran est ouvert. */
+export function usePeriodeImpression(periode: string | null) {
+  const { setPeriode } = useEtatCadre();
+  useEffect(() => { setPeriode(periode); }, [periode, setPeriode]);
+  useEffect(() => () => setPeriode(null), [setPeriode]);
 }
 
 /** Publie la somme de la sélection tant que l'écran est ouvert. */

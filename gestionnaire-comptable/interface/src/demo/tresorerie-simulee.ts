@@ -26,6 +26,8 @@ interface Mvt {
   id: string; compteId: string; sens: "entree" | "sortie"; nature: string; montant: number; tva: number; date: string; reference: string; libelle: string;
   categorie: string | null; contrepartie: string; factureId: string | null; annulationDe: string | null; motif: string | null; auteur: string; creeLe: string;
   ecritureId: string | null; groupe: string | null; avoirId?: string | null;
+  /** Identité de l'entreprise figée le jour de l'opération (comme la colonne issuer du vrai serveur). */
+  emetteur?: Fac["vendeur"];
 }
 interface Fac {
   id: string; numero: string; date: string; type: "goods" | "services" | "mixed"; client: { id: string | null; nom: string; niu: string | null; adresse: string | null; telephone: string | null };
@@ -101,7 +103,7 @@ export function initialiserTresorerie(ids: Record<string, string>, vendeur: Fac[
     { id: uid(), type: "mobile", nom: "Mobile money (fictif)", banque: "Opérateur fictif", referenceBancaire: null, actif: true, numero: "5212", journal: "BQ", caissiers: [] });
   const ousmane = ids["ousmane.djibrine@demo.cm"];
   const m: Mvt = { id: uid(), compteId: caisse.id, sens: "entree", nature: "receipt", montant: 100000, tva: 0, date: `${AN}-01-03`, reference: `MVT-${AN}-${String(++seqMvt).padStart(5, "0")}`,
-    libelle: "Fonds de caisse initial", categorie: "apport", contrepartie: "101", factureId: null, annulationDe: null, motif: null, auteur: ousmane, creeLe: `${AN}-01-03T08:00:00Z`, ecritureId: null, groupe: null };
+    libelle: "Fonds de caisse initial", categorie: "apport", contrepartie: "101", factureId: null, annulationDe: null, motif: null, auteur: ousmane, creeLe: `${AN}-01-03T08:00:00Z`, ecritureId: null, groupe: null, emetteur: { ...vendeur } };
   m.ecritureId = genererEcriture("CA", m.date, m.reference, m.libelle, ousmane, { type: "mouvement", id: m.id, reference: m.reference }, [["5711", 100000, 0], ["101", 0, 100000]]);
   mouvements.push(m);
   historiqueVentes(ousmane, ids["joseph.atangana@demo.cm"], comptesT[1], vendeur);
@@ -139,7 +141,7 @@ function historiqueVentes(auteur: string, validateur: string, banque: CompteT, v
       const montant = paye ? ttc : Math.floor(ttc / 2);
       const dateReg = paye ? date : `${date.slice(0, 8)}${String(Math.min(jour + 10, 28)).padStart(2, "0")}`;
       const mv: Mvt = { id: uid(), compteId: banque.id, sens: "entree", nature: "invoice_payment", montant, tva: 0, date: dateReg, reference: f.numero, libelle: `Règlement ${libelle}`,
-        categorie: "encaissement_client", contrepartie: "411", factureId: f.id, annulationDe: null, motif: null, auteur, creeLe: `${dateReg}T11:00:00Z`, ecritureId: null, groupe: null };
+        categorie: "encaissement_client", contrepartie: "411", factureId: f.id, annulationDe: null, motif: null, auteur, creeLe: `${dateReg}T11:00:00Z`, ecritureId: null, groupe: null, emetteur: { ...vendeur } };
       mv.ecritureId = genererEcriture("BQ", dateReg, f.numero, `Règlement ${libelle}`, auteur, { type: "mouvement", id: mv.id, reference: mv.reference }, [["5211", montant, 0], ["411", 0, montant]]);
       validerEcritureDemo(mv.ecritureId, validateur);
       mouvements.push(mv);
@@ -169,13 +171,13 @@ export function traiterTresorerie(m: string, chemin: string, q: Q, c: any, o: Ou
     return { id: x.id, compte: { id: t.id, nom: t.nom, type: t.type }, sens: x.sens, nature: x.nature, montant: x.montant, tva: x.tva, date: x.date, reference: x.reference, libelle: x.libelle,
       categorie: x.categorie, contrepartie: { numero: x.contrepartie, libelle: LIB[x.contrepartie] ?? comptesT.find((y) => y.numero === x.contrepartie)?.nom ?? "" },
       factureId: x.factureId, facture: factures.find((f) => f.id === x.factureId)?.numero ?? null, annulationDe: x.annulationDe,
-      annuleePar: mouvements.find((y) => y.annulationDe === x.id)?.id ?? null, motif: x.motif, auteur: o.nomDe(x.auteur), creeLe: x.creeLe, ecriture: etatEcriture(x.ecritureId) };
+      annuleePar: mouvements.find((y) => y.annulationDe === x.id)?.id ?? null, motif: x.motif, auteur: o.nomDe(x.auteur), creeLe: x.creeLe, ecriture: etatEcriture(x.ecritureId), emetteur: x.emetteur ?? null };
   };
   const inserer = (x: Omit<Mvt, "id" | "creeLe" | "auteur" | "ecritureId">) => {
     const t = comptesT.find((y) => y.id === x.compteId)!;
     if (t.type === "cash" && x.sens === "sortie" && x.montant > solde(t.id))
       throw o.erreur(409, "regle_comptable", `Solde de caisse insuffisant : ${solde(t.id)} FCFA disponibles, ${x.montant} demandés.`);
-    const mv: Mvt = { ...x, id: uid(), reference: x.reference || `MVT-${x.date.slice(0, 4)}-${String(++seqMvt).padStart(5, "0")}`, auteur: moi.id, creeLe: new Date().toISOString(), ecritureId: null };
+    const mv: Mvt = { ...x, id: uid(), reference: x.reference || `MVT-${x.date.slice(0, 4)}-${String(++seqMvt).padStart(5, "0")}`, auteur: moi.id, creeLe: new Date().toISOString(), ecritureId: null, emetteur: o.entreprise() };
     mouvements.push(mv);
     return mv;
   };

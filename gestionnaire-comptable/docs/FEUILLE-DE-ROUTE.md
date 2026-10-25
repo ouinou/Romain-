@@ -89,6 +89,16 @@ Couvre les sections 1 à 6 du cahier des charges, côté serveur.
 - [x] Écran « À propos » (menu Fichier) : version, slogan et mention de l'éditeur ITI ; ITI n'apparaît plus ailleurs dans l'interface
 - [x] Contrastes vérifiés (WCAG AA) : texte secondaire foncé à #5A697D, courbe verte des graphiques en vert foncé #08752D (le vert vif #65C900 reste réservé au voyant « connecté »)
 
+## Fait (v0.3 : profil d'entreprise centralisé)
+
+- [x] Profil complet en rubriques : identité, coordonnées, juridique et fiscal, banque et paiement, documents, sécurité
+- [x] Service unique côté serveur (`domaine/profil-entreprise.ts`) : lecture, validation, identité imprimée ; plus aucune identité recopiée à la main (la démonstration utilise aussi ce service)
+- [x] Factures, avoirs et nouveaux reçus de caisse (PDF) : en-tête complet, site web, cachet, pied de page, banque, moyens de paiement, format A4 ou Lettre
+- [x] Identité figée sur chaque document émis, reçus compris (migration 008) ; aperçu et mention « profil au jour de l'émission »
+- [x] En-tête d'entreprise, période et date d'édition sur les états imprimés (balance, grand livre, écritures)
+- [x] Les autres sessions ouvertes voient le nouveau nom sans reconnexion
+- [x] Mise à jour par le setup : sauvegarde chiffrée automatique avant la migration du schéma
+
 ## À faire ensuite
 
 **Ventes et trésorerie (suite).** Rapprochement bancaire, clôture de caisse journalière avec billetage, devis et bons de livraison, relances clients. Règles à vérifier : voir `TRESORERIE-VENTES.md`.

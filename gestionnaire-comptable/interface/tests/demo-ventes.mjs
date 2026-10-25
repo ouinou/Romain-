@@ -98,6 +98,30 @@ try {
   await menu("Caisses et banques").click();
   await page.getByText("142 700").first().waitFor();
   etape("DAF : avoir de 17 888 FCFA remboursé en caisse (160 588 → 142 700)");
+
+  // Profil de l'entreprise (administratrice) : nouveau nom et site web repris par l'écran ; les factures émises gardent le leur.
+  await page.getByRole("button", { name: "Déconnexion" }).click();
+  await connexion("mariam.saleh@demo.cm");
+  await page.getByRole("heading", { name: /Bonjour/ }).waitFor();
+  await page.goto(`file://${fichier}#/entreprise`);
+  await page.getByLabel("Raison sociale").fill("Commerce Fictif de Test SARL");
+  await page.getByRole("tab", { name: "Coordonnées" }).click();
+  await page.getByLabel("Site web officiel").fill("www.commerce-fictif.cm");
+  await page.getByRole("button", { name: "Enregistrer le profil" }).click();
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await page.getByText(/Profil enregistré\. Les prochains documents/).waitFor();
+  await page.locator(".apercu-entete").getByText("www.commerce-fictif.cm").waitFor();
+  assert.equal(await page.locator(".barre-titre .nom-entreprise").textContent(), "Commerce Fictif de Test SARL");
+  await page.screenshot({ path: `${DOSSIER}/demo-profil.png` });
+  await page.getByRole("button", { name: "Déconnexion" }).click();
+  await connexion("ousmane.djibrine@demo.cm");
+  await page.getByRole("heading", { name: /Bonjour/ }).waitFor();
+  assert.equal(await page.locator(".barre-titre .nom-entreprise").textContent(), "Commerce Fictif de Test SARL");
+  await page.goto(`file://${fichier}#/ventes`);
+  await page.getByRole("cell", { name: `FAC-${new Date().getFullYear()}-00022` }).click();
+  await page.keyboard.press("Enter");
+  await page.locator(".apercu-facture").getByText("Entreprise Démo SARL").waitFor();
+  etape("profil modifié (nom, site web) ; barre de titre à jour ; facture déjà émise inchangée");
   assert.deepEqual(erreurs.filter((e) => !/status of 40[0-9]/.test(e)), []);
   etape("aucune erreur JavaScript");
 } catch (e) {

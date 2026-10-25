@@ -372,6 +372,46 @@ tfoot tr.net-a-payer th { color: var(--texte); font-size: 16px; font-weight: 900
   .apercu-facture { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
 }
 
+/* Identité de l'entreprise sur les documents (aperçu de facture, d'avoir ; profil). */
+.bloc-identite { min-width: 0; display: flex; gap: 12px; align-items: flex-start; }
+.logo-document { width: 72px; height: 72px; object-fit: contain; flex-shrink: 0; }
+.nom-document { font-size: 16px; }
+.sous-titre-document { font-weight: 700; font-size: 13px; }
+.slogan-document { font-style: italic; font-size: 12px; color: var(--discret); }
+.lignes-document { font-size: 12px; display: grid; overflow-wrap: anywhere; }
+.pied-document { display: grid; gap: 2px; border-top: 1px solid var(--ligne); padding-top: 8px; font-size: 11.5px; color: var(--discret); text-align: center; }
+.cachet-document { justify-self: end; margin: 0; text-align: center; font-size: 11px; color: var(--discret); }
+.cachet-document img { display: block; max-width: 150px; max-height: 100px; object-fit: contain; margin-top: 4px; }
+/* Profil de l'entreprise : rubriques en onglets, barre d'enregistrement, aperçu. */
+.onglets-profil { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--bordure); margin-bottom: 14px; }
+.onglets-profil button { border: 1px solid transparent; border-bottom: 0; background: none; padding: 8px 14px; font: inherit; font-weight: 700; color: var(--discret); cursor: pointer; border-radius: var(--rayon) var(--rayon) 0 0; margin-bottom: -1px; }
+.onglets-profil button:hover { background: var(--survol); color: var(--texte); }
+.onglets-profil button[aria-selected="true"] { background: var(--carte); color: var(--marine); border-color: var(--bordure); border-bottom: 2px solid var(--carte); box-shadow: inset 0 3px 0 var(--accent); }
+.barre-enregistrement { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 14px; padding: 10px 14px; background: var(--carte); border: 1px solid var(--bordure); border-radius: var(--rayon-carte); box-shadow: var(--ombre); }
+.barre-enregistrement .alerte { flex-basis: 100%; margin: 0; }
+.barre-enregistrement > .discret { margin-right: auto; }
+.resume-profil { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 4px 0 0; padding: 10px 12px; background: var(--fond); border-radius: var(--rayon); font-size: 13px; }
+.resume-profil dt { color: var(--discret); }
+.resume-profil dd { margin: 0; }
+.cases-profil { border: 1px solid var(--ligne); border-radius: var(--rayon); padding: 10px 12px; margin: 0; display: grid; gap: 8px; }
+.cases-profil legend { font-weight: 700; padding: 0 4px; }
+.ligne-identifiant { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 8px; align-items: center; }
+.bloc-image { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.apercu-collant { position: sticky; top: 0; align-self: start; }
+@media (max-width: 1100px) { .apercu-collant { position: static; } }
+.apercu-entete { display: grid; gap: 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); padding: 14px; background: var(--blanc); }
+.apercu-corps { border: 1px dashed var(--ligne); border-radius: var(--rayon); padding: 18px 12px; text-align: center; font-size: 12px; }
+@media (max-width: 640px) { .ligne-identifiant { grid-template-columns: 1fr; } .resume-profil { grid-template-columns: 1fr; } }
+
+/* En-tête des pages imprimées (états comptables, listes) : identité courte de l'entreprise, titre, date d'édition. */
+.entete-impression { display: none; }
+@media print {
+  .entete-impression { display: flex; justify-content: space-between; gap: 16px; border-bottom: 2px solid var(--marine); padding-bottom: 8px; margin-bottom: 12px; font-size: 11px; color: var(--texte); }
+  .entete-impression .nom { font-size: 14px; font-weight: 800; color: var(--marine); }
+  .entete-impression .droite { text-align: right; }
+  .entete-impression .titre { font-size: 14px; font-weight: 800; }
+}
+
 /* Logo de l'entreprise (barre de titre) : fond blanc, pour qu'un logo sombre reste visible. */
 .logo-entreprise { width: 48px; height: 48px; flex-shrink: 0; object-fit: contain; background: var(--blanc); border-radius: 3px; padding: 3px; }
 .cadre-logo { width: 96px; height: 96px; border: 1px dashed var(--bordure); border-radius: 2px; display: grid; place-items: center; background: var(--blanc); overflow: hidden; }

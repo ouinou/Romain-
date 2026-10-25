@@ -136,12 +136,16 @@ try {
   await p.getByLabel("Raison sociale").waitFor();
   await capture(p, "entreprise");
   etape("page entreprise");
-  // Profil : régime fiscal, patente, e-mail ; logo (image fictive dessinée pour le test) ; couleurs de l'entreprise.
+  // Profil (rubriques en onglets) : régime fiscal, patente, e-mail, site web ; logo (image fictive dessinée pour le test) ; couleurs.
+  await p.getByRole("tab", { name: "Juridique et fiscal" }).click();
   await p.getByLabel("Régime fiscal").fill("Régime du réel");
   await p.getByLabel("N° de patente").fill("PAT-2026-DEMO");
-  await p.getByLabel("Adresse e-mail").fill("contact@entreprise-demo.cm");
-  await p.getByRole("button", { name: "Enregistrer", exact: true }).first().click();
-  await p.getByText(/Informations enregistrées/).waitFor();
+  await p.getByRole("tab", { name: "Coordonnées" }).click();
+  await p.getByLabel("Adresse e-mail professionnelle").fill("contact@entreprise-demo.cm");
+  await p.getByLabel("Site web officiel").fill("www.entreprise-demo.cm");
+  await p.getByRole("button", { name: "Enregistrer le profil" }).click();
+  await p.getByText(/Profil enregistré\. Les prochains documents/).waitFor();
+  await p.getByRole("tab", { name: "Documents" }).click();
   const dessin = await nouvellePage(200, 200);
   await dessin.setContent(`<div id="l" style="width:160px;height:160px;border-radius:24px;background:#0b5d3b;color:#f2c200;font:900 64px sans-serif;display:grid;place-items:center">EDS</div>`);
   const fichierLogo = `${DOSSIER}/logo-test.png`;
@@ -151,10 +155,13 @@ try {
   await p.getByText(/Logo enregistré/).waitFor();
   await p.locator(".barre-titre img.logo-entreprise").waitFor();
   await p.getByLabel("Couleur principale").fill("#0b5d3b");
-  await p.getByLabel("Couleur d'accent").fill("#f2c200");
-  await p.getByRole("button", { name: "Enregistrer les couleurs" }).click();
-  await p.getByText("Couleurs enregistrées.").waitFor();
+  await p.getByLabel("Couleur secondaire").fill("#f2c200");
+  const enregistre = p.waitForResponse((r) => r.url().endsWith("/api/entreprise") && r.request().method() === "PATCH");
+  await p.getByRole("button", { name: "Enregistrer le profil" }).click();
+  assert.equal((await enregistre).status(), 200, "couleurs enregistrées");
   assert.notEqual(await p.evaluate(() => document.documentElement.style.getPropertyValue("--marine")), "", "couleurs appliquées à l'interface");
+  // Aperçu des prochains documents : le site web enregistré y figure, sans préfixe technique.
+  await p.locator(".apercu-entete").getByText("www.entreprise-demo.cm").waitFor();
   await capture(p, "entreprise-profil");
   etape("profil : régime fiscal, patente, logo et couleurs de l'entreprise appliqués à l'écran");
 

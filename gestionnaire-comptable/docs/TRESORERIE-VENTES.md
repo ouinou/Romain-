@@ -35,10 +35,15 @@ Ce module enregistre les opérations courantes (ventes, prestations, dépenses, 
 4. **Facture normalisée / dispositifs de certification** : vérifier si l'administration fiscale impose un format, un timbre ou un dispositif de facturation certifié.
 5. **Mobile money** : rattaché pour l'instant à un sous-compte de banque (521x). **Compte exact à confirmer** (52 ou 57 ?).
 6. **Précompte, acompte d'impôt sur le revenu (AIR) et autres retenues** : non gérés.
+7. **Mentions de la société sur ses documents (droit OHADA des sociétés commerciales)** : le profil permet d'imprimer la forme juridique, le capital social, l'adresse et le RCCM. L'obligation et la liste exacte de ces mentions (article de l'Acte uniforme relatif au droit des sociétés commerciales et du GIE) sont **à vérifier** ; le logiciel ne rend aucune de ces mentions obligatoire.
+8. **Reçus de caisse** : le reçu imprime l'identité de l'entreprise, le numéro, la date, le montant en chiffres et en lettres, l'objet et le compte. **Mentions et éventuel timbre exigés à confirmer.**
+9. **Référentiel comptable** : le choix « système normal » ou « système minimal de trésorerie » est enregistré et affiché, mais ne change pas encore les états produits (le plan comptable suit le système normal du SYSCOHADA révisé).
 
 ## 4. Limites connues
 
 - **Avoirs** : pas d'avoir « commercial » sans facture d'origine (remise de fin d'année, ristourne globale) ; pas de solde client consolidé : un trop-perçu non remboursé reste rattaché à sa facture (reste dû négatif).
 - Pas de **rapprochement bancaire** ni d'import de relevés.
 - Pas de **clôture de caisse journalière** (comptage, billetage, écart de caisse).
-- La **démonstration en ligne** imprime l'aperçu HTML de la facture ; le PDF n'est produit que par le logiciel installé.
+- La **démonstration en ligne** imprime l'aperçu HTML de la facture ; les PDF (facture, avoir, reçu) ne sont produits que par le logiciel installé. Ses données repartent de zéro à chaque ouverture (rien n'est conservé dans le navigateur).
+- Les **mouvements de trésorerie enregistrés avant la version 0.3** n'ont pas d'identité figée : leur reçu imprime l'identité actuelle de l'entreprise (signalé sur la fiche du mouvement).
+- Les **exports CSV** (balance, grand livre) ne contiennent que les données, sans en-tête d'entreprise, pour rester lisibles par un tableur.

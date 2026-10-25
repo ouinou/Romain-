@@ -1,3 +1,4 @@
+import { usePeriodeImpression } from "../../composants/cadre/etat";
 import { useState } from "react";
 import { api, telecharger } from "../../api";
 import { useSession } from "../../session";
@@ -23,6 +24,7 @@ export function GrandLivre() {
   const compte = useRetarde(f.compte);
   const params = paramsEtats({ ...f, compte });
   const gl = useDonnees(() => api.get<GL>(`/api/comptabilite/grand-livre${params}`), [params]);
+  usePeriodeImpression(gl.donnees ? `Exercice ${gl.donnees.exercice.code} · du ${dateFr(gl.donnees.du)} au ${dateFr(gl.donnees.au)}${f.brouillons ? " · brouillards inclus (document de travail)" : ""}` : null);
   const exporter = async () => {
     if (__DEMO__) return toast("Démonstration : le téléchargement n'est pas disponible dans l'aperçu.");
     try { await telecharger(`/api/comptabilite/grand-livre/export${params}`, "grand-livre.csv"); toast("Grand livre exporté ; l'export est tracé."); }

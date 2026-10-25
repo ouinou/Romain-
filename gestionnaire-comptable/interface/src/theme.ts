@@ -7,7 +7,11 @@ import { api } from "./api";
 import { FINEXA } from "./jetons";
 
 export interface Couleurs { principale: string; accent: string }
-export interface Apparence { raisonSociale: string; couleurs: Couleurs; logoId: string | null; logoUrl: string | null }
+export interface Apparence {
+  raisonSociale: string; nomCommercial?: string | null; sigle?: string | null; couleurs: Couleurs; logoId: string | null; logoUrl: string | null;
+  /** Identité courte imprimée en tête des états comptables et des listes. */
+  etat?: { raisonSociale: string; sousTitre: string | null; lignes: string[] };
+}
 /** Couleurs de FINEXA ERP (identité visuelle officielle) : bleu marine et bleu. */
 export const COULEURS_DEFAUT: Couleurs = { principale: FINEXA.navy, accent: FINEXA.blue };
 

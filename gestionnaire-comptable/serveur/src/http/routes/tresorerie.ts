@@ -8,6 +8,8 @@ import { avecReglesBase } from "../../domaine/comptabilite/erreurs.js";
 import { CATEGORIES_ENTREE, CATEGORIES_SORTIE, COMPTE_TVA_RECUPERABLE, COMPTE_CLIENTS } from "../../domaine/tresorerie/categories.js";
 import { exigerConfirmation, pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
 import { ErreurHttp, nonTrouve } from "../erreurs.js";
+import { avecUrls, deviseTexte, identiteActuelle } from "../../domaine/profil-entreprise.js";
+import { genererRecuPdf, imagesDocument } from "../../domaine/ventes/pdf.js";
 
 const TYPES = { caisse: "cash", banque: "bank", mobile: "mobile" } as const;
 const LIB_TYPES: Record<string, string> = { cash: "caisse", bank: "banque", mobile: "mobile money" };
@@ -104,6 +106,8 @@ const vueMouvement = (r: Record<string, any>) => ({
   categorie: r.category, contrepartie: { numero: r.cp_numero, libelle: r.cp_libelle }, factureId: r.invoice_id, facture: r.facture_numero ?? null,
   annulationDe: r.reversal_of, annuleePar: r.annule_par, motif: r.reason, auteur: r.auteur, creeLe: r.created_at,
   ecriture: r.entry_id ? { id: r.entry_id, statut: r.entry_status === "validated" ? "validee" : "brouillard", numero: r.entry_number } : null,
+  // Identité de l'entreprise figée le jour de l'opération (null : mouvement antérieur à la version 0.3).
+  emetteur: r.issuer ? avecUrls(r.issuer) : null,
 });
 
 const SELECT_MOUVEMENTS = `
@@ -231,6 +235,26 @@ export function routesTresorerie(app: FastifyInstance, deps: Dependances) {
     const { rows: [r] } = await ctx.c.query(`${SELECT_MOUVEMENTS} WHERE m.id = $2 AND ${visibles(ctx)} ${peutLireTout(ctx) ? "AND $1::uuid IS NOT NULL" : ""}`, [ctx.utilisateur.id, id]);
     if (!r) throw nonTrouve("Mouvement");
     return vueMouvement(r);
+  }));
+
+  // Reçu (encaissement) ou bon de décaissement, en PDF. Chaque génération est tracée.
+  app.get("/api/tresorerie/mouvements/:id/recu", proteger(deps, { permission: null }, async (req, ctx) => {
+    exigerLecture(ctx);
+    const id = (req.params as { id: string }).id;
+    if (!UUID.test(id)) throw nonTrouve("Mouvement");
+    const { rows: [r] } = await ctx.c.query(`${SELECT_MOUVEMENTS} WHERE m.id = $2 AND ${visibles(ctx)} ${peutLireTout(ctx) ? "AND $1::uuid IS NOT NULL" : ""}`, [ctx.utilisateur.id, id]);
+    if (!r) throw nonTrouve("Mouvement");
+    // Mouvement antérieur à la version 0.3 : pas d'identité figée, on imprime l'identité actuelle.
+    const vendeur = r.issuer ?? await identiteActuelle(ctx.c, ctx.entrepriseId);
+    const { rows: [e] } = await ctx.c.query("SELECT currency_code FROM companies WHERE id = $1", [ctx.entrepriseId]);
+    const { rows: [av] } = r.credit_note_id ? await ctx.c.query("SELECT number FROM credit_notes WHERE id = $1", [r.credit_note_id]) : { rows: [] };
+    const pdf = await genererRecuPdf({ vendeur, ...await imagesDocument(ctx.c, vendeur),
+      numero: r.reference, date: r.date, sens: r.direction, montant: versEntier(r.amount), devise: deviseTexte(e.currency_code), libelle: r.label,
+      compte: r.compte_nom, facture: av ? `avoir ${av.number} (facture ${r.facture_numero})` : r.facture_numero, emisPar: r.auteur,
+      annulation: r.annule_par ? "ce mouvement a été annulé par une opération inverse" : r.reversal_of ? "ce mouvement annule une opération antérieure" : null });
+    await ctx.journaliser({ type: "treasury", action: "receipt_pdf", objetType: "treasury_movement", objetId: id, details: { reference: r.reference } });
+    ctx.rep.header("content-type", "application/pdf").header("content-disposition", `inline; filename="${r.reference}.pdf"`);
+    return pdf;
   }));
 
   // Encaissement ou dépense.

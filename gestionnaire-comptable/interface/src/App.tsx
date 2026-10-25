@@ -93,16 +93,39 @@ function Bandeau() {
 
 function Coquille() {
   const route = useRoute();
-  const { a } = useSession();
+  const { a, moi, rafraichir } = useSession();
   const [cle, setCle] = useState(0);   // « Actualiser » : l'écran est recréé et recharge ses données
-  // Couleurs et logo de l'entreprise ; rechargés quand l'administrateur modifie le profil, retirés à la déconnexion.
+  // Couleurs, logo et identité de l'entreprise (profil) ; rechargés quand l'administrateur modifie le profil, retirés à la déconnexion.
   const [apparence, setApparence] = useState<Apparence | null>(null);
+  const derniereLecture = useRef(0);
+  const nomConnu = useRef(moi.entreprise.raisonSociale);
+  nomConnu.current = moi.entreprise.raisonSociale;
+  const maj = useCallback(() => {
+    derniereLecture.current = Date.now();
+    chargerApparence().then((ap) => {
+      setApparence(ap);
+      // Profil modifié depuis un autre poste : la session (nom dans la barre de titre) est relue elle aussi.
+      if (ap && ap.raisonSociale !== nomConnu.current) rafraichir().catch(() => {});
+    });
+  }, [rafraichir]);
   useEffect(() => {
-    const maj = () => { chargerApparence().then(setApparence); };
     maj();
     window.addEventListener(EVENEMENT_APPARENCE, maj);
     return () => { window.removeEventListener(EVENEMENT_APPARENCE, maj); appliquerCouleurs(null); };
-  }, []);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  // Un autre utilisateur peut modifier le profil pendant qu'on travaille : relecture à chaque changement d'écran
+  // (une petite requête sur le réseau local) et au retour sur la fenêtre (au plus toutes les 5 secondes),
+  // pour que les en-têtes imprimés soient à jour. Pas sur la page du profil, où l'aperçu des couleurs en cours
+  // de saisie ne doit pas être écrasé.
+  const premierAffichage = useRef(true);
+  useEffect(() => {
+    if (route.startsWith("/entreprise")) return;
+    if (premierAffichage.current) premierAffichage.current = false;   // déjà lue au montage
+    else maj();
+    const auRetour = () => { if (Date.now() - derniereLecture.current > 5000) maj(); };
+    window.addEventListener("focus", auRetour);
+    return () => window.removeEventListener("focus", auRetour);
+  }, [route, maj]);
 
   const [section, id] = route.split("/").filter(Boolean);
   let page: JSX.Element, titre: string;
@@ -167,6 +190,6 @@ function CoquilleOnglets({ route, titre, page, apparence, cle, setCle }: {
     setOnglets(reste);
     if (chemin === route) aller((reste[i - 1] ?? reste[0]).chemin);
   };
-  return <Cadre route={route} titre={titre} page={page} logoUrl={apparence?.logoUrl ?? null} cle={cle}
+  return <Cadre route={route} titre={titre} page={page} logoUrl={apparence?.logoUrl ?? null} etat={apparence?.etat ?? null} cle={cle}
     onActualiser={() => setCle((k) => k + 1)} onglets={onglets} onFermerOnglet={fermerOnglet} />;
 }

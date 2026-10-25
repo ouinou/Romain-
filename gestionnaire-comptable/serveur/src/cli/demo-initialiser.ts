@@ -1,5 +1,6 @@
 import { transaction } from "../db.js";
 import { creerEntreprise } from "../domaine/entreprises.js";
+import { identiteActuelle, memoriserIdentite } from "../domaine/profil-entreprise.js";
 import { journaliser } from "../domaine/audit.js";
 import { hacherMotDePasse } from "../securite/motdepasse.js";
 import { genererEcriture } from "../domaine/comptabilite/generation.js";
@@ -33,7 +34,14 @@ await executer(async () => {
     });
     const hash = await hacherMotDePasse(motDePasse);
     await transaction(pool, e.entrepriseId, async (c) => {
-      await c.query("UPDATE companies SET settings = settings || '{\"mfaObligatoire\": false}', address = 'Douala (adresse fictive)' WHERE id = $1", [e.entrepriseId]);
+      await c.query("UPDATE companies SET settings = settings || '{\"mfaObligatoire\": false}', address = 'Adresse fictive' WHERE id = $1", [e.entrepriseId]);
+      // TVA de démonstration : 19,25 % (taux À VÉRIFIER dans la loi de finances en vigueur avant tout usage réel).
+      // Profil fictif complet (en-tête des factures). Logo et couleurs : à choisir par l'entreprise dans « Entreprise ».
+      await c.query(`UPDATE companies SET phone = '+237 600 00 00 00 (fictif)',
+        settings = jsonb_set(settings, '{profil}', '{"email": "contact@demo.cm", "regimeFiscal": "Régime du réel (à vérifier)", "patente": "PAT-DEMO-0000 (fictif)", "ville": "Douala", "formeJuridique": "SARL"}') WHERE id = $1`, [e.entrepriseId]);
+      await c.query(`UPDATE companies SET settings = jsonb_set(settings, '{fiscal}', '{"tvaApplicable": true, "tauxTvaPdm": 1925, "mentionsFacture": "Document de démonstration : données fictives, taux de TVA à vérifier."}') WHERE id = $1`, [e.entrepriseId]);
+      // Identité imprimée sur les documents : calculée par le même service que dans le logiciel (aucune copie en dur).
+      await memoriserIdentite(c, e.entrepriseId);
       await c.query("UPDATE app_users SET status = 'active', password_hash = $2, password_changed_at = now() WHERE id = $1", [e.adminId, hash]);
       await c.query("UPDATE user_tokens SET used_at = now() WHERE user_id = $1", [e.adminId]);
       for (const [nom, email, role, statut] of PERSONNES) {
@@ -82,11 +90,6 @@ await executer(async () => {
       // Historique FICTIF de ventes sur les cinq mois précédents, pour que le tableau de bord d'une installation
       // d'évaluation montre des courbes. Seulement avec GC_DEMO_HISTORIQUE=oui (option « démonstration » du setup).
       if (process.env.GC_DEMO_HISTORIQUE === "oui") await historiqueVentes(c, { amina, ousmane, joseph, an, ids, entrepriseId: e.entrepriseId });
-      // TVA de démonstration : 19,25 % (taux À VÉRIFIER dans la loi de finances en vigueur avant tout usage réel).
-      // Profil fictif complet (en-tête des factures). Logo et couleurs : à choisir par l'entreprise dans « Entreprise ».
-      await c.query(`UPDATE companies SET phone = '+237 600 00 00 00 (fictif)',
-        settings = jsonb_set(settings, '{profil}', '{"email": "contact@demo.cm", "regimeFiscal": "Régime du réel (à vérifier)", "patente": "PAT-DEMO-0000 (fictif)"}') WHERE id = $1`, [e.entrepriseId]);
-      await c.query(`UPDATE companies SET settings = jsonb_set(settings, '{fiscal}', '{"tvaApplicable": true, "tauxTvaPdm": 1925, "mentionsFacture": "Document de démonstration : données fictives, taux de TVA à vérifier."}') WHERE id = $1`, [e.entrepriseId]);
     });
     console.log("Entreprise de démonstration créée (données fictives).");
     console.log("  Code entreprise : GC-DEMO-2026");
@@ -103,9 +106,7 @@ async function historiqueVentes(c: import("../db.js").Client, d: {
   amina: string; ousmane: string; joseph: string; an: number; entrepriseId: string;
   ids: Record<string, { id: string; compte: string; journal: string }>;
 }) {
-  const { rows: [ent] } = await c.query("SELECT legal_name, niu, rccm, address, phone FROM companies WHERE id = $1", [d.entrepriseId]);
-  const vendeur = { raisonSociale: ent.legal_name, niu: ent.niu, rccm: ent.rccm, adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)",
-    email: "contact@demo.cm", regimeFiscal: "Régime du réel (à vérifier)", patente: "PAT-DEMO-0000 (fictif)", logoId: null, couleurs: { principale: "#062b68", accent: "#0647a9" } };
+  const vendeur = await identiteActuelle(c, d.entrepriseId);
   const compte = async (n: string) => (await c.query("SELECT id FROM accounts WHERE account_number = $1", [n])).rows[0].id as string;
   const cpt = { "701": await compte("701"), "706": await compte("706"), "411": await compte("411"), "443": await compte("443") };
   const { rows: [jv] } = await c.query("SELECT id FROM journals WHERE code = 'VT'");

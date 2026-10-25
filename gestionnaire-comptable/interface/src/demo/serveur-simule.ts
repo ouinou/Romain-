@@ -60,10 +60,34 @@ const utilisateurs: Util[] = [
   util("Rachel Ewane", "rachel.ewane@demo.cm", "hr_manager", "invited", null),
   util("Auditeur externe", "audit@demo.cm", "auditor", "disabled", 60 * 24 * 12),
 ];
-const entreprise = { id: id(), code: CODE, raisonSociale: "Entreprise Démo SARL", statut: "active", pays: "CM", devise: "XAF", rccm: "RC/DLA/2026/B/0000 (fictif)", niu: "M000000000000X (fictif)", adresse: "Douala (adresse fictive)", telephone: "+237 600 00 00 00 (fictif)" as string | null,
-  email: "contact@demo.cm" as string | null, regimeFiscal: "Régime du réel (à vérifier)" as string | null, patente: "PAT-DEMO-0000 (fictif)" as string | null,
-  couleurs: { principale: "#062b68", accent: "#0647a9" }, logoId: null as string | null, logoUrl: null as string | null,
+const entreprise = { id: id(), code: CODE, raisonSociale: "Entreprise Démo SARL", statut: "active", pays: "CM", paysNom: "Cameroun", devise: "XAF",
+  rccm: "RC/DLA/2026/B/0000 (fictif)" as string | null, niu: "M000000000000X (fictif)" as string | null, adresse: "Adresse fictive" as string | null, telephone: "+237 600 00 00 00 (fictif)" as string | null,
+  nomCommercial: null as string | null, sigle: null as string | null, slogan: null as string | null, formeJuridique: "SARL" as string | null, capitalSocial: null as number | null, dateCreation: null as string | null,
+  boitePostale: null as string | null, quartier: null as string | null, commune: null as string | null, ville: "Douala" as string | null, region: null as string | null,
+  telephone2: null as string | null, email: "contact@demo.cm" as string | null, siteWeb: null as string | null,
+  numeroContribuable: null as string | null, numeroTva: null as string | null, autresIdentifiants: [] as { libelle: string; valeur: string }[],
+  regimeFiscal: "Régime du réel (à vérifier)" as string | null, patente: "PAT-DEMO-0000 (fictif)" as string | null, referentiel: null as string | null,
+  banque: null as { nom: string; titulaire: string | null; references: string | null } | null, moyensPaiement: [] as string[],
+  enTete: null as string | null, piedDePage: null as string | null, formatPapier: "A4" as "A4" | "LETTER",
+  affichage: { telephone: true, email: true, siteWeb: true, slogan: true, banque: true, moyensPaiement: true, cachet: true },
+  couleurs: { principale: "#062b68", accent: "#0647a9" }, logoId: null as string | null, logoUrl: null as string | null, cachetId: null as string | null, cachetUrl: null as string | null,
   parametres: { mfaObligatoire: false, inactiviteJours: 90 }, codeMaitre: { actif: true, creeLe: ilYa(60 * 24 * 40), bloque: false } };
+const MOYENS: Record<string, string> = { especes: "Espèces", virement: "Virement bancaire", cheque: "Chèque", mobile_money: "Mobile money", carte: "Carte bancaire" };
+/** Identité imprimée (même calcul que serveur/src/domaine/profil-entreprise.ts, options d'affichage appliquées). */
+function identiteDemo() {
+  const e = entreprise, aff = e.affichage;
+  return {
+    raisonSociale: e.raisonSociale, nomCommercial: e.nomCommercial, sigle: e.sigle, slogan: aff.slogan ? e.slogan : null, formeJuridique: e.formeJuridique, capitalSocial: e.capitalSocial,
+    devise: e.devise, adresse: e.adresse, boitePostale: e.boitePostale, localite: [e.quartier, e.commune, e.ville].filter(Boolean).join(", ") || null, region: e.region, pays: e.paysNom,
+    telephone: aff.telephone ? [e.telephone, e.telephone2].filter(Boolean).join(" / ") || null : null, email: aff.email ? e.email : null, siteWeb: aff.siteWeb ? e.siteWeb : null,
+    niu: e.niu, rccm: e.rccm, numeroContribuable: e.numeroContribuable, numeroTva: e.numeroTva, autresIdentifiants: e.autresIdentifiants.map((x) => ({ ...x })),
+    regimeFiscal: e.regimeFiscal, patente: e.patente, enTete: e.enTete, piedDePage: e.piedDePage, banque: aff.banque && e.banque ? { ...e.banque } : null,
+    moyensPaiement: aff.moyensPaiement ? e.moyensPaiement.map((m) => MOYENS[m]) : [], couleurs: { ...e.couleurs }, logoId: e.logoId, logoUrl: e.logoUrl,
+    cachetId: aff.cachet ? e.cachetId : null, cachetUrl: aff.cachet ? e.cachetUrl : null, formatPapier: e.formatPapier,
+  };
+}
+const vueEntreprise = () => ({ ...entreprise, fiscal: { tvaApplicable: true, tauxTvaPdm: 1925 },
+  exercice: { code: String(new Date().getFullYear()), du: `${new Date().getFullYear()}-01-01`, au: `${new Date().getFullYear()}-12-31` }, identiteDocument: identiteDemo() });
 const journal: Evt[] = [];
 const notifications: { id: string; type: "info" | "warning" | "security"; titre: string; texte: string; date: string; lus: Set<string>; pour: string | null; permission: string | null }[] = [];
 
@@ -87,7 +111,7 @@ tracer({ type: "auth", action: "login", resultat: "failure", acteurId: utilisate
 notifications.push({ id: id(), type: "security", titre: "Accès refusé", texte: "Amina Mahamat a tenté d'ouvrir la liste des utilisateurs (droit non accordé).", date: ilYa(125), lus: new Set(), pour: null, permission: "users.admin" });
 
 /* ------------------------------------------------------------------ outils */
-class E { constructor(public s: number, public code: string, public message: string) {} }
+class E { constructor(public s: number, public code: string, public message: string, public champs?: { champ: string; message: string }[]) {} }
 const moi = () => utilisateurs.find((u) => u.id === session?.utilisateurId)!;
 const permsDe = (u: Util) => new Set(u.roles.flatMap((r) => roles.find((x) => x.id === r && !x.archiveLe)?.permissions ?? []));
 function exiger(perm: string | null, sensible = false) {
@@ -265,26 +289,50 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
 
   if (mod === "entreprise") {
     if (a1 === "code-maitre") { exiger("company.admin", true); tracer({ type: "security", action: "master_code_regenerate" }); entreprise.codeMaitre = { actif: true, creeLe: new Date().toISOString(), bloque: false }; return { codeMaitre: "GCM-DEMO-FICT-IF00-0000-0000-0000" }; }
-    if (a1 === "apparence") { exiger(null); return { raisonSociale: entreprise.raisonSociale, couleurs: entreprise.couleurs, logoId: entreprise.logoId, logoUrl: entreprise.logoUrl }; }
-    if (a1 === "logo") {
-      exiger("company.update");
-      if (m === "DELETE") { entreprise.logoId = null; entreprise.logoUrl = null; tracer({ type: "company", action: "logo_remove" }); return { ok: true }; }
-      const b64 = String(c.image ?? "").replace(/^data:image\/[a-z]+;base64,/, "");
-      if (!/^iVBORw0KGgo|^\/9j\//.test(b64)) throw new E(400, "logo_format", "Format refusé : envoyez une image PNG ou JPEG.");
-      if (b64.length * 0.75 > 512 * 1024) throw new E(400, "logo_trop_lourd", "Le logo dépasse 512 Kio.");
-      // Démonstration : le logo reste dans la page (adresse data:), le vrai serveur le conserve en base.
-      entreprise.logoId = id(); entreprise.logoUrl = `data:image/${b64.startsWith("/9j/") ? "jpeg" : "png"};base64,${b64}`;
-      tracer({ type: "company", action: "logo_change" }); return { logoId: entreprise.logoId };
+    if (a1 === "apparence") {
+      exiger(null);
+      const v = identiteDemo();
+      return { raisonSociale: entreprise.raisonSociale, nomCommercial: entreprise.nomCommercial, sigle: entreprise.sigle, couleurs: entreprise.couleurs, logoId: entreprise.logoId, logoUrl: entreprise.logoUrl,
+        etat: { raisonSociale: v.raisonSociale, sousTitre: [v.sigle, v.nomCommercial].filter((x) => x && x !== v.raisonSociale).join(" · ") || null,
+          lignes: [[v.adresse, v.localite, v.pays].filter(Boolean).join(" · "), [v.niu && `NIU : ${v.niu}`, v.rccm && `RCCM : ${v.rccm}`].filter(Boolean).join(" · ")].filter(Boolean) } };
     }
-    if (m === "GET") { exiger("company.read"); return entreprise; }
+    if (a1 === "logo" || a1 === "cachet") {
+      exiger("company.update");
+      const cle = a1 === "logo" ? "logo" : "cachet";
+      if (m === "DELETE") { entreprise[`${cle}Id`] = null; entreprise[`${cle}Url`] = null; tracer({ type: "company", action: `${cle}_remove` }); return { ok: true }; }
+      const b64 = String(c.image ?? "").replace(/^data:image\/[a-z]+;base64,/, "");
+      if (!/^iVBORw0KGgo|^\/9j\//.test(b64)) throw new E(400, `${cle}_format`, "Format refusé : envoyez une image PNG ou JPEG.");
+      if (b64.length * 0.75 > 512 * 1024) throw new E(400, `${cle}_trop_lourd`, `Le ${cle} dépasse 512 Kio.`);
+      // Démonstration : l'image reste dans la page (adresse data:), le vrai serveur la conserve en base.
+      entreprise[`${cle}Id`] = id(); entreprise[`${cle}Url`] = `data:image/${b64.startsWith("/9j/") ? "jpeg" : "png"};base64,${b64}`;
+      tracer({ type: "company", action: `${cle}_change` }); return { [`${cle}Id`]: entreprise[`${cle}Id`] };
+    }
+    if (m === "GET") { exiger("company.read"); return vueEntreprise(); }
     exiger("company.update");
-    if (c.couleurs && !(/^#[0-9a-f]{6}$/i.test(c.couleurs.principale) && /^#[0-9a-f]{6}$/i.test(c.couleurs.accent))) throw new E(400, "donnees_invalides", "Couleur au format #RRGGBB.");
-    if (c.parametres) { exiger("company.admin", true); entreprise.parametres = { ...entreprise.parametres, ...c.parametres }; tracer({ type: "security", action: "security_settings_change", apres: entreprise.parametres }); return entreprise; }
+    if (c.parametres) { exiger("company.admin", true); entreprise.parametres = { ...entreprise.parametres, ...c.parametres }; tracer({ type: "security", action: "security_settings_change", apres: entreprise.parametres }); return vueEntreprise(); }
+    // Mêmes contrôles que le vrai serveur (les principaux) ; un champ renvoyé inchangé n'est pas revalidé.
+    for (const k of Object.keys(c)) if (k in entreprise && !["affichage", "couleurs", "banque"].includes(k) && JSON.stringify((typeof c[k] === "string" ? c[k].trim() || null : c[k]) ?? null) === JSON.stringify((entreprise as Record<string, unknown>)[k] ?? null)) delete c[k];
+    const champs: { champ: string; message: string }[] = [];
+    const tel = (v: unknown) => v == null || v === "" || (/^\+?[0-9][0-9 .()-]*$/.test(String(v)) && (String(v).match(/\d/g)?.length ?? 0) >= 6 && (String(v).match(/\d/g)?.length ?? 0) <= 15);
+    if ("raisonSociale" in c && String(c.raisonSociale ?? "").trim().length < 2) champs.push({ champ: "raisonSociale", message: "La raison sociale est obligatoire (2 caractères au moins)." });
+    if (c.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) champs.push({ champ: "email", message: "Adresse e-mail invalide (exemple : contact@monentreprise.cm)." });
+    for (const k of ["telephone", "telephone2"]) if (k in c && !tel(c[k])) champs.push({ champ: k, message: "Numéro de téléphone invalide : chiffres, espaces et « + » initial seulement (6 à 15 chiffres)." });
+    let site: string | null | undefined = undefined;
+    if ("siteWeb" in c) {
+      if (!c.siteWeb) site = null;
+      else { try { const u = new URL(/^https?:\/\//i.test(c.siteWeb) ? c.siteWeb : `https://${c.siteWeb}`); if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(u.hostname)) throw 0; site = u.toString().replace(/\/$/, ""); }
+        catch { champs.push({ champ: "siteWeb", message: "Adresse du site web invalide (exemple : www.monentreprise.cm)." }); } }
+    }
+    if (c.couleurs && !(/^#[0-9a-f]{6}$/i.test(c.couleurs.principale) && /^#[0-9a-f]{6}$/i.test(c.couleurs.accent))) champs.push({ champ: "couleurs", message: "Couleur au format #RRGGBB." });
+    if (champs.length) throw new E(400, "donnees_invalides", "Certaines données sont invalides.", champs);
     const avant = { ...entreprise };
-    for (const k of ["raisonSociale", "rccm", "niu", "adresse", "telephone", "email", "regimeFiscal", "patente", "couleurs"] as const)
-      if (k in c) (entreprise as Record<string, unknown>)[k] = k === "raisonSociale" ? c[k] || entreprise.raisonSociale : c[k] ?? null;
+    const ent = entreprise as Record<string, unknown>;
+    for (const [k, v] of Object.entries(c)) {
+      if (!(k in entreprise) || ["id", "code", "statut", "pays", "paysNom", "devise", "parametres", "codeMaitre", "logoId", "logoUrl", "cachetId", "cachetUrl"].includes(k)) continue;
+      ent[k] = k === "affichage" ? { ...entreprise.affichage, ...(v as object) } : k === "siteWeb" ? site : typeof v === "string" ? v.trim() || null : v ?? null;
+    }
     tracer({ type: "company", action: "update", avant: { raisonSociale: avant.raisonSociale }, apres: { raisonSociale: entreprise.raisonSociale } });
-    return entreprise;
+    return vueEntreprise();
   }
 
   if (mod === "notifications") {
@@ -302,8 +350,8 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
     exiger, tracer, motif, permissions: () => permsDe(moi()), moi: () => ({ id: moi().id, nom: moi().nom }), nomDe, page,
     erreur: (s: number, code: string, message: string) => new E(s, code, message),
     utilisateurs: () => utilisateurs.map((u) => ({ id: u.id, nom: u.nom, actif: u.statut === "active", permissions: permsDe(u) })),
-    entreprise: () => ({ raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone, devise: entreprise.devise,
-      email: entreprise.email, regimeFiscal: entreprise.regimeFiscal, patente: entreprise.patente, couleurs: { ...entreprise.couleurs }, logoId: entreprise.logoId, logoUrl: entreprise.logoUrl, code: entreprise.code }),
+    // Identité figée sur les nouveaux documents : celle du profil au moment de l'émission.
+    entreprise: () => ({ ...identiteDemo(), code: entreprise.code }),
   });
   throw new E(404, "introuvable", "Adresse inconnue.");
 }
@@ -311,9 +359,7 @@ function traiter(m: string, chemin: string, q: URLSearchParams, c: any): unknown
 export function installer() {
   const ids = Object.fromEntries(utilisateurs.map((u) => [u.email, u.id]));
   initialiserComptabilite(ids);
-  initialiserTresorerie(ids, { raisonSociale: entreprise.raisonSociale, niu: entreprise.niu, rccm: entreprise.rccm, adresse: entreprise.adresse, telephone: entreprise.telephone,
-    devise: entreprise.devise, email: entreprise.email, regimeFiscal: entreprise.regimeFiscal, patente: entreprise.patente, couleurs: { ...entreprise.couleurs },
-    logoId: null, logoUrl: null, code: entreprise.code });
+  initialiserTresorerie(ids, { ...identiteDemo(), code: entreprise.code });
   definirTransport(async (methode, url, corps) => {
     await new Promise((r) => setTimeout(r, 120));   // petite latence réaliste
     const u = new URL(url, location.href);
@@ -324,7 +370,7 @@ export function installer() {
         : new Response(JSON.stringify(r), { status: 200, headers: { "content-type": "application/json" } });
     } catch (e) {
       const err = e instanceof E ? e : new E(500, "erreur_interne", "Erreur de la démonstration.");
-      return new Response(JSON.stringify({ erreur: { code: err.code, message: err.message } }), { status: err.s, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({ erreur: { code: err.code, message: err.message, champs: err.champs } }), { status: err.s, headers: { "content-type": "application/json" } });
     }
   });
 }

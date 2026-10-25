@@ -59,7 +59,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
 
   app.get("/api/sante", async () => {
     await deps.pool.query("SELECT 1");
-    return { statut: "ok", version: "0.2.0" };
+    return { statut: "ok", version: "0.3.0" };
   });
 
   routesAuth(app, deps);

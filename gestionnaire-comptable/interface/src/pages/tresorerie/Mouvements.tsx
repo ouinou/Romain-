@@ -1,3 +1,4 @@
+import { imprimerPdf } from "../ventes/FicheFacture";
 import { useEffect, useState } from "react";
 import { effacerParametres, useParametres } from "../../routeur";
 import { api, qs } from "../../api";
@@ -49,6 +50,13 @@ export function Mouvements() {
   );
 }
 
+/** Reçu ou bon de décaissement en PDF (même impression que les factures). */
+function imprimerRecu(id: string, toast: (m: string) => void) {
+  const url = `/api/tresorerie/mouvements/${id}/recu`;
+  if (__DEMO__) { toast("Démonstration : le reçu PDF est produit par le logiciel installé (serveur de l'entreprise)."); return; }
+  imprimerPdf(url, () => { window.open(url, "_blank", "noopener"); });
+}
+
 export function FicheMouvement({ id }: { id: string }) {
   const { a } = useSession();
   const toast = useToast();
@@ -62,7 +70,10 @@ export function FicheMouvement({ id }: { id: string }) {
       <div><a href="#/tresorerie/mouvements" className="btn-lien">← Tous les mouvements</a></div>
       <div className="entete-page">
         <div><h2>{NATURES[x.nature] ?? x.nature} {x.reference}</h2><p className="infos">{x.libelle} · {x.compte.nom} · {dateFr(x.date)}</p></div>
-        {a("treasury.cancel") && !x.annuleePar && x.nature !== "reversal" && <button className="btn btn-danger" onClick={() => setAnnuler(true)}>Annuler ce mouvement</button>}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-principal" onClick={() => imprimerRecu(id, toast)}>🖨 {x.sens === "entree" ? "Imprimer le reçu" : "Imprimer le bon de décaissement"}</button>
+          {a("treasury.cancel") && !x.annuleePar && x.nature !== "reversal" && <button className="btn btn-danger" onClick={() => setAnnuler(true)}>Annuler ce mouvement</button>}
+        </div>
       </div>
       {x.annuleePar && <div className="alerte alerte-attention">Ce mouvement a été annulé (<a href={`#/tresorerie/mouvements/${x.annuleePar}`}>voir l'annulation</a>).</div>}
       {x.annulationDe && <div className="alerte">Annulation du <a href={`#/tresorerie/mouvements/${x.annulationDe}`}>mouvement d'origine</a>. Motif : {x.motif}</div>}
@@ -74,6 +85,7 @@ export function FicheMouvement({ id }: { id: string }) {
           {x.facture && <><dt className="discret">Facture</dt><dd style={{ margin: 0 }}><a href={`#/ventes/factures/${x.factureId}`}>{x.facture}</a></dd></>}
           <dt className="discret">Écriture comptable</dt><dd style={{ margin: 0 }}>{x.ecriture ? <>{x.ecriture.statut === "validee" ? `Validée (n° ${x.ecriture.numero})` : "En attente de validation"}{a("accounting.read") && <> · <a href={`#/comptabilite/ecritures/${x.ecriture.id}`}>ouvrir</a></>}</> : "Portée par l'autre jambe du transfert"}</dd>
           <dt className="discret">Enregistré par</dt><dd style={{ margin: 0 }}>{x.auteur} · <span className="num">{dateHeure(x.creeLe)}</span></dd>
+          <dt className="discret">En-tête du reçu</dt><dd style={{ margin: 0 }}>{x.emetteur ? <>{x.emetteur.raisonSociale} <span className="discret">· profil de l'entreprise au jour de l'opération</span></> : <span className="discret">Profil actuel de l'entreprise (opération antérieure à la version 0.3)</span>}</dd>
         </dl>
       </section>
       {annuler && <ConfirmerAction titre="Annuler ce mouvement ?" danger motif libelle="Annuler le mouvement"

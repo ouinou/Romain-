@@ -1,3 +1,4 @@
+import { memoriserIdentite } from "./profil-entreprise.js";
 import { randomUUID } from "node:crypto";
 import type { Pool } from "../db.js";
 import { transaction } from "../db.js";
@@ -49,6 +50,7 @@ export async function creerEntreprise(poolProprietaire: Pool, n: NouvelleEntrepr
       [admin.id, empreinteJeton(jeton)]);
     // Comptabilité : plan de référence, journaux, exercice de l'année civile, comptes protégés.
     await c.query("SELECT accounting_initialize($1)", [new Date().getFullYear()]);
+    await memoriserIdentite(c, id);   // identité imprimée sur les documents (reçus compris)
     await journaliser(c, { type: "company", action: "create", objetType: "company", objetId: id, apres: { code, raisonSociale: n.raisonSociale }, details: { origine: "outil d'exploitation" } });
     await journaliser(c, { type: "users", action: "invite", objetType: "user", objetId: admin.id, apres: { email: n.adminEmail, role: "company_admin" }, details: { origine: "outil d'exploitation" } });
     return { entrepriseId: id, code, adminId: admin.id as string, jetonInvitation: jeton, expireLe: tok.expires_at as Date, codeMaitre };

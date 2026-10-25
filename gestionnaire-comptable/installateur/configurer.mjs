@@ -178,6 +178,10 @@ if (!miseAJour) {
   env.GC_DOSSIER_INTERFACE = join(APP, "interface", "dist"); env.GC_PG_BIN = PG_BIN;
   demarrerPg();
   await connexion(env.GC_BASE_PROPRIETAIRE).then((c) => c.end());
+  // Sauvegarde chiffrée AVANT de toucher au schéma : en cas de problème, la base d'avant la mise à jour est restaurable.
+  // Si elle échoue, la mise à jour s'arrête ici (lancer lève une erreur) et la base reste telle quelle.
+  etape("Sauvegarde chiffrée de la base avant la mise à jour");
+  lancer(NODE, [join(SERVEUR, "dist", "src", "cli", "sauvegarder.js")], { env: { ...process.env, ...env }, cwd: SERVEUR });
 }
 
 etape("Schéma de la base (migrations)");

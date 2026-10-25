@@ -5,9 +5,9 @@ import { compteParNumero, genererEcriture } from "../../domaine/comptabilite/gen
 import { MONTANT_MAX, versEntier } from "../../domaine/comptabilite/montants.js";
 import { avecReglesBase } from "../../domaine/comptabilite/erreurs.js";
 import { montantLigne, montantTva, quantiteEnMilliemes } from "../../domaine/ventes/calculs.js";
-import { genererFacturePdf } from "../../domaine/ventes/pdf.js";
+import { genererFacturePdf, imagesDocument } from "../../domaine/ventes/pdf.js";
 import { codeVerification, verifierSignature } from "../../domaine/ventes/signature.js";
-import { profilDe } from "./entreprise.js";
+import { avecUrls, identiteActuelle } from "../../domaine/profil-entreprise.js";
 import { COMPTE_CLIENTS, COMPTE_SERVICES_VENDUS, COMPTE_TVA_FACTUREE, COMPTE_VENTES_MARCHANDISES } from "../../domaine/tresorerie/categories.js";
 import { compteUtilisable } from "./tresorerie.js";
 import { pagination, proteger, type Ctx, type Dependances } from "../contexte.js";
@@ -50,7 +50,7 @@ export async function chargerFacture(c: Client, id: string) {
   return {
     id: f.id, numero: f.number, date: f.date, type: f.kind, typeLibelle: TYPES[f.kind],
     client: { id: f.customer_id, nom: f.customer_name, niu: f.customer_niu, adresse: f.customer_address, telephone: f.customer_phone },
-    vendeur: { ...f.seller, logoUrl: f.seller?.logoId ? `/api/entreprise/logos/${f.seller.logoId}` : null }, devise: f.currency, tauxTvaPdm: f.tax_rate_bp,
+    vendeur: avecUrls(f.seller), devise: f.currency, tauxTvaPdm: f.tax_rate_bp,
     lignes: lignes.map((l) => ({ ordre: l.line_no, designation: l.description, quantite: Number(l.quantite), prixUnitaire: versEntier(l.unit_price), montant: versEntier(l.amount), nature: l.account_number === COMPTE_SERVICES_VENDUS ? "service" : "marchandise",
       quantiteCreditee: Number(l.q_credit), montantCredite: versEntier(l.m_credit) })),
     totalHt: versEntier(f.total_ht), totalTva: versEntier(f.total_tax), totalTtc: ttc, paye, totalAvoirs, tvaAvoirs: versEntier(f.tva_avoirs), reste: ttc - totalAvoirs - paye,
@@ -216,11 +216,8 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
       const { rows: [c] } = await ctx.c.query("INSERT INTO customers (name, niu, phone, address) VALUES ($1,$2,$3,$4) RETURNING id", [client.nom, client.niu, client.telephone, client.adresse]);
       client.id = c.id;
     }
-    const { rows: [e] } = await ctx.c.query("SELECT legal_name, niu, rccm, address, phone, settings FROM companies WHERE id = $1", [ctx.entrepriseId]);
     // Identité du vendeur figée à l'émission : une réimpression garde l'en-tête, le logo et les couleurs du jour de la facture.
-    const p = profilDe(e.settings);
-    const vendeur = { raisonSociale: e.legal_name, niu: e.niu, rccm: e.rccm, adresse: e.address, telephone: e.phone,
-      email: p.email, regimeFiscal: p.regimeFiscal, patente: p.patente, logoId: p.logoId, couleurs: p.couleurs };   // logoUrl est recalculé à la lecture
+    const vendeur = await identiteActuelle(ctx.c, ctx.entrepriseId);   // logoUrl et cachetUrl sont recalculés à la lecture
     const comptes = {
       marchandise: await compteParNumero(ctx.c, COMPTE_VENTES_MARCHANDISES), service: await compteParNumero(ctx.c, COMPTE_SERVICES_VENDUS),
       clients: await compteParNumero(ctx.c, COMPTE_CLIENTS), tva: totalTva ? await compteParNumero(ctx.c, COMPTE_TVA_FACTUREE) : null,
@@ -274,8 +271,7 @@ export function routesVentes(app: FastifyInstance, deps: Dependances) {
     if (!f) throw nonTrouve("Facture");
     const fiscal = await parametresFiscaux(ctx.c, ctx.entrepriseId);
     const { codeVerification: code } = await avecCode(ctx, deps, f);
-    const logo = f.vendeur.logoId ? (await ctx.c.query("SELECT data FROM company_logos WHERE id = $1", [f.vendeur.logoId])).rows[0]?.data as Buffer | undefined : undefined;
-    const pdf = await genererFacturePdf({ codeVerification: code, logo,
+    const pdf = await genererFacturePdf({ codeVerification: code, ...await imagesDocument(ctx.c, f.vendeur),
       numero: f.numero, date: f.date, type: f.typeLibelle, vendeur: f.vendeur, client: f.client,
       lignes: f.lignes.map((l) => ({ designation: l.designation, quantite: quantiteTexte(l.quantite), prixUnitaire: l.prixUnitaire, montant: l.montant })),
       totalHt: f.totalHt, tauxTvaPdm: f.tauxTvaPdm, totalTva: f.totalTva, totalTtc: f.totalTtc, devise: f.devise === "XAF" ? "FCFA" : f.devise,
