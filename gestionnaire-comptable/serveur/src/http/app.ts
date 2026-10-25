@@ -61,7 +61,7 @@ export function construireApp(deps: Dependances, options: FastifyServerOptions =
   app.get("/api/sante", async () => {
     await deps.pool.query("SELECT 1");
     // Nom du poste serveur : affiché sur l'écran de connexion, pour qu'on voie à quelle installation on est relié.
-    return { statut: "ok", version: "0.3.0", serveur: hostname() };
+    return { statut: "ok", version: "0.3.1", serveur: hostname() };
   });
 
   routesAuth(app, deps);
