@@ -12,8 +12,8 @@
 
 ## Quand quelque chose ne va pas
 
-- **Un utilisateur est verrouillé** : le verrou tombe seul après le délai. Pour le lever plus tôt, appeler `PATCH /api/admin/users/:id` avec `{"unlock": true}` — il n'y a pas encore de bouton dans l'écran Paramètres. Regarder d'abord le journal : ce n'est pas toujours la personne elle-même qui a fait les tentatives.
-- **Téléphone perdu (MFA)** : utiliser un code de secours ; sinon l'administrateur réinitialise la MFA (`PATCH /api/admin/users/:id` avec `{"resetMfa": true}`, pas encore de bouton), ce qui ferme toutes les sessions de la personne.
+- **Un utilisateur est verrouillé** : le verrou tombe seul après le délai. Pour le lever plus tôt : Administration › Utilisateurs › « Déverrouiller ». Regarder d'abord le journal : ce n'est pas toujours la personne elle-même qui a fait les tentatives.
+- **Téléphone perdu (MFA)** : utiliser un code de secours ; sinon l'administrateur utilise Administration › Utilisateurs › « Réinitialiser MFA », ce qui ferme toutes les sessions de la personne.
 - **« Jeton CSRF invalide »** : la session a expiré ou a été remplacée par une reconnexion dans un autre onglet. Recharger la page.
 - **Erreur 500** : le message donne une référence ; la retrouver dans Loki (`{container=~".*api.*"} |= "<référence>"`) ou Sentry.
 - **Licence en consultation seule** : vérifier l'accès Internet du serveur vers le serveur de licences, puis l'état de l'abonnement.
