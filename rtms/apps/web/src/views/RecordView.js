@@ -413,7 +413,9 @@ export class RecordView {
       case 'record.cancel':
         if (await cancelRecords(m, [this.record])) return this.ws.close(this.tab.id, { force: true });
         return undefined;
-      case 'file.print': case 'file.pdf': return printHtml(recordDoc(`${MODULE_LABEL[m]} — ${recordTitle(m, this.record)}`, this.defs().fields, this.record), { pdf: id === 'file.pdf' });
+      case 'file.pdf': if (m === 'invoices') return printHtml(invoiceDoc(this.record), { pdf: true });
+      // falls through
+      case 'file.print': return printHtml(recordDoc(`${MODULE_LABEL[m]} — ${recordTitle(m, this.record)}`, this.defs().fields, this.record), { pdf: id === 'file.pdf' });
       case 'transport.order': return printHtml(missionOrderDoc(this.record));
       case 'transport.waybill': return printHtml(waybillDoc(this.record));
       case 'transport.loading': return printHtml(loadingDoc(this.record));

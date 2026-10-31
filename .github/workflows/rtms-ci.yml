@@ -139,6 +139,30 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         with: { projectBaseDir: rtms }
 
+  windows:
+    name: Application Windows (installateur)
+    needs: [qualite]
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: rtms/apps/desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: rtms/apps/desktop/package-lock.json }
+      - run: npm ci
+      - run: npm test
+      - run: xvfb-run -a node test/e2e-desktop.cjs /tmp http://127.0.0.1:9
+        continue-on-error: true   # la partie « serveur » demande l'API ; lanceur, démo et sécurité sont vérifiés
+      - run: npm run dist:win
+      - run: node test/check-build.mjs
+      - run: cd dist && sha256sum RTMS-Setup-*.exe RTMS-Portable-*.zip > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rtms-windows
+          path: |
+            rtms/apps/desktop/dist/RTMS-Setup-*.exe
+            rtms/apps/desktop/dist/RTMS-Portable-*.zip
+            rtms/apps/desktop/dist/SHA256SUMS.txt
+
   image:
     name: Image Docker
     needs: [qualite, integration, securite]

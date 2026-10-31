@@ -14,3 +14,5 @@ rtms/infra/postgres/tls/
 rtms/infra/cloudflare/.terraform/
 rtms/infra/cloudflare/*.tfstate*
 dump.rdb
+rtms/apps/desktop/dist/
+rtms/apps/desktop/webapp/

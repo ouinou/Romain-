@@ -1,0 +1,68 @@
+{
+  "name": "rtms-desktop",
+  "productName": "RAHA TRANSPORT RTMS",
+  "version": "2.2.0",
+  "description": "RAHA TRANSPORT Management System — application de bureau",
+  "author": "RAHA TRANSPORT",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node scripts/prepare.js && electron .",
+    "test": "node --test test/*.test.js",
+    "dist:win": "node scripts/prepare.js && electron-builder --win dir --x64 && node scripts/build-installer.js"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.17.0",
+    "png-to-ico": "2.1.8",
+    "resedit": "3.1.0"
+  },
+  "overrides": {
+    "glob": "^14.0.3",
+    "minimatch": "^11.0.3"
+  },
+  "homepage": "https://raha-transport.cm",
+  "build": {
+    "appId": "cm.rahatransport.rtms",
+    "productName": "RAHA TRANSPORT RTMS",
+    "copyright": "© 2026 RAHA TRANSPORT",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**",
+      "webapp/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "afterPack": "./scripts/after-pack.js",
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "artifactName": "RTMS-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "RAHA TRANSPORT RTMS",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerLanguages": [
+        "fr_FR"
+      ],
+      "language": "1036",
+      "artifactName": "RTMS-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "RTMS-Portable-${version}.${ext}"
+    }
+  }
+}

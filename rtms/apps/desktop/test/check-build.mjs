@@ -1,0 +1,20 @@
+// Contrôle du paquet Windows produit (exécutable, icône, version, contenu).
+import fs from 'node:fs';
+import path from 'node:path';
+import * as ResEdit from 'resedit';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const asar = require('@electron/asar');
+const dir = 'dist/win-unpacked';
+const exe = ResEdit.NtExecutable.from(fs.readFileSync(path.join(dir, 'RAHA TRANSPORT RTMS.exe')), { ignoreCert: true });
+const res = ResEdit.NtExecutableResource.from(exe);
+const groups = ResEdit.Resource.IconGroupEntry.fromEntries(res.entries);
+const [vi] = ResEdit.Resource.VersionInfo.fromEntries(res.entries);
+const strings = vi.getStringValues({ lang: 1033, codepage: 1200 });
+const icons = res.entries.filter((e) => e.type === 3).map((e) => Buffer.from(e.bin));
+console.log('exécutable x64 :', exe.newHeader.fileHeader.machine === 0x8664);
+console.log('groupes d’icônes :', groups.length, '· images :', icons.length);
+const fv = vi.fixedInfo; console.log('version :', `${fv.fileVersionMS >>> 16}.${fv.fileVersionMS & 0xffff}.${fv.fileVersionLS >>> 16}`, '·', strings.ProductName, '·', strings.CompanyName);
+const files = asar.listPackage(path.join(dir, 'resources', 'app.asar'));
+for (const f of ['/src/main.js', '/src/preload.js', '/src/pages/launcher.html', '/webapp/demo.html', '/webapp/src/demo/mockApi.js', '/webapp/assets/logo-raha.png']) console.log(files.includes(f) ? 'présent ' : 'ABSENT  ', f);
+console.log('fichiers sensibles :', files.filter((f) => /\.(pem|key|env)$/.test(f) || f.includes('node_modules')).length);

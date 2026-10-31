@@ -7,6 +7,7 @@ La v2.0 a transformé le prototype (un fichier HTML qui stockait tout dans le na
 | Dossier | Contenu |
 |---|---|
 | `apps/api` | API TypeScript (Fastify, Prisma, PostgreSQL, Redis), migrations, tests |
+| `apps/desktop` | application Windows (Electron) et son installateur |
 | `apps/web` | interface (modules ES natifs, sans compilation) + tests Playwright |
 | `infra` | Docker Compose de production, Caddy/TLS, PostgreSQL, sauvegardes, supervision, Vault, Cloudflare, Wazuh, déploiement |
 | `tests` | test de charge k6, règles OWASP ZAP |
@@ -22,7 +23,8 @@ La v2.0 a transformé le prototype (un fichier HTML qui stockait tout dans le na
 6. [Sauvegarde et restauration](docs/06-SAUVEGARDE-RESTAURATION.md)
 7. [Licences](docs/07-LICENCES.md)
 8. [Maintenance](docs/08-MAINTENANCE.md)
-9. [Interface 2.1 — espace de travail](docs/09-INTERFACE.md)
+9. [Interface — espace de travail](docs/09-INTERFACE.md)
+10. [Application Windows et démonstration](docs/10-APPLICATION-WINDOWS.md)
 
 ## Démarrage rapide (développement)
 

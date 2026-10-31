@@ -1,5 +1,10 @@
 # Journal des versions
 
+## 2.2.0 (bureau) — 31/10/2026
+- Application Windows (Electron) : installateur français sans droits administrateur, version portable, choix du serveur au premier lancement, écran « serveur injoignable », export PDF natif, navigation et permissions verrouillées.
+- Mode démonstration (serveur simulé dans le navigateur, données fictives) : intégré à l'application Windows et publié en ligne.
+- Depuis une fiche facture, « Exporter PDF » produit la facture au modèle RAHA.
+
 ## 2.2.0 — 31/10/2026
 
 ### Éléments fournis par RAHA TRANSPORT pris en compte

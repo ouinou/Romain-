@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>RAHA TRANSPORT RTMS</title><link rel="stylesheet" href="pages.css"><script src="offline.js" defer></script></head>
+<body><main class="card">
+  <img class="logo" src="/assets/logo-raha.png" alt="Raha Transport">
+  <h1>Serveur RTMS injoignable</h1>
+  <p class="sub">Le poste n’arrive pas à joindre <code id="url"></code>.</p>
+  <section class="choice">
+    <p>Vérifiez la connexion réseau du poste (câble, Wi-Fi, VPN), puis réessayez. Si le problème continue, prévenez l’administrateur : le serveur est peut-être arrêté.</p>
+    <p>Détail technique : <code id="err"></code></p>
+    <div class="row"><button id="retry" type="button">Réessayer</button><button class="secondary" id="change" type="button">Changer de serveur</button></div>
+  </section>
+</main></body></html>

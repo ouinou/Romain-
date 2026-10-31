@@ -48,10 +48,30 @@ export async function printHtml(html, { pdf = false } = {}) {
   let root = document.getElementById('print-root');
   if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
   root.innerHTML = html;
-  // Le logo et le filigrane doivent être chargés avant d'ouvrir l'impression
+  // Le logo et le filigrane doivent être chargés avant d'imprimer
   await Promise.all([...root.querySelectorAll('img')].map((i) => (i.complete ? null : i.decode().catch(() => null))));
+  // Application Windows : vrai fichier PDF A4, enregistré où l'utilisateur le choisit
+  if (pdf && window.rtmsDesktop) {
+    try {
+      const r = await window.rtmsDesktop.savePdf(pdfName(root));
+      if (r && r.saved) toast(`PDF enregistré : ${r.path}`, 'success');
+    } catch (e) { toast(`PDF non enregistré : ${e.message}`, 'error'); }
+    return;
+  }
   if (pdf) toast('Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF ».', 'info');
   setTimeout(() => window.print(), pdf ? 300 : 50);
+}
+
+/** Nom de fichier proposé : type de document + numéro. */
+function pdfName(root) {
+  const inv = root.querySelector('.invoice');
+  if (inv) {
+    const num = [...inv.querySelectorAll('.pr-dot')].find((d) => d.querySelector('.lbl')?.textContent.trim() === 'N°')?.querySelector('.val')?.textContent.trim();
+    return `Facture ${num || ''}`.trim();
+  }
+  const bar = root.querySelector('.doc-titlebar');
+  if (bar) return [...bar.querySelectorAll('span')].map((x) => x.textContent.trim()).filter(Boolean).join(' ').replace(/^(.)(.*)$/, (m, a, b) => a + b.toLowerCase());
+  return `RTMS ${new Date().toISOString().slice(0, 10)}`;
 }
 
 /** Lignes d'une facture : nouveau format multi-lignes ou ancienne saisie à une ligne. */

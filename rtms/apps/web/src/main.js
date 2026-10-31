@@ -85,6 +85,12 @@ g('window.resetWs', 'Réinitialiser l’espace', 'refresh', null, () => applyWor
 g('help.shortcuts', 'Raccourcis clavier', 'key', 'F1', () => showShortcuts());
 g('help.about', 'À propos de RTMS', 'info', null, () => alertDialog(`RAHA TRANSPORT Management System — version ${session.me?.version || APP_VERSION}. Interface organisée en espace de travail (menus, outils, onglets, panneaux) ; identité visuelle RAHA TRANSPORT.`, 'À propos'));
 g('session.logout', 'Déconnexion', 'logout', null, () => logout());
+g('desktop.changeServer', 'Changer de serveur…', 'database', null, async () => {
+  if (await confirmDialog('Revenir à l’écran de choix du serveur ?', { detail: 'Vous serez déconnecté de ce serveur sur ce poste.', ok: 'Changer de serveur' })) {
+    try { await post('/api/auth/logout', {}); } catch { /* déjà déconnecté */ }
+    window.rtmsDesktop.changeServer();
+  }
+}, () => !!window.rtmsDesktop);
 
 const openNew = (key) => {
   const v = viewByKey(key);
@@ -101,7 +107,7 @@ setMenus(() => [
   { label: 'Fichier', items: () => [
     { label: 'Nouveau', icon: 'plus', submenu: () => VIEWS.filter((v) => v.kind === 'list').map((v) => newItem(v.key)) },
     { label: 'Ouvrir', icon: 'folder', submenu: () => VIEWS.map((v) => openItem(v.key, v.label)) },
-    '-', { cmd: 'form.save' }, '-', { cmd: 'tab.close' }, { cmd: 'tab.closeAll' }, '-', { cmd: 'file.print' }, { cmd: 'file.pdf' }, { cmd: 'file.csv' }, '-', { cmd: 'session.logout' }] },
+    '-', { cmd: 'form.save' }, '-', { cmd: 'tab.close' }, { cmd: 'tab.closeAll' }, '-', { cmd: 'file.print' }, { cmd: 'file.pdf' }, { cmd: 'file.csv' }, '-', ...(window.rtmsDesktop ? [{ cmd: 'desktop.changeServer' }] : []), { cmd: 'session.logout' }] },
   { label: 'Édition', items: () => [{ cmd: 'record.edit' }, { cmd: 'record.duplicate' }, { cmd: 'record.status' }, { cmd: 'record.validate' }, '-', { cmd: 'form.cancelEdit' }, { cmd: 'record.cancel' }, '-', { cmd: 'edit.selectAll' }, { cmd: 'edit.deselect' }, '-', { cmd: 'edit.find' }, { cmd: 'search.global' }] },
   { label: 'Affichage', items: () => [{ cmd: 'view.refresh' }, '-',
     { label: 'Panneaux latéraux', icon: 'panel', key: 'F4', checked: () => prefs().panelVisible, action: () => togglePanel() },

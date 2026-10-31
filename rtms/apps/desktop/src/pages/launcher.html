@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>RAHA TRANSPORT RTMS</title><link rel="stylesheet" href="pages.css"><script src="launcher.js" defer></script></head>
+<body><main class="card">
+  <img class="logo" src="/assets/logo-raha.png" alt="Raha Transport">
+  <h1>RAHA TRANSPORT MANAGEMENT SYSTEM</h1>
+  <p class="sub">Premier lancement sur ce poste</p>
+  <section class="choice">
+    <h2>Se connecter au serveur de l’entreprise</h2>
+    <p>Saisissez l’adresse du serveur RTMS communiquée par votre administrateur.</p>
+    <form id="srv" novalidate>
+      <label for="url">Adresse du serveur</label>
+      <div class="row"><input id="url" name="url" placeholder="https://rtms.raha-transport.cm" autocomplete="off" required><button id="go">Se connecter</button></div>
+      <div class="msg" id="msg" role="status"></div>
+    </form>
+  </section>
+  <section class="choice">
+    <h2>Essayer la démonstration</h2>
+    <p>Découvrir le logiciel sans serveur, avec des données fictives enregistrées sur ce poste uniquement.</p>
+    <button class="secondary" id="demo" type="button">Ouvrir la démonstration</button>
+  </section>
+  <p class="foot">Version <span id="ver"></span> · L’adresse pourra être modifiée plus tard (menu Fichier › Changer de serveur).</p>
+</main></body></html>
