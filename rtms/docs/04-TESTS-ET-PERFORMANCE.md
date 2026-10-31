@@ -1,5 +1,7 @@
 # Résultats des tests et rapport de performance
 
+> Mise à jour v2.1 : 79 tests Vitest (dont 9 pour les nouvelles routes de l'espace de travail) et 20 tests Playwright sur la nouvelle interface, tous verts. Les mesures de charge ci-dessous datent de la v2.0 et n'ont pas été refaites.
+
 Mesures faites le 31/10/2026 dans un conteneur Linux à **4 cœurs**, PostgreSQL 16.15 et Redis sur la même machine, une seule instance de l'API. Ce n'est pas le serveur de production : les chiffres donnent un ordre de grandeur, pas une garantie.
 
 ## Synthèse

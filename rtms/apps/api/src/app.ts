@@ -12,10 +12,11 @@ import { authRoutes } from './auth/routes.js';
 import { recordRoutes } from './modules/routes.js';
 import { dashboardRoutes } from './modules/dashboard.js';
 import { adminRoutes } from './admin/routes.js';
+import { workspaceRoutes } from './modules/workspace.js';
 import { registerMetrics, licenseState } from './observability/metrics.js';
 import { captureError } from './observability/telemetry.js';
 
-export const APP_VERSION = process.env.RTMS_VERSION ?? '2.0.0';
+export const APP_VERSION = process.env.RTMS_VERSION ?? '2.1.0';
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_EXEMPT = new Set(['/api/auth/login']);
 
@@ -138,6 +139,7 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
   recordRoutes(app, ctx);
   dashboardRoutes(app, ctx);
   adminRoutes(app, ctx, APP_VERSION);
+  workspaceRoutes(app, ctx);
 
   if (config.WEB_ROOT) {
     await app.register(fastifyStatic, { root: config.WEB_ROOT, index: ['index.html'], dotfiles: 'deny' });

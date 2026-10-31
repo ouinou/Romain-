@@ -4,16 +4,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RAHA TRANSPORT | RTMS</title>
 <meta name="referrer" content="no-referrer">
 <link rel="stylesheet" href="app.css">
-<script src="app.js" defer></script>
+<script type="module" src="src/main.js"></script>
 </head>
-<body><div class="app hidden" id="app"><aside class="side"><div class="brand"><strong>RAHA TRANSPORT</strong><small>Management System · RTMS</small></div><nav class="nav" id="nav">
-<div class="navlabel">Pilotage</div><button class="active" data-page="dashboard">▦ &nbsp; Tableau de bord</button>
-<div class="navlabel">Opérations</div><button data-page="transport">⇄ &nbsp; Transport</button><button data-page="transit">▤ &nbsp; Transit</button><button data-page="importexport">⇅ &nbsp; Import / Export</button><button data-page="commerce">▣ &nbsp; Commerce & stocks</button>
-<div class="navlabel">Ressources</div><button data-page="clients">♙ &nbsp; Clients & fournisseurs</button><button data-page="fleet">▰ &nbsp; Parc automobile</button><button data-page="staff">♧ &nbsp; Personnel</button><button data-page="maintenance">⚙ &nbsp; Maintenance</button>
-<div class="navlabel">Gestion</div><button data-page="invoices">▧ &nbsp; Facturation</button><button data-page="finance">◈ &nbsp; Finance & trésorerie</button><button data-page="documents">▣ &nbsp; Documents</button><button data-page="reports">▥ &nbsp; Rapports</button><button data-page="settings">⚙ &nbsp; Paramètres</button></nav></aside>
-<main class="main"><header class="top"><div class="crumb" id="crumb">Tableau de bord</div><div class="user"><span id="whoami">Espace de gestion</span><button class="btn secondary" data-action="logout" type="button">Déconnexion</button></div></header><section class="content" id="view"></section></main></div>
-
-<div class="modalbg" id="modalbg"><div class="modal"><h2 id="modtitle">Nouvel élément</h2><div id="moderr"></div><form id="recordform" novalidate><div class="form" id="formfields"></div><div class="actions"><button type="button" class="btn secondary" data-action="close-modal">Annuler</button><button class="btn" id="savebtn">Enregistrer</button></div></form></div></div>
+<body>
+<div class="app-shell hidden" id="app"></div>
 
 <div class="modalbg loginbg hidden" id="loginbg"><div class="modal login">
   <h2>RAHA TRANSPORT</h2><p class="brandline">Management System · RTMS — connexion sécurisée</p>
@@ -25,7 +19,7 @@
   </form>
   <form id="mfaform" class="form hidden" novalidate>
     <label class="wide">Code à 6 chiffres de votre application d’authentification (ou code de secours)<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>
-    <div class="actions wide"><button type="button" class="btn secondary" data-action="logout">Annuler</button><button class="btn">Valider</button></div>
+    <div class="actions wide"><button type="button" class="btn secondary" data-act="auth-cancel">Annuler</button><button class="btn">Valider</button></div>
   </form>
   <div id="enroll" class="hidden">
     <p>Votre profil impose la vérification en deux étapes. Scannez ce code avec une application d’authentification (Google Authenticator, Microsoft Authenticator, FreeOTP…), puis saisissez le code affiché.</p>
@@ -33,13 +27,13 @@
     <p style="font-size:12px;color:var(--muted)">Ou saisissez la clé manuellement :</p><div class="secret" id="mfasecret"></div>
     <form id="enrollform" class="form" novalidate style="margin-top:12px">
       <label class="wide">Code à 6 chiffres<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>
-      <div class="actions wide"><button type="button" class="btn secondary" data-action="logout">Annuler</button><button class="btn">Activer</button></div>
+      <div class="actions wide"><button type="button" class="btn secondary" data-act="auth-cancel">Annuler</button><button class="btn">Activer</button></div>
     </form>
   </div>
   <div id="recovery" class="hidden">
     <div class="notice">Notez ces codes de secours et rangez-les en lieu sûr. Chacun ne sert qu’une fois, et ils ne seront plus affichés.</div>
     <div class="codes" id="codes"></div>
-    <div class="actions"><button class="btn" data-action="enter-app" type="button">J’ai noté mes codes</button></div>
+    <div class="actions"><button class="btn" data-act="enter-app" type="button">J’ai noté mes codes</button></div>
   </div>
 </div></div>
 </body></html>

@@ -1,5 +1,27 @@
 # Journal des versions
 
+## 2.1.0 — 31/10/2026
+
+### Interface (identité visuelle RAHA inchangée)
+- Espace de travail de type logiciel de bureau : barre de menus (13 menus), barre de commandes contextuelle, barre d'outils verticale (17 modules), onglets multiples, panneaux droits, barre d'état.
+- Onglets : saisie conservée entre modules, réorganisation, historique de navigation, restauration après rechargement.
+- Panneaux : propriétés, historique champ par champ, documents associés, actions rapides, notifications, activités récentes ; réduction, masquage, réorganisation, redimensionnement, panneaux flottants ; espaces de travail enregistrables.
+- Tableaux : tri, filtres multicritères, sélection multiple, actions groupées, colonnes au choix, totaux de page, menu contextuel.
+- Formulaires : sections, champs obligatoires signalés, recherche dans les référentiels, calculs automatiques, confirmation avant validation, gestion des conflits de modification.
+- Recherche globale groupée par catégorie (Ctrl+K), notifications métier (assurances, documents, factures échues, stocks, entretiens), raccourcis clavier.
+- Commandes métier : affectation véhicule/chauffeur, ordre de mission, impression de facture (provisoire), export PDF par l'impression du système.
+- Administration complète dans l'interface : profils des utilisateurs, déverrouillage, réinitialisation MFA, désactivation, matrice des permissions.
+
+### API (aucune route existante modifiée)
+- Tri et filtres sur les listes ; historique d'un enregistrement ; recherche globale ; notifications ; activité récente.
+- Migration `0004_ui_helpers` (fonctions de conversion tolérantes, aucune donnée modifiée).
+
+### Corrigé pendant les tests
+- Un formulaire neuf n'envoyait pas la valeur par défaut d'une liste déroulante (statut).
+- Double-clic perdu quand la sélection décalait le tableau ; barre d'actions groupées désormais flottante.
+- Survol « fantôme » qui changeait le menu ouvert au clavier ; Échap ne fermait pas un menu ouvert à la souris.
+- Brouillons perdus lors d'un rechargement rapide ; glisser-déposer interrompu (capture du pointeur).
+
 ## 2.0.0 — 31/10/2026
 
 ### Ajouté

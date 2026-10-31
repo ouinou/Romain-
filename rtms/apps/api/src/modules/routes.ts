@@ -69,14 +69,53 @@ function present(ctx: AppContext, module: ModuleKey, r: Row) {
 
 const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
-async function listRows(tx: Tx, companyId: string, module: string, q: string, limit: number, offset: number) {
-  const pattern = `%${escapeLike(q.toLowerCase())}%`;
-  const where = Prisma.sql`company_id = ${companyId}::uuid AND module = ${module} AND cancelled_at IS NULL
-    AND (${q} = '' OR search_text LIKE ${pattern})`;
+export interface ListOptions {
+  q: string; limit: number; offset: number;
+  sort?: string; dir?: 'asc' | 'desc';
+  /** Filtres multicritères : valeur exacte (listes), « contient » (texte), {from,to} (dates, nombres). */
+  filters?: Record<string, string | { from?: string | number; to?: string | number }>;
+}
+
+/** Colonnes triables hors champs métier. */
+const META_SORT: Record<string, Prisma.Sql> = {
+  createdAt: Prisma.sql`created_at`, updatedAt: Prisma.sql`updated_at`, reference: Prisma.sql`lower(reference)`,
+  status: Prisma.sql`status`, totalTTC: Prisma.sql`rtms_num(computed->>'totalTTC')`,
+};
+
+function fieldExpr(module: ModuleKey, name: string): { expr: Prisma.Sql; type: string } {
+  const f = MODULE_DEFS[module].fields.find((x) => x.name === name);
+  if (!f || f.sensitive) throw badRequest(`Champ « ${name} » non triable ou non filtrable`);
+  const raw = Prisma.sql`(data->>${name})`;
+  if (f.type === 'number') return { expr: Prisma.sql`rtms_num(${raw})`, type: f.type };
+  if (f.type === 'date') return { expr: Prisma.sql`rtms_date(${raw})`, type: f.type };
+  return { expr: raw, type: f.type };
+}
+
+async function listRows(tx: Tx, companyId: string, module: ModuleKey, o: ListOptions) {
+  const pattern = `%${escapeLike(o.q.toLowerCase())}%`;
+  const parts: Prisma.Sql[] = [
+    Prisma.sql`company_id = ${companyId}::uuid AND module = ${module} AND cancelled_at IS NULL`,
+    Prisma.sql`(${o.q} = '' OR search_text LIKE ${pattern})`,
+  ];
+  for (const [name, value] of Object.entries(o.filters ?? {})) {
+    const { expr, type } = fieldExpr(module, name);
+    if (typeof value === 'object' && value !== null) {
+      const cast = (v: string | number) => (type === 'number' ? Prisma.sql`${Number(v)}::numeric` : Prisma.sql`rtms_date(${String(v)})`);
+      if (value.from !== undefined && value.from !== '') parts.push(Prisma.sql`${expr} >= ${cast(value.from)}`);
+      if (value.to !== undefined && value.to !== '') parts.push(Prisma.sql`${expr} <= ${cast(value.to)}`);
+    } else if (value !== '') {
+      parts.push(type === 'enum'
+        ? Prisma.sql`${expr} = ${value}`
+        : Prisma.sql`lower(data->>${name}) LIKE ${`%${escapeLike(String(value).toLowerCase())}%`}`);
+    }
+  }
+  const where = Prisma.join(parts, ' AND ');
+  const dir = o.dir === 'asc' ? Prisma.raw('ASC') : Prisma.raw('DESC');
+  const sortExpr = !o.sort ? META_SORT.createdAt! : (META_SORT[o.sort] ?? fieldExpr(module, o.sort).expr);
   const rows = await tx.$queryRaw<Row[]>`
     SELECT id, version, reference, status, data, computed, created_at AS "createdAt", updated_at AS "updatedAt"
       FROM records WHERE ${where}
-     ORDER BY created_at DESC, id DESC LIMIT ${limit} OFFSET ${offset}`;
+     ORDER BY ${sortExpr} ${dir} NULLS LAST, id DESC LIMIT ${o.limit} OFFSET ${o.offset}`;
   const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`SELECT count(*) FROM records WHERE ${where}`;
   return { rows, total: Number(count) };
 }
@@ -96,7 +135,7 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
   const tenant = (req: FastifyRequest) => ({ companyId: req.session!.companyId, userId: req.session!.userId });
 
   app.get('/api/modules', { preHandler: requirePermission(ctx, 'dashboard', 'read') }, async () =>
-    Object.values(MODULE_DEFS).map((m) => ({ key: m.key, referenceField: m.referenceField, fields: m.fields.map(({ sensitive: _s, ...f }) => f) })));
+    Object.values(MODULE_DEFS).map((m) => ({ key: m.key, referenceField: m.referenceField, statusField: m.statusField, fields: m.fields.map(({ sensitive, ...f }) => ({ ...f, filterable: !sensitive })) })));
 
   // ---------- Liste paginée + recherche serveur ----------
   app.get('/api/records/:module', { preHandler: requirePermission(ctx, moduleParam, 'read') }, async (req) => {
@@ -105,8 +144,18 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
       q: z.string().max(100).default(''),
       limit: z.coerce.number().int().min(1).max(200).default(50),
       offset: z.coerce.number().int().min(0).max(1_000_000).default(0),
+      sort: z.string().max(80).optional(),
+      dir: z.enum(['asc', 'desc']).default('desc'),
+      f: z.string().max(4000).optional(),
     }).parse(req.query);
-    const { rows, total } = await withTenant(ctx.prisma, tenant(req), (tx) => listRows(tx, req.session!.companyId, module, p.q.trim(), p.limit, p.offset));
+    let filters: ListOptions['filters'];
+    if (p.f) {
+      const range = z.object({ from: z.union([z.string().max(40), z.number()]).optional(), to: z.union([z.string().max(40), z.number()]).optional() }).strict();
+      const parsed = z.record(z.string().max(80), z.union([z.string().max(200), range])).refine((o) => Object.keys(o).length <= 15).safeParse((() => { try { return JSON.parse(p.f!); } catch { return null; } })());
+      if (!parsed.success) throw badRequest('Filtres invalides');
+      filters = parsed.data;
+    }
+    const { rows, total } = await withTenant(ctx.prisma, tenant(req), (tx) => listRows(tx, req.session!.companyId, module, { q: p.q.trim(), limit: p.limit, offset: p.offset, sort: p.sort, dir: p.dir, filters }));
     return { items: rows.map((r) => present(ctx, module, r)), total, limit: p.limit, offset: p.offset };
   });
 
