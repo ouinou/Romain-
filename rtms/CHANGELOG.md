@@ -1,5 +1,21 @@
 # Journal des versions
 
+## 2.2.0 — 31/10/2026
+
+### Éléments fournis par RAHA TRANSPORT pris en compte
+- **Logo officiel** : bandeau titre, écran de connexion, icône de l'application, documents imprimés, filigrane.
+- **Modèle de facture** reproduit au format A4 : logo et ligne des activités, date et n°, nom du chauffeur, contacts, n° de camion, montant du transport, bloc FACTURE, tableau N° / DÉSIGNATION / QTE / P. UNITAIRE / P. TOTAL, TOTAL, mention sur les marchandises, montant arrêté en lettres, avance et reste, trois signatures, filigrane, bandeau ondulé vert/jaune/orange avec RCCM, contribuable, téléphones et adresse. Vérifié par génération d'un PDF A4 d'une page et comparaison visuelle avec le modèle.
+- **Maquette d'interface** : bandeau titre vert avec logo, barre latérale avec libellés (repliable), barre de commandes avec « Plus d'actions », tuiles de comptage par statut, filtres Période et Statut, pagination numérotée, panneau droit à onglets Propriétés / Historique / Documents, barre d'état (version, base, utilisateur, connexion, date et heure).
+
+### Données (sans migration de base : champs JSON validés par le serveur)
+- Factures : lignes multiples, chauffeur, contacts, n° de camion, montant du transport, avance ; reste et montant en lettres calculés par le serveur. Les factures à une ligne restent valides.
+- Missions : champ « Montant (FCFA) ».
+- Paramètres : RCCM et n° de contribuable.
+
+### Ajouté
+- Lettre de transport et bon de chargement imprimables (modèles RTMS, à valider).
+- Route `GET /api/records/:module/stats` (compteurs par statut).
+
 ## 2.1.0 — 31/10/2026
 
 ### Interface (identité visuelle RAHA inchangée)

@@ -10,6 +10,7 @@ import { badRequest, HttpError, unauthorized } from '../errors.js';
 import { burnDummyVerify, hashPassword, passwordProblems, verifyPassword } from '../security/password.js';
 import { loadPermissions, requireSession, SESSION_COOKIE } from '../security/guard.js';
 import { ROLES } from '../security/permissions.js';
+import { APP_VERSION } from '../version.js';
 import type { SessionData } from '../security/session.js';
 
 authenticator.options = { window: 1, step: 30, digits: 6 };
@@ -44,6 +45,7 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
     return {
       user: { id: s.userId, fullName: s.fullName, role: s.roleKey, roleLabel: ROLES[s.roleKey as keyof typeof ROLES] ?? s.roleKey },
       state: s.state, csrfToken: s.csrf, permissions: perms, license: ctx.license.status(),
+      instance: ctx.config.INSTANCE_NAME, version: APP_VERSION,
     };
   }
 

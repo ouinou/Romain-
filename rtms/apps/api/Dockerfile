@@ -25,6 +25,7 @@ COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/package.json ./
 COPY --chown=node:node apps/web/index.html apps/web/app.css ./web/
 COPY --chown=node:node apps/web/src ./web/src
+COPY --chown=node:node apps/web/assets ./web/assets
 ARG RTMS_VERSION=dev
 ENV RTMS_VERSION=${RTMS_VERSION}
 LABEL org.opencontainers.image.title="rtms-api" org.opencontainers.image.version="${RTMS_VERSION}"

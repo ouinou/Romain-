@@ -10,7 +10,7 @@ import { can, session } from './core/session.js';
 import { VIEWS, viewByKey } from './config.js';
 import { mountApplicationShell } from './components/ApplicationShell.js';
 import { closeContextMenu } from './components/ContextMenu.js';
-import { openViewTab, viewAllowed } from './components/LeftToolBar.js';
+import { openViewTab, toggleSidebar, viewAllowed } from './components/LeftToolBar.js';
 import { registerView, workspace } from './components/MainWorkspace.js';
 import { alertDialog, closeTopDialog, confirmDialog, dialog, formDialog, hasOpenDialog } from './components/ModalManager.js';
 import { mountToasts, notificationListHtml, notifications, refreshNotifications } from './components/NotificationCenter.js';
@@ -26,7 +26,7 @@ import { RecordView } from './views/RecordView.js';
 import { ReportsView } from './views/ReportsView.js';
 import { SettingsView } from './views/SettingsView.js';
 
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 
 registerView('dashboard', (t, ws) => new DashboardView(t, ws));
 registerView('list', (t, ws) => new ListView(t, ws));
@@ -43,7 +43,7 @@ view('record.edit', 'Modifier', 'pencil', 'F2');
 view('record.duplicate', 'Dupliquer', 'copy');
 view('record.status', 'Modifier le statut', 'tag');
 view('record.validate', 'Valider', 'check');
-view('record.cancel', 'Supprimer', 'ban', 'Suppr');
+view('record.cancel', 'Annuler', 'xcircle', 'Suppr');
 view('form.save', 'Enregistrer', 'save', 'Ctrl+S');
 view('form.cancelEdit', 'Annuler la saisie', 'x');
 view('file.print', 'Imprimer', 'printer', 'Ctrl+P');
@@ -58,6 +58,8 @@ view('edit.deselect', 'Désélectionner', 'x');
 view('transport.vehicle', 'Affecter un véhicule', 'car');
 view('transport.driver', 'Affecter un chauffeur', 'steering');
 view('transport.order', 'Ordre de mission', 'printer');
+view('transport.waybill', 'Lettre de transport', 'file');
+view('transport.loading', 'Bon de chargement', 'file');
 view('invoice.print', 'Imprimer la facture', 'receipt');
 
 const g = (id, label, ic, key, fn, enabled) => register({ id, label, icon: ic, key, global: fn, enabled });
@@ -69,6 +71,7 @@ g('tab.prev', 'Onglet précédent', 'back', 'Alt+PgPréc', () => workspace.cycle
 g('nav.back', 'Revenir à l’onglet précédent', 'back', 'Alt+Retour arrière', () => workspace.back(), () => workspace.history.length > 0);
 g('search.global', 'Recherche globale', 'search', 'Ctrl+K', () => shell.search.focus());
 g('view.togglePanel', 'Panneaux latéraux', 'panel', 'F4', () => togglePanel());
+g('view.toggleSidebar', 'Barre latérale des modules', 'chevronsl', null, () => toggleSidebar());
 g('view.toggleStatus', 'Barre d’état', 'info', null, () => setPrefs({ statusBar: prefs().statusBar === false }));
 g('view.toggleLabels', 'Libellés des commandes', 'info', null, () => setPrefs({ toolLabels: prefs().toolLabels === false }));
 g('view.density', 'Tableaux compacts', 'columns', null, () => setPrefs({ density: prefs().density === 'normal' ? 'compact' : 'normal' }));
@@ -80,7 +83,7 @@ g('window.saveWs', 'Enregistrer l’espace actuel…', 'save', null, async () =>
 });
 g('window.resetWs', 'Réinitialiser l’espace', 'refresh', null, () => applyWorkspace('Essentiel'));
 g('help.shortcuts', 'Raccourcis clavier', 'key', 'F1', () => showShortcuts());
-g('help.about', 'À propos de RTMS', 'info', null, () => alertDialog(`RAHA TRANSPORT Management System — version ${APP_VERSION}. Interface organisée en espace de travail (menus, outils, onglets, panneaux) ; identité visuelle RAHA TRANSPORT.`, 'À propos'));
+g('help.about', 'À propos de RTMS', 'info', null, () => alertDialog(`RAHA TRANSPORT Management System — version ${session.me?.version || APP_VERSION}. Interface organisée en espace de travail (menus, outils, onglets, panneaux) ; identité visuelle RAHA TRANSPORT.`, 'À propos'));
 g('session.logout', 'Déconnexion', 'logout', null, () => logout());
 
 const openNew = (key) => {
@@ -102,19 +105,24 @@ setMenus(() => [
   { label: 'Édition', items: () => [{ cmd: 'record.edit' }, { cmd: 'record.duplicate' }, { cmd: 'record.status' }, { cmd: 'record.validate' }, '-', { cmd: 'form.cancelEdit' }, { cmd: 'record.cancel' }, '-', { cmd: 'edit.selectAll' }, { cmd: 'edit.deselect' }, '-', { cmd: 'edit.find' }, { cmd: 'search.global' }] },
   { label: 'Affichage', items: () => [{ cmd: 'view.refresh' }, '-',
     { label: 'Panneaux latéraux', icon: 'panel', key: 'F4', checked: () => prefs().panelVisible, action: () => togglePanel() },
+    { label: 'Barre latérale dépliée', checked: () => !prefs().sidebarCollapsed, action: () => toggleSidebar() },
     { label: 'Barre d’état', checked: () => prefs().statusBar !== false, action: () => run('view.toggleStatus') },
     { label: 'Libellés des commandes', checked: () => prefs().toolLabels !== false, action: () => run('view.toggleLabels') },
     { label: 'Tableaux compacts', checked: () => prefs().density !== 'normal', action: () => run('view.density') },
     '-', { cmd: 'view.filters' }, { cmd: 'view.columns' }] },
   { label: 'Navigation', items: () => [{ cmd: 'nav.back' }, { cmd: 'tab.next' }, { cmd: 'tab.prev' }, '-', openItem('dashboard'), { cmd: 'search.global' }, '-',
     ...workspace.tabs.map((t) => ({ label: t.view.title(), icon: t.view.icon?.() || 'dashboard', checked: () => t.id === workspace.activeId, action: () => workspace.activate(t.id) }))] },
-  { label: 'Transport', items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, '-', openItem('fleet'), openItem('staff'), openItem('maintenance')] },
+  { label: 'Transport', items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('staff'), openItem('maintenance')] },
   { label: 'Transit', items: () => [newItem('transit'), openItem('transit'), '-', openItem('documents')] },
   { label: 'Import / Export', items: () => [newItem('import'), newItem('export'), '-', openItem('import'), openItem('export')] },
   { label: 'Commerce', items: () => [newItem('commerce'), openItem('commerce'), '-', newItem('clients'), openItem('clients'), newItem('suppliers'), openItem('suppliers')] },
   { label: 'Finance', items: () => [newItem('invoices'), openItem('invoices'), { label: 'Factures échues…', icon: 'bell', enabled: () => can('invoices'), action: () => showNotifications('invoices') }, { cmd: 'invoice.print' }, '-', newItem('finance'), openItem('finance')] },
   { label: 'Fenêtre', items: () => [
-    ...PANEL_SECTIONS.map((s) => ({ label: SECTION_LABELS[s], checked: () => !prefs().hidden.includes(s), action: () => (prefs().hidden.includes(s) ? showSection(s) : setPrefs({ hidden: [...prefs().hidden, s] })) })),
+    { label: 'Onglet Propriétés', checked: () => (prefs().panelTab || 'props') === 'props', action: () => setPrefs({ panelTab: 'props', panelVisible: true }) },
+    { label: 'Onglet Historique', checked: () => prefs().panelTab === 'history', action: () => setPrefs({ panelTab: 'history', panelVisible: true }) },
+    { label: 'Onglet Documents', checked: () => prefs().panelTab === 'docs', action: () => setPrefs({ panelTab: 'docs', panelVisible: true }) },
+    '-',
+    ...PANEL_SECTIONS.filter((s) => s !== 'history').map((s) => ({ label: SECTION_LABELS[s], checked: () => !prefs().hidden.includes(s), action: () => (prefs().hidden.includes(s) ? showSection(s) : setPrefs({ hidden: [...prefs().hidden, s] })) })),
     '-', { label: 'Espaces de travail', icon: 'panel', submenu: () => [
       ...Object.keys(PRESETS).map((n) => ({ label: n, checked: () => prefs().workspace === n, action: () => applyWorkspace(n) })),
       ...Object.keys(prefs().custom).map((n) => ({ label: n, checked: () => prefs().workspace === n, action: () => applyWorkspace(n) })),
@@ -166,8 +174,9 @@ document.addEventListener('keydown', (e) => {
 });
 // Liens « ouvrir l'enregistrement » partout dans l'appli (alertes du tableau de bord…)
 document.addEventListener('click', (e) => {
-  const b = e.target.closest('.panes [data-open-record], [data-bell], .appbar [data-cmd]');
+  const b = e.target.closest('.panes [data-open-record], [data-bell], .appbar [data-cmd], .wtabs-row [data-cmd], [data-user-menu]');
   if (!b) return;
+  if (b.matches('[data-user-menu]')) { const t = openViewTab('settings'); if (t && t.view.section !== 'account') { t.view.section = 'account'; t.view.show(); } return; }
   if (b.matches('[data-bell]')) return showNotifications();
   if (b.matches('[data-cmd]')) return run(b.dataset.cmd);
   const [m, id] = b.dataset.openRecord.split(':');

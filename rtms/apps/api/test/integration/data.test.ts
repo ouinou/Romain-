@@ -89,7 +89,7 @@ describe('Enregistrements métier', () => {
     const A = await adminOf();
     const r = await A.c.post('/api/records/invoices', invoice('F-2026-001'));
     expect(r.status).toBe(201);
-    expect(r.body.computed).toEqual({ totalHT: 500000, tax: 90000, totalTTC: 590000 });
+    expect(r.body.computed).toMatchObject({ totalHT: 500000, tax: 90000, totalTTC: 590000, reste: 590000 });
     const dup = await A.c.post('/api/records/invoices', invoice('f-2026-001'));
     expect(dup.status).toBe(409);
   });

@@ -1,4 +1,4 @@
-# RTMS — RAHA TRANSPORT Management System (v2.1)
+# RTMS — RAHA TRANSPORT Management System (v2.2)
 
 Logiciel de gestion de RAHA TRANSPORT : transport, transit, import-export, commerce, parc, personnel, maintenance, facturation, finance, documents.
 

@@ -9,7 +9,7 @@ import { icon } from '../core/icons.js';
 import { can, session } from '../core/session.js';
 import { LOCKED_STATUSES, LOOKUPS, MODULE_LABEL, SECTIONS, VALIDATED_STATUS, recordTitle, viewByKey } from '../config.js';
 import { confirmDialog, dialog } from '../components/ModalManager.js';
-import { invoiceDoc, missionOrderDoc, printHtml, recordDoc } from '../components/PrintService.js';
+import { invoiceDoc, invoiceLines, loadingDoc, missionOrderDoc, printHtml, recordDoc, waybillDoc } from '../components/PrintService.js';
 import { cancelRecords, pillClass, statusField } from './ListView.js';
 
 const lookupCache = new Map();
@@ -56,7 +56,8 @@ export class RecordView {
   isDirty() {
     if (this.mode === 'view') return false;
     const base = this.mode === 'new' ? this.initial : this.record?.data || {};
-    return this.defs().fields.some((f) => String(this.values[f.name] ?? '') !== String(base[f.name] ?? ''));
+    const norm = (v) => (Array.isArray(v) ? JSON.stringify(v.map((l) => Object.fromEntries(Object.entries(l).map(([k, x]) => [k, String(x ?? '')])))) : String(v ?? ''));
+    return this.defs().fields.some((f) => norm(this.values[f.name]) !== norm(base[f.name]));
   }
   serialize() {
     return { id: this.tab.id, kind: 'record', module: this.module, viewKey: this.viewKey, mode: this.mode, recordId: this.recordId, values: this.mode === 'view' ? undefined : this.values, initial: this.initial || undefined };
@@ -69,6 +70,9 @@ export class RecordView {
     el.addEventListener('change', (e) => this.onInput(e));
     el.addEventListener('submit', (e) => { e.preventDefault(); this.exec('form.save'); });
     el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-addline]')) { this.materializeLines().push({ 'Désignation': '', 'Quantité': '1', 'Prix unitaire (FCFA)': '' }); this.rerenderLines(true); return; }
+      const del = e.target.closest('[data-delline]');
+      if (del) { this.materializeLines().splice(Number(del.dataset.delline), 1); this.rerenderLines(); return; }
       const c = e.target.closest('[data-cmd]');
       if (c) import('../core/commands.js').then((m) => m.run(c.dataset.cmd));
       const o = e.target.closest('[data-open-linked]');
@@ -120,6 +124,8 @@ export class RecordView {
       fs.forEach((f) => used.add(f.name));
       return [title, fs];
     });
+    // Factures : l'ancienne saisie à une ligne est reprise dans l'éditeur de lignes
+    if (this.module === 'invoices') ['Désignation', 'Quantité', 'Prix unitaire (FCFA)'].forEach((n) => used.add(n));
     const rest = fields.filter((f) => !used.has(f.name));
     if (rest.length) secs.push(['Autres informations', rest]);
     return secs;
@@ -151,7 +157,38 @@ export class RecordView {
     if (first && this.mode === 'new' && this.ws.active() === this.tab) first.focus();
   }
 
+  /** Lignes affichées : format multi-lignes, ou ancienne saisie à une ligne. */
+  currentLines() {
+    if (Array.isArray(this.values.Lignes)) return this.values.Lignes;
+    return invoiceLines(this.values).map((l) => ({ ...l }));
+  }
+  materializeLines() {
+    if (!Array.isArray(this.values.Lignes)) {
+      this.values.Lignes = this.currentLines();
+      for (const k of ['Désignation', 'Quantité', 'Prix unitaire (FCFA)']) if (this.values[k] !== undefined) this.values[k] = '';
+    }
+    return this.values.Lignes;
+  }
+
+  linesHtml(editing) {
+    const lines = this.currentLines();
+    const rows = (editing && !lines.length ? [{}] : lines).map((l, i) => {
+      const total = (Number(l['Quantité']) || 0) * (Number(l['Prix unitaire (FCFA)']) || 0);
+      if (!editing) return `<tr><td class="c">${i + 1}</td><td>${esc(l['Désignation'])}</td><td class="num">${esc(money(l['Quantité']))}</td><td class="num">${esc(money(l['Prix unitaire (FCFA)']))}</td><td class="num">${esc(money(total))}</td></tr>`;
+      return `<tr><td class="c">${i + 1}</td>
+        <td><input data-line="${i}" data-k="Désignation" value="${esc(l['Désignation'] ?? '')}" maxlength="300" required aria-label="Désignation ligne ${i + 1}"></td>
+        <td><input data-line="${i}" data-k="Quantité" type="number" step="any" min="0.0001" value="${esc(l['Quantité'] ?? '')}" required aria-label="Quantité ligne ${i + 1}"></td>
+        <td><input data-line="${i}" data-k="Prix unitaire (FCFA)" type="number" step="any" min="0" value="${esc(l['Prix unitaire (FCFA)'] ?? '')}" required aria-label="Prix unitaire ligne ${i + 1}"></td>
+        <td class="num" data-line-total="${i}">${esc(money(total))}</td>
+        <td><button type="button" class="icon-btn" data-delline="${i}" title="Supprimer la ligne" aria-label="Supprimer la ligne ${i + 1}">${icon('x', 14)}</button></td></tr>`;
+    }).join('');
+    return `<div class="fv wide lines-box" data-lines><table class="lines"><thead><tr><th class="c">N°</th><th>Désignation</th><th class="num">Qté</th><th class="num">P. unitaire (FCFA)</th><th class="num">P. total</th>${editing ? '<th></th>' : ''}</tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" class="muted">Aucune ligne.</td></tr>`}</tbody></table>
+      ${editing ? `<button type="button" class="btn outline sm" data-addline>${icon('plus', 14)} Ajouter une ligne</button>` : ''}</div>`;
+  }
+
   fieldHtml(f, editing) {
+    if (f.type === 'lines') return this.linesHtml(editing);
     const v = this.values[f.name];
     const wide = f.type === 'longtext' ? 'wide' : '';
     const errored = this.errors.some((e) => e.startsWith(f.name));
@@ -174,6 +211,18 @@ export class RecordView {
     return `<label class="fv ${wide} ${locked}">${label}${input}</label>`;
   }
 
+  rerenderLines(focusLast = false) {
+    const box = $('[data-lines]', this.el);
+    if (!box) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = this.linesHtml(true);
+    box.replaceWith(tmp.firstElementChild);
+    this.refreshComputed();
+    this.ws.persist();
+    emit('tab-title');
+    if (focusLast) { const ins = this.el.querySelectorAll('[data-k="Désignation"]'); ins[ins.length - 1]?.focus(); }
+  }
+
   async attachLookups() {
     for (const f of this.defs().fields) {
       if (!LOOKUPS[f.name]) continue;
@@ -188,13 +237,17 @@ export class RecordView {
   computedHtml() {
     const v = this.values;
     if (this.module === 'invoices') {
-      const ht = (Number(v['Quantité']) || 0) * (Number(v['Prix unitaire (FCFA)']) || 0);
+      const ht = this.currentLines().reduce((sum, l) => sum + (Number(l['Quantité']) || 0) * (Number(l['Prix unitaire (FCFA)']) || 0), 0);
       const tax = (ht * (Number(v['Taxe (%)']) || 0)) / 100;
+      const r2 = (x) => Math.round(x * 100) / 100;
       const server = this.mode === 'view' && this.record?.computed;
-      const c = server || { totalHT: Math.round(ht * 100) / 100, tax: Math.round(tax * 100) / 100, totalTTC: Math.round((ht + tax) * 100) / 100 };
+      const avance = Number(v['Avance (FCFA)']) || 0;
+      const c = server || { totalHT: r2(ht), tax: r2(tax), totalTTC: r2(ht + tax), avance, reste: r2(ht + tax - avance) };
       return `<fieldset class="fs computed"><legend>Calcul ${server ? '(serveur)' : 'automatique'}</legend><div class="totals" data-computed>
-        <span>Total HT</span><strong>${esc(money(c.totalHT))} FCFA</strong><span>Taxe</span><strong>${esc(money(c.tax))} FCFA</strong><span>Total TTC</span><strong class="ttc">${esc(money(c.totalTTC))} FCFA</strong></div>
-        ${server ? '' : '<p class="muted small">Le montant définitif est recalculé par le serveur à l’enregistrement.</p>'}</fieldset>`;
+        <span>Total HT</span><strong>${esc(money(c.totalHT))} FCFA</strong><span>Taxe</span><strong>${esc(money(c.tax))} FCFA</strong><span>Total</span><strong class="ttc">${esc(money(c.totalTTC))} FCFA</strong>
+        <span>Avance</span><strong>${esc(money(c.avance ?? 0))} FCFA</strong><span>Reste</span><strong class="${(c.reste ?? 0) < 0 ? 'neg' : ''}">${esc(money(c.reste ?? c.totalTTC))} FCFA</strong>
+        ${server && c.totalEnLettres ? `<span>En lettres</span><strong class="words">${esc(c.totalEnLettres)}</strong>` : ''}</div>
+        ${server ? '' : '<p class="muted small">Montant en lettres et totaux définitifs calculés par le serveur à l’enregistrement.</p>'}</fieldset>`;
     }
     if (this.module === 'commerce' && v['Prix de vente'] !== undefined && v['Prix d’achat'] !== undefined && v['Prix de vente'] !== '' && v['Prix d’achat'] !== '') {
       const m = Number(v['Prix de vente']) - Number(v['Prix d’achat']);
@@ -207,20 +260,40 @@ export class RecordView {
 
   onInput(e) {
     const t = e.target;
-    if (!t.name || this.mode === 'view' || !t.closest('.record-form')) return;
+    if (this.mode === 'view' || !t.closest('.record-form')) return;
+    if (t.dataset.line !== undefined) {
+      const lines = this.materializeLines();
+      const i = Number(t.dataset.line);
+      lines[i] = { ...(lines[i] || {}), [t.dataset.k]: t.value };
+      const cell = $(`[data-line-total="${i}"]`, this.el);
+      if (cell) cell.textContent = money((Number(lines[i]['Quantité']) || 0) * (Number(lines[i]['Prix unitaire (FCFA)']) || 0));
+      this.refreshComputed();
+      this.ws.persist();
+      emit('tab-title');
+      return;
+    }
+    if (!t.name) return;
     this.values[t.name] = t.value;
     t.classList.remove('invalid');
-    const box = $('[data-computed]', this.el);
-    if (box) { const tmp = document.createElement('div'); tmp.innerHTML = this.computedHtml(); const nb = $('[data-computed]', tmp); if (nb) box.replaceWith(nb); }
+    this.refreshComputed();
     if (t.name === statusField(this.module)) { const p = $('.view-head .pill', this.el); if (p) { p.textContent = t.value; p.className = `pill ${pillClass(t.value)}`; } }
     this.ws.persist();
     emit('tab-title');
+  }
+
+  refreshComputed() {
+    const box = $('[data-computed]', this.el);
+    if (box) { const tmp = document.createElement('div'); tmp.innerHTML = this.computedHtml(); const nb = $('[data-computed]', tmp); if (nb) box.replaceWith(nb); }
   }
 
   payload() {
     const data = {};
     for (const f of this.defs().fields) {
       const v = this.values[f.name];
+      if (f.type === 'lines') {
+        if (Array.isArray(v) && v.length) data[f.name] = v.map((l) => ({ 'Désignation': String(l['Désignation'] ?? '').trim(), 'Quantité': String(l['Quantité'] ?? ''), 'Prix unitaire (FCFA)': String(l['Prix unitaire (FCFA)'] ?? '') }));
+        continue;
+      }
       if (v === undefined || v === null || String(v).trim() === '') continue;
       data[f.name] = String(v).trim();
     }
@@ -232,6 +305,10 @@ export class RecordView {
     if (!form.reportValidity()) return false;
     // Les listes laissées sur leur valeur par défaut n'émettent aucun événement : on relit le formulaire
     for (const el of form.querySelectorAll('[name]')) this.values[el.name] = el.value;
+    if (this.module === 'invoices' && form.querySelector('[data-line]')) {
+      const lines = this.materializeLines();
+      for (const inp of form.querySelectorAll('[data-line]')) { const i = Number(inp.dataset.line); lines[i] = { ...(lines[i] || {}), [inp.dataset.k]: inp.value }; }
+    }
     const sf = statusField(this.module);
     const data = this.payload();
     if (validate) data[sf] = VALIDATED_STATUS[this.module];
@@ -279,7 +356,7 @@ export class RecordView {
 
   toolbar() {
     if (this.mode === 'view') {
-      const extra = this.module === 'transport' ? ['transport.order'] : this.module === 'invoices' ? ['invoice.print'] : [];
+      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print'] : [];
       return [['record.new'], ['record.edit', 'record.duplicate'], ['record.validate'], [...extra, 'file.print', 'file.pdf'], ['record.cancel'], ['view.refresh']];
     }
     return [['form.save', 'record.validate', 'form.cancelEdit'], ['view.refresh']];
@@ -303,7 +380,7 @@ export class RecordView {
       case 'record.validate': return !!VALIDATED_STATUS[m] && can(m, 'validate') && (editing || (r && r.status !== VALIDATED_STATUS[m]));
       case 'record.cancel': return !editing && !!r && can(m, 'cancel');
       case 'file.print': case 'file.pdf': return !editing && !!r;
-      case 'transport.order': return !editing && !!r && m === 'transport';
+      case 'transport.order': case 'transport.waybill': case 'transport.loading': return !editing && !!r && m === 'transport';
       case 'invoice.print': return !editing && !!r && m === 'invoices';
       case 'view.refresh': return !!this.recordId;
       default: return false;
@@ -338,6 +415,8 @@ export class RecordView {
         return undefined;
       case 'file.print': case 'file.pdf': return printHtml(recordDoc(`${MODULE_LABEL[m]} — ${recordTitle(m, this.record)}`, this.defs().fields, this.record), { pdf: id === 'file.pdf' });
       case 'transport.order': return printHtml(missionOrderDoc(this.record));
+      case 'transport.waybill': return printHtml(waybillDoc(this.record));
+      case 'transport.loading': return printHtml(loadingDoc(this.record));
       case 'invoice.print': return printHtml(invoiceDoc(this.record));
       case 'view.refresh':
         if (this.isDirty() && !(await confirmDialog('Recharger et perdre les modifications en cours ?', { ok: 'Recharger', danger: true }))) return undefined;

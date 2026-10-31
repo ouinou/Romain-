@@ -4,12 +4,12 @@ import { emit } from './bus.js';
 import { userKey } from './session.js';
 
 export const PANEL_SECTIONS = ['properties', 'history', 'documents', 'quick', 'notifications', 'activity'];
-export const SECTION_LABELS = { properties: 'Propriétés', history: 'Historique', documents: 'Documents associés', quick: 'Actions rapides', notifications: 'Notifications', activity: 'Activités récentes' };
+export const SECTION_LABELS = { properties: 'Détails', history: 'Historique', documents: 'Documents associés', quick: 'Actions rapides', notifications: 'Notifications', activity: 'Activités récentes' };
 
 export const PRESETS = {
-  Essentiel: { panelVisible: true, panelWidth: 320, order: [...PANEL_SECTIONS], hidden: [], collapsed: ['activity'], statusBar: true, toolLabels: true, density: 'compact' },
-  Saisie: { panelVisible: false, panelWidth: 320, order: [...PANEL_SECTIONS], hidden: [], collapsed: [], statusBar: true, toolLabels: true, density: 'normal' },
-  Contrôle: { panelVisible: true, panelWidth: 380, order: ['history', 'notifications', 'activity', 'properties', 'documents', 'quick'], hidden: ['quick'], collapsed: [], statusBar: true, toolLabels: true, density: 'compact' },
+  Essentiel: { panelVisible: true, panelWidth: 340, panelTab: 'props', order: ['properties', 'quick', 'documents', 'notifications', 'activity', 'history'], hidden: [], collapsed: ['notifications', 'activity'], statusBar: true, toolLabels: true, density: 'compact', sidebarCollapsed: false },
+  Saisie: { panelVisible: false, panelWidth: 340, panelTab: 'props', order: ['properties', 'quick', 'documents', 'notifications', 'activity', 'history'], hidden: [], collapsed: [], statusBar: true, toolLabels: true, density: 'normal', sidebarCollapsed: true },
+  Contrôle: { panelVisible: true, panelWidth: 400, panelTab: 'history', order: ['properties', 'notifications', 'activity', 'documents', 'quick', 'history'], hidden: ['quick'], collapsed: [], statusBar: true, toolLabels: true, density: 'compact', sidebarCollapsed: false },
 };
 
 const read = (k, fallback) => {
@@ -23,7 +23,7 @@ const key = () => `rtms.ws.${userKey()}`;
 export function prefs() {
   if (!current) {
     const saved = read(key(), null);
-    current = { ...structuredClone(PRESETS.Essentiel), workspace: 'Essentiel', columns: {}, pageSize: 50, custom: {}, ...(saved || {}) };
+    current = { ...structuredClone(PRESETS.Essentiel), workspace: 'Essentiel', columns: {}, pageSize: 25, custom: {}, floating: {}, ...(saved || {}) };
     // Sections ajoutées dans une version ultérieure : on les rajoute
     for (const s of PANEL_SECTIONS) if (!current.order.includes(s)) current.order.push(s);
   }
@@ -44,7 +44,7 @@ export function applyWorkspace(name) {
 }
 export function saveWorkspace(name) {
   const p = prefs();
-  const snap = { panelVisible: p.panelVisible, panelWidth: p.panelWidth, order: [...p.order], hidden: [...p.hidden], collapsed: [...p.collapsed], statusBar: p.statusBar, toolLabels: p.toolLabels, density: p.density };
+  const snap = { panelVisible: p.panelVisible, panelWidth: p.panelWidth, panelTab: p.panelTab, order: [...p.order], hidden: [...p.hidden], collapsed: [...p.collapsed], statusBar: p.statusBar, toolLabels: p.toolLabels, density: p.density, sidebarCollapsed: p.sidebarCollapsed };
   setPrefs({ custom: { ...p.custom, [name]: snap }, workspace: name });
 }
 export function deleteWorkspace(name) {

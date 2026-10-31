@@ -19,6 +19,9 @@ const settingsSchema = z.object({
   phone: z.string().trim().max(60).optional().default(''),
   email: z.union([z.literal(''), z.string().trim().email().max(200)]).optional().default(''),
   address: z.string().trim().max(300).optional().default(''),
+  // Mentions légales du pied de facture (CdC §4) — à confirmer par l'entreprise
+  rccm: z.string().trim().max(80).optional().default(''),
+  taxId: z.string().trim().max(80).optional().default(''),
   currency: z.enum(['FCFA', 'EUR', 'USD']).default('FCFA'),
   language: z.enum(['Français', 'English']).default('Français'),
 }).strict();

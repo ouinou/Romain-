@@ -1,8 +1,9 @@
-// Barre d'outils verticale : un outil par module, infobulle, pastille d'alertes,
-// module actif signalé par la barre orange (comme le menu du prototype).
+// Barre latérale des modules (maquette RTMS) : icône + libellé, module actif en orange,
+// pastille d'alertes, repliable en barre d'icônes (« ») avec infobulles.
 import { on } from '../core/bus.js';
 import { esc } from '../core/dom.js';
 import { icon } from '../core/icons.js';
+import { prefs, setPrefs } from '../core/prefs.js';
 import { can } from '../core/session.js';
 import { VIEWS } from '../config.js';
 import { workspace } from './MainWorkspace.js';
@@ -20,21 +21,32 @@ export function openViewTab(key) {
   return workspace.open({ id: `view:${key}`, kind: v.kind, viewKey: key });
 }
 
+export function toggleSidebar(force) {
+  setPrefs({ sidebarCollapsed: force ?? !prefs().sidebarCollapsed });
+}
+
 export function mountLeftToolBar(el) {
   const render = () => {
-    const active = workspace.active();
-    const activeKey = active?.view.tab.desc.viewKey;
+    const collapsed = !!prefs().sidebarCollapsed;
+    document.body.classList.toggle('rail-collapsed', collapsed);
+    const activeKey = workspace.active()?.view.tab.desc.viewKey;
     const counts = notifications().counts;
-    let group = '';
-    el.innerHTML = VIEWS.filter(viewAllowed).map((v) => {
-      const sep = v.group !== group ? (group = v.group, '<div class="tool-sep" aria-hidden="true"></div>') : '';
+    const toggle = (cls) => `<button type="button" class="rail-toggle ${cls}" data-toggle-rail title="${collapsed ? 'Déplier' : 'Replier'} la barre latérale" aria-label="${collapsed ? 'Déplier' : 'Replier'} la barre latérale">${icon(collapsed ? 'chevronsr' : 'chevronsl', 17)}</button>`;
+    el.innerHTML = `${toggle('top')}<div class="rail-items">${VIEWS.filter(viewAllowed).map((v) => {
       const n = v.module && !v.preset ? counts[v.module] : 0;
-      return `${sep}<button type="button" class="tool ${v.key === activeKey ? 'active' : ''}" data-view="${v.key}" aria-label="${esc(v.label)}" data-tip="${esc(v.label)}">${icon(v.icon, 20)}${n ? `<span class="badge" aria-label="${n} alerte(s)">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
-    }).join('').replace(/^<div class="tool-sep"[^>]*><\/div>/, '');
+      return `<button type="button" class="tool ${v.key === activeKey ? 'active' : ''}" data-view="${v.key}" aria-label="${esc(v.label)}" data-tip="${esc(v.label)}" ${v.key === activeKey ? 'aria-current="page"' : ''}>
+        ${icon(v.icon, 20)}<span class="tool-label">${esc(v.label)}</span>${n ? `<span class="badge" aria-label="${n} alerte(s)">${n > 99 ? '99+' : n}</span>` : ''}</button>`;
+    }).join('')}</div>${toggle('bottom')}`;
   };
-  el.addEventListener('click', (e) => { const b = e.target.closest('[data-view]'); if (b) openViewTab(b.dataset.view); });
+  el.addEventListener('click', (e) => {
+    if (e.target.closest('[data-toggle-rail]')) return toggleSidebar();
+    const b = e.target.closest('[data-view]');
+    if (b) openViewTab(b.dataset.view);
+    return undefined;
+  });
   on('tab-changed', render);
   on('notifications', render);
   on('session', render);
+  on('prefs', render);
   render();
 }

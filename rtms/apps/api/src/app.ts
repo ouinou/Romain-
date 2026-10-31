@@ -16,7 +16,8 @@ import { workspaceRoutes } from './modules/workspace.js';
 import { registerMetrics, licenseState } from './observability/metrics.js';
 import { captureError } from './observability/telemetry.js';
 
-export const APP_VERSION = process.env.RTMS_VERSION ?? '2.1.0';
+import { APP_VERSION } from './version.js';
+export { APP_VERSION };
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_EXEMPT = new Set(['/api/auth/login']);
 

@@ -15,7 +15,7 @@ export function showContextMenu(x, y, items) {
     const c = typeof it === 'string' ? command(it) : null;
     const label = c ? labelOf(it) : it.label;
     const disabled = c ? !isEnabled(it) : !!it.disabled;
-    const b = h(`<button type="button" class="menu-item" role="menuitem" ${disabled ? 'disabled' : ''}><span class="mi-ico">${icon((c ? c.icon : it.icon) || 'chevron', 15)}</span><span class="mi-label">${esc(label)}</span><span class="mi-key">${esc(keyLabel(c ? c.key : ''))}</span></button>`);
+    const b = h(`<button type="button" class="menu-item" role="menuitem" ${c ? `data-cmd="${esc(it)}"` : ''} ${disabled ? 'disabled' : ''}><span class="mi-ico">${icon((c ? c.icon : it.icon) || 'chevron', 15)}</span><span class="mi-label">${esc(label)}</span><span class="mi-key">${esc(keyLabel(c ? c.key : ''))}</span></button>`);
     b.addEventListener('click', () => { closeContextMenu(); if (c) run(it); else it.action(); });
     el.appendChild(b);
   });

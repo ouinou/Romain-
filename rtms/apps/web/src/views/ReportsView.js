@@ -1,9 +1,9 @@
 // Rapports : synthèse calculée par le serveur, impression / PDF.
-import { on } from '../core/bus.js';
+import { emit, on } from '../core/bus.js';
 import { get } from '../core/api.js';
 import { dateTimeFr, esc, money } from '../core/dom.js';
 import { icon } from '../core/icons.js';
-import { printHtml } from '../components/PrintService.js';
+import { printHtml, reportDoc } from '../components/PrintService.js';
 
 const VOL = { Transport: 'transport', Transit: 'transit', 'Import / Export': 'importexport', Commerce: 'commerce', Facturation: 'invoices', 'Finance (mouvements)': 'finance', Véhicules: 'fleet', Personnel: 'staff', Maintenance: 'maintenance', Documents: 'documents', 'Clients et fournisseurs': 'clients' };
 
@@ -25,6 +25,7 @@ export class ReportsView {
       root.innerHTML = `<div class="view-head"><h1>${icon('chart', 20)} Rapports & statistiques</h1><span class="muted small">Calculé par le serveur le ${esc(dateTimeFr(s.generatedAt))}</span></div>
         <div class="report" data-report>${this.reportHtml(s)}</div>`;
     } catch (e) { root.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+    emit('context-changed');
   }
   reportHtml(s) {
     return `<div class="kpis"><div class="kpi money"><span class="kl">Recettes enregistrées</span><span class="kv">${esc(money(s.finance.recettes))} F</span></div><div class="kpi money"><span class="kl">Dépenses enregistrées</span><span class="kv">${esc(money(s.finance.depenses))} F</span></div><div class="kpi money ${s.finance.solde < 0 ? 'neg' : ''}"><span class="kl">Solde net</span><span class="kv">${esc(money(s.finance.solde))} F</span></div></div>
@@ -33,7 +34,7 @@ export class ReportsView {
   supports(id) { return ['view.refresh', 'file.print', 'file.pdf'].includes(id) && (id === 'view.refresh' || !!this.data); }
   exec(id) {
     if (id === 'view.refresh') return this.load();
-    return printHtml(`<header class="pr-head"><div><div class="pr-brand">RAHA TRANSPORT</div><div class="pr-activities">TRANSPORT - TRANSIT - IMPORT - EXPORT - COMMERCE GÉNÉRAL</div></div></header><h1 class="pr-title">Rapport d’activité</h1>${this.reportHtml(this.data)}`, { pdf: id === 'file.pdf' });
+    return printHtml(reportDoc(this.reportHtml(this.data)), { pdf: id === 'file.pdf' });
   }
   toolbar() { return [['view.refresh'], ['file.print', 'file.pdf']]; }
   panelContext() { return { kind: 'reports' }; }

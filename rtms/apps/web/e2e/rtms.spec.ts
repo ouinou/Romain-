@@ -21,6 +21,25 @@ test.beforeAll(async ({ browser }) => {
 
 const tool = (key: string) => page.locator(`.tool[data-view="${key}"]`);
 const ctxBtn = (cmd: string) => page.locator(`.ctxbar [data-cmd="${cmd}"]`);
+/** Commande de la barre contextuelle, ou de « Plus d'actions » si elle n'y tient pas. */
+const cmd = { click: async (id: string) => {
+  // La barre se redessine à chaque changement de contexte : on retente brièvement
+  for (let i = 0; i < 10; i++) {
+    const b = ctxBtn(id);
+    if (await b.count()) { try { await b.click({ timeout: 1500 }); return; } catch { /* redessinée entre-temps */ } }
+    const more = page.locator('.ctxbar [data-more]');
+    if (await more.count()) {
+      try {
+        await more.click({ timeout: 1500 });
+        const it = page.locator(`.ctx-menu [data-cmd="${id}"]`);
+        if (await it.count()) { await it.click(); return; }
+        await page.keyboard.press('Escape');
+      } catch { /* idem */ }
+    }
+    await page.waitForTimeout(150);
+  }
+  throw new Error(`Commande introuvable : ${id}`);
+} };
 const activePane = () => page.locator('.tab-pane:not([hidden])');
 const rows = () => activePane().locator('table.grid tbody tr');
 async function menu(label: string, item: string) {
@@ -28,7 +47,7 @@ async function menu(label: string, item: string) {
   await page.locator('.menu-pop .menu-item', { hasText: item }).first().click();
 }
 async function newMission(ref: string, goods: string, extra: Record<string, string> = {}) {
-  await ctxBtn('record.new').click();
+  await cmd.click('record.new');
   const f = activePane();
   await f.locator('[name="Référence mission"]').fill(ref);
   await f.locator('[name="Client"]').fill('SONASUT');
@@ -63,8 +82,16 @@ test('structure : barre de menus (13), barre d’outils (17), onglets, panneaux,
   await expect(tool('dashboard')).toHaveClass(/active/);
   await expect(tool('suppliers')).toHaveAttribute('data-tip', 'Fournisseurs');
   await expect(page.locator('.wtab')).toHaveCount(1);
-  await expect(page.locator('.rpanel .psec')).toHaveCount(6);
-  await expect(page.locator('.statusbar')).toContainText('Connecté au serveur');
+  await expect(page.locator('.rpanel .ptab')).toHaveText(['Propriétés', 'Historique', 'Documents']);
+  await expect(page.locator('.rpanel .psec')).toHaveCount(5);
+  await expect(page.locator('.titlebar img')).toHaveAttribute('src', /logo-raha/);
+  await expect(page.locator('.statusbar')).toContainText('Connecté');
+  await expect(page.locator('.statusbar')).toContainText(/RTMS v2\.\d/);
+  // Barre latérale repliable
+  await page.locator('.toolrail .rail-toggle.top').click();
+  await expect(page.locator('body')).toHaveClass(/rail-collapsed/);
+  await page.locator('.toolrail .rail-toggle.top').click();
+  await expect(page.locator('body')).not.toHaveClass(/rail-collapsed/);
 });
 
 test('chaque menu s’ouvre et propose des commandes ; navigation au clavier', async () => {
@@ -115,7 +142,7 @@ test('transport : création par formulaire, recherche et suppression de la bonne
   await activePane().locator('[data-q]').fill('coton');
   await expect(rows()).toHaveCount(1);
   await rows().first().click();
-  await ctxBtn('record.cancel').click();
+  await cmd.click('record.cancel');
   await page.locator('.dlg [name=reason]').fill('Doublon de saisie');
   await page.locator('.dlg .btn:not(.secondary)').click();
   await activePane().locator('[data-q]').fill('');
@@ -124,17 +151,23 @@ test('transport : création par formulaire, recherche et suppression de la bonne
 });
 
 test('tri par colonne, filtres multicritères et colonnes personnalisables', async () => {
-  await activePane().locator('th[data-sort="Marchandise"]').click();
-  await expect(rows().first()).toContainText('Ciment');
-  await activePane().locator('th[data-sort="Marchandise"]').click();
-  await expect(rows().first()).toContainText('Riz');
-  await ctxBtn('view.filters').click();
+  await activePane().locator('th[data-sort="Référence mission"]').click();
+  await expect(rows().first()).toContainText('M-E2E-1');
+  await activePane().locator('th[data-sort="Référence mission"]').click();
+  await expect(rows().first()).toContainText('M-E2E-3');
+  // Tuiles de comptage par statut : un clic filtre la liste
+  await expect(activePane().locator('.tile.t-total b')).toHaveText('2');
+  await activePane().locator('.tile[data-tile="En cours"]').click();
+  await expect(activePane().locator('[data-qstatus]')).toHaveValue('En cours');
+  await activePane().locator('.tile.t-total').click();
+  await expect(activePane().locator('[data-qstatus]')).toHaveValue('');
+  await cmd.click('view.filters');
   await activePane().locator('[data-filters] select[data-f="Statut"]').selectOption('Clôturé');
   await expect(activePane().locator('.empty')).toContainText('Aucun résultat');
   await expect(activePane().locator('.chip')).toContainText('Statut');
   await activePane().locator('[data-act=clearfilters]').click();
   await expect(rows()).toHaveCount(2);
-  await ctxBtn('view.columns').click();
+  await cmd.click('view.columns');
   await page.locator('.dlg .col-choice input[value="Chauffeur"]').uncheck();
   await page.locator('.dlg .btn', { hasText: 'Appliquer' }).click();
   await expect(activePane().locator('thead')).not.toContainText('Chauffeur');
@@ -160,13 +193,17 @@ test('menu contextuel et ouverture de la fiche au double-clic ; modification ave
   await expect(page.locator('.wtab.active')).toHaveClass(/dirty/);
   await page.keyboard.press('Control+s');
   await expect(activePane().locator('.record-form.reading')).toContainText('Ciment gris');
+  await page.locator('.rpanel [data-ptab=history]').click();
   await expect(page.locator('.rpanel [data-sec-body=history]')).toContainText('Marchandise');
   await expect(page.locator('.rpanel [data-sec-body=history]')).toContainText('Modification');
+  await page.locator('.rpanel [data-ptab=docs]').click();
+  await expect(page.locator('.rpanel [data-sec-body=gendocs]')).toContainText('Lettre de transport.pdf');
+  await page.locator('.rpanel [data-ptab=props]').click();
 });
 
 test('la saisie en cours est conservée quand on change d’onglet', async () => {
   await tool('transit').click();
-  await ctxBtn('record.new').click();
+  await cmd.click('record.new');
   await activePane().locator('[name="Référence dossier"]').fill('TR-BROUILLON');
   await tool('dashboard').click();
   await page.locator('.wtab', { hasText: 'Nouveau dossier' }).click();
@@ -187,7 +224,7 @@ test('la saisie en cours est conservée quand on change d’onglet', async () =>
 
 test('erreur serveur explicite sur le champ concerné : référence en double', async () => {
   await tool('transport').click();
-  await ctxBtn('record.new').click();
+  await cmd.click('record.new');
   const f = activePane();
   await f.locator('[name="Référence mission"]').fill('m-e2e-1');
   await f.locator('[name="Client"]').fill('X');
@@ -201,7 +238,7 @@ test('erreur serveur explicite sur le champ concerné : référence en double', 
 
 test('affectation d’un véhicule depuis le référentiel + ordre de mission imprimé', async () => {
   await tool('fleet').click();
-  await ctxBtn('record.new').click();
+  await cmd.click('record.new');
   await activePane().locator('[name="Immatriculation"]').fill('TD-4521-A');
   await activePane().locator('[name="Marque / modèle"]').fill('Renault Kerax');
   await activePane().locator('[name="Assurance valide jusqu’au"]').fill('2020-01-01');
@@ -209,12 +246,12 @@ test('affectation d’un véhicule depuis le référentiel + ordre de mission im
   await expect(activePane().locator('.record-form.reading')).toBeVisible();
   await tool('transport').click();
   await rows().filter({ hasText: 'M-E2E-3' }).click();
-  await ctxBtn('transport.vehicle').click();
+  await cmd.click('transport.vehicle');
   await page.locator('.dlg select[name=v]').selectOption('TD-4521-A');
   await page.locator('.dlg .btn', { hasText: 'Affecter' }).click();
   await expect(rows().filter({ hasText: 'M-E2E-3' })).toContainText('TD-4521-A');
   await rows().filter({ hasText: 'M-E2E-3' }).click();
-  await ctxBtn('transport.order').click();
+  await cmd.click('transport.order');
   await expect(page.locator('#print-root')).toContainText('ORDRE DE MISSION');
   await expect(page.locator('#print-root')).toContainText('TD-4521-A');
   await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: number }).__printed)).toBeGreaterThan(0);
@@ -230,28 +267,40 @@ test('notifications : assurance expirée signalée (cloche + pastille du module)
 
 test('facturation : calcul automatique, validation confirmée, impression et export', async () => {
   await tool('invoices').click();
-  await ctxBtn('record.new').click();
+  await cmd.click('record.new');
   const f = activePane();
   await f.locator('[name="Numéro de facture"]').fill('F-E2E-001');
   await f.locator('[name="Client"]').fill('SONASUT');
   await f.locator('[name="Date"]').fill('2026-10-31');
-  await f.locator('[name="Désignation"]').fill('Transport conteneur');
-  await f.locator('[name="Quantité"]').fill('2');
-  await f.locator('[name="Prix unitaire (FCFA)"]').fill('250000');
+  await f.locator('[name="Chauffeur"]').fill('Kouadio M.');
+  await f.locator('[name="N° de camion"]').fill('LT 4589 BH');
+  await f.locator('[data-line="0"][data-k="Désignation"]').fill('Transport conteneur');
+  await f.locator('[data-line="0"][data-k="Quantité"]').fill('2');
+  await f.locator('[data-line="0"][data-k="Prix unitaire (FCFA)"]').fill('200000');
+  await f.locator('[data-addline]').click();
+  await f.locator('[data-line="1"][data-k="Désignation"]').fill('Manutention');
+  await f.locator('[data-line="1"][data-k="Quantité"]').fill('1');
+  await f.locator('[data-line="1"][data-k="Prix unitaire (FCFA)"]').fill('100000');
   await f.locator('[name="Taxe (%)"]').fill('18');
+  await f.locator('[name="Avance (FCFA)"]').fill('90000');
   await expect(f.locator('[data-computed]')).toContainText(/590\s000/);
-  await ctxBtn('record.validate').click();
+  await cmd.click('record.validate');
   await expect(page.locator('.dlg')).toContainText('Validée');
   await page.locator('.dlg .btn', { hasText: 'Valider' }).click();
   await expect(activePane().locator('.view-head .pill')).toHaveText('Validée');
-  await ctxBtn('invoice.print').click();
+  await cmd.click('invoice.print');
   await expect(page.locator('#print-root')).toContainText('FACTURE');
   await expect(page.locator('#print-root')).toContainText(/590\s000/);
-  await ctxBtn('file.pdf').click();
+  await expect(page.locator('#print-root')).toContainText('Cinq cent quatre-vingt-dix mille francs CFA');
+  await expect(page.locator('#print-root')).toContainText('Kouadio M.');
+  await expect(page.locator('#print-root')).toContainText(/500\s000 FCFA/); // reste = 590 000 − 90 000
+  await expect(page.locator('#print-root .inv-table tbody tr')).toHaveCount(10);
+  await expect(page.locator('#print-root .pr-wave-text')).toContainText('RCCM');
+  await cmd.click('file.pdf');
   await expect(page.locator('.toast', { hasText: 'Enregistrer au format PDF' })).toBeVisible();
   await tool('invoices').click();
   await expect(rows().first()).toContainText(/590\s000/);
-  const [dl] = await Promise.all([page.waitForEvent('download'), ctxBtn('file.csv').click()]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), cmd.click('file.csv')]);
   expect(dl.suggestedFilename()).toBe('raha_invoices.csv');
 });
 
@@ -299,8 +348,8 @@ test('panneaux : réduction, masquage, détachement, redimensionnement, espace m
 test('rapports, paramètres, administration (utilisateurs, permissions, audit)', async () => {
   await tool('reports').click();
   await expect(activePane()).toContainText('Volumes par activité');
-  await ctxBtn('file.print').click();
-  await expect(page.locator('#print-root')).toContainText('Rapport d’activité');
+  await cmd.click('file.print');
+  await expect(page.locator('#print-root')).toContainText(/rapport d’activité/i);
   await tool('settings').click();
   await activePane().locator('[name=phone]').fill('+235 66 00 00 00');
   await activePane().locator('[data-act=save-company]').click();

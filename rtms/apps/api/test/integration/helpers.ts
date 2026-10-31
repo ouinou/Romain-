@@ -25,7 +25,7 @@ export function testConfig(over: Partial<Config> = {}): Config {
     DATA_ENCRYPTION_KEYS: `v1:${randomBytes(32).toString('base64')}`, DATA_ENCRYPTION_ACTIVE_KEY: 'v1',
     COOKIE_SECURE: false, SESSION_IDLE_MINUTES: 30, SESSION_ABSOLUTE_HOURS: 12,
     MFA_REQUIRED_ROLES: 'admin,direction,finance', RATE_LIMIT_PER_MINUTE: 10_000, LOGIN_RATE_LIMIT_PER_MINUTE: 1000,
-    LICENSE_ENFORCEMENT: 'off', LICENSE_OFFLINE_GRACE_DAYS: 7, LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
+    LICENSE_ENFORCEMENT: 'off', LICENSE_OFFLINE_GRACE_DAYS: 7, INSTANCE_NAME: 'RAHA_TEST', LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     ...over,
   } as Config;
 }

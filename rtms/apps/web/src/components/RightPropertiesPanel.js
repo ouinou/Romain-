@@ -13,6 +13,7 @@ import { workspace } from './MainWorkspace.js';
 import { notificationListHtml, notifications } from './NotificationCenter.js';
 
 const ICONS = { properties: 'info', history: 'history', documents: 'link', quick: 'zap', notifications: 'bell', activity: 'activity' };
+const DETAILS = { transport: 'Détails de la mission', transit: 'Détails du dossier', importexport: 'Détails de l’opération', commerce: 'Détails de l’article', clients: 'Détails du tiers', fleet: 'Détails du véhicule', staff: 'Détails de l’employé', maintenance: 'Détails de l’intervention', invoices: 'Détails de la facture', finance: 'Détails du mouvement', documents: 'Détails du document' };
 const ACTIONS = { 'record.create': 'Création', 'record.update': 'Modification', 'record.cancel': 'Suppression', 'record.export': 'Export' };
 const cache = new Map();
 async function cached(key, fn) { if (!cache.has(key)) cache.set(key, fn().catch((e) => { cache.delete(key); throw e; })); return cache.get(key); }
@@ -61,6 +62,8 @@ export function mountRightPanel(el, splitter) {
       if (t.dataset.pact === 'dock') { const f = { ...(p.floating || {}) }; delete f[s]; setPrefs({ floating: f }); }
       return;
     }
+    const pt = e.target.closest('[data-ptab]');
+    if (pt) return setPrefs({ panelTab: pt.dataset.ptab });
     const c = e.target.closest('[data-cmd]');
     if (c && !c.disabled) return run(c.dataset.cmd);
     const o = e.target.closest('[data-open-record]');
@@ -94,7 +97,7 @@ export function togglePanel(force) {
 }
 export function showSection(s) {
   const p = prefs();
-  setPrefs({ hidden: p.hidden.filter((x) => x !== s), collapsed: p.collapsed.filter((x) => x !== s), panelVisible: true });
+  setPrefs({ hidden: p.hidden.filter((x) => x !== s), collapsed: p.collapsed.filter((x) => x !== s), panelVisible: true, panelTab: 'props' });
 }
 
 function applyLayout() {
@@ -107,9 +110,11 @@ function applyLayout() {
 function sectionBox(s, body, floating) {
   const p = prefs();
   const collapsed = p.collapsed.includes(s) && !floating;
-  return `<section class="psec ${collapsed ? 'collapsed' : ''}" data-sec-box="${s}" ${floating ? '' : 'draggable="true"'} aria-label="${esc(SECTION_LABELS[s])}">
+  const ctxM = activeView()?.panelContext?.()?.module;
+  const title = s === 'properties' && ctxM ? DETAILS[ctxM] || SECTION_LABELS[s] : SECTION_LABELS[s];
+  return `<section class="psec ${collapsed ? 'collapsed' : ''}" data-sec-box="${s}" ${floating ? '' : 'draggable="true"'} aria-label="${esc(title)}">
     <header class="psec-head">${floating ? '' : `<span class="grip" title="Glisser pour réorganiser">${icon('grip', 13)}</span>`}
-      <button type="button" class="psec-title" data-pact="collapse" data-sec="${s}" aria-expanded="${!collapsed}">${icon(collapsed ? 'chevron' : 'chevrondown', 13)} ${icon(ICONS[s], 14)} ${esc(SECTION_LABELS[s])}</button>
+      <button type="button" class="psec-title" data-pact="collapse" data-sec="${s}" aria-expanded="${!collapsed}">${icon(collapsed ? 'chevron' : 'chevrondown', 13)} ${icon(ICONS[s], 14)} ${esc(title)}</button>
       <button type="button" class="icon-btn" data-pact="${floating ? 'dock' : 'float'}" data-sec="${s}" title="${floating ? 'Ancrer dans le panneau' : 'Détacher en panneau flottant'}">${icon(floating ? 'pin' : 'float', 13)}</button>
       <button type="button" class="icon-btn" data-pact="hide" data-sec="${s}" title="Masquer (réafficher : menu Fenêtre)">${icon('x', 13)}</button></header>
     <div class="psec-body" data-sec-body="${s}">${collapsed ? '' : body}</div></section>`;
@@ -121,11 +126,19 @@ async function render() {
   const v = activeView();
   const ctx = v?.panelContext?.() || { kind: 'none' };
   const floating = p.floating || {};
-  const visible = p.order.filter((s) => PANEL_SECTIONS.includes(s) && !p.hidden.includes(s));
+  const tab = p.panelTab || 'props';
+  // L'historique a son propre onglet ; les autres panneaux sont dans « Propriétés »
+  const visible = p.order.filter((s) => PANEL_SECTIONS.includes(s) && s !== 'history' && !p.hidden.includes(s));
   const docked = visible.filter((s) => !floating[s]);
-  panelEl.innerHTML = docked.length
+  const tabs = [['props', 'Propriétés'], ['history', 'Historique'], ['docs', 'Documents']];
+  const head = `<div class="ptabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" class="ptab ${k === tab ? 'on' : ''}" data-ptab="${k}" aria-selected="${k === tab}">${l}</button>`).join('')}</div>`;
+  let body;
+  if (tab === 'history') body = '<section class="psec flat"><div class="psec-body" data-sec-body="history"></div></section>';
+  else if (tab === 'docs') body = '<section class="psec flat"><div class="psec-body" data-sec-body="gendocs"></div></section><section class="psec flat"><header class="psec-head"><span class="psec-title">' + icon('link', 14) + ' Documents associés</span></header><div class="psec-body" data-sec-body="documents"></div></section>';
+  else body = docked.length
     ? docked.map((s) => sectionBox(s, '<div class="muted small">…</div>', false)).join('')
     : '<div class="muted small pad">Tous les panneaux sont masqués ou détachés. Menu Fenêtre pour les réafficher.</div>';
+  panelEl.innerHTML = head + `<div class="ptab-body">${body}</div>`;
   // Panneaux flottants (bornés à l'écran, déplaçables par leur titre)
   floatHost.innerHTML = '';
   for (const s of visible.filter((x) => floating[x])) {
@@ -134,8 +147,9 @@ async function render() {
     clampToViewport(w, floating[s].x, floating[s].y);
     makeDraggable($('.psec-head', w), w, (rr) => setPrefs({ floating: { ...prefs().floating, [s]: { x: rr.left, y: rr.top } } }, { silent: true }));
   }
-  for (const s of visible) {
-    if (p.collapsed.includes(s) && !floating[s]) continue;
+  const toFill = tab === 'history' ? ['history', ...visible.filter((x) => floating[x])] : tab === 'docs' ? ['gendocs', 'documents', ...visible.filter((x) => floating[x])] : visible;
+  for (const s of toFill) {
+    if (tab === 'props' && p.collapsed.includes(s) && !floating[s]) continue;
     const target = document.querySelector(`[data-sec-body="${s}"]`);
     if (!target) continue;
     try { target.innerHTML = await sectionContent(s, ctx, v); } catch (e) { target.innerHTML = `<div class="err small">${esc(e.message)}</div>`; }
@@ -151,16 +165,17 @@ async function sectionContent(s, ctx, v) {
     case 'properties': {
       if (rec && m) {
         const f = session.defs[m]?.fields || [];
-        const rows = f.map((x) => [x.name, x.type === 'date' ? dateFr(rec.data[x.name]) : x.type === 'number' && rec.data[x.name] !== undefined ? money(rec.data[x.name]) : rec.data[x.name]]);
+        const rows = f.filter((x) => x.type !== 'lines' && (rec.data[x.name] !== undefined || x.required)).map((x) => [x.name, x.type === 'date' ? dateFr(rec.data[x.name]) : x.type === 'number' && rec.data[x.name] !== undefined ? money(rec.data[x.name]) : rec.data[x.name]]);
+        if (Array.isArray(rec.data.Lignes)) rows.push(['Lignes de facture', `${rec.data.Lignes.length}`]);
         if (rec.computed?.totalTTC !== undefined) rows.push(['Total TTC (calculé)', `${money(rec.computed.totalTTC)} FCFA`]);
         rows.push(['Version', String(rec.version)], ['Modifié le', dateTimeFr(rec.updatedAt)]);
-        return `<div class="psec-title2">${esc(MODULE_LABEL[m])} — ${esc(recordTitle(m, rec))}</div>${kv(rows)}`;
+        return kv(rows);
       }
       if (ctx.kind === 'list') {
         return `<div class="psec-title2">Informations générales</div>${kv([['Vue', viewByKey(ctx.viewKey)?.title], ['Enregistrements', String(ctx.total)], ['Sélection', ctx.selection ? `${ctx.selection} enregistrement(s)` : 'aucune'], ['Actualisé', ctx.loadedAt ? dateTimeFr(ctx.loadedAt) : '—']])}<p class="muted small">Sélectionnez une ligne pour afficher ses propriétés. Double-clic ou Entrée pour ouvrir la fiche.</p>`;
       }
       if (ctx.kind === 'record' && ctx.mode === 'new') return '<p class="muted small">Nouvel enregistrement en cours de saisie. Les propriétés s’afficheront après l’enregistrement.</p>';
-      return kv([['Utilisateur', session.me?.user.fullName], ['Profil', session.me?.user.roleLabel], ['Licence', session.me?.license?.state], ['Version', '2.1']]);
+      return kv([['Utilisateur', session.me?.user.fullName], ['Profil', session.me?.user.roleLabel], ['Licence', session.me?.license?.state], ['Version', session.me?.version || '—'], ['Base', session.me?.instance || '—']]);
     }
     case 'history': {
       if (!rec || !m) return '<p class="muted small">Sélectionnez un enregistrement pour voir son historique.</p>';
@@ -179,8 +194,14 @@ async function sectionContent(s, ctx, v) {
         : `<p class="muted small">Aucun document dont le « Dossier lié » est ${esc(rec.reference)}.</p>`;
     }
     case 'quick': {
-      const ids = [...new Set((v?.toolbar?.() || []).flat())].filter((id) => isEnabled(id));
-      return ids.length ? `<div class="quick-list">${ids.map((id) => `<button type="button" class="qa" data-cmd="${id}">${icon(command(id)?.icon || 'zap', 14)} ${esc(labelOf(id))}</button>`).join('')}</div>` : '<p class="muted small">Aucune action disponible ici.</p>';
+      const ids = [...new Set((v?.toolbar?.() || []).flat())].filter((id) => isEnabled(id) && !['view.filters', 'view.columns', 'view.refresh', 'record.new'].includes(id));
+      return ids.length ? `<div class="quick-list">${ids.map((id) => `<button type="button" class="qa" data-cmd="${id}">${icon(command(id)?.icon || 'zap', 15)} ${esc(labelOf(id))}</button>`).join('')}</div>` : '<p class="muted small">Sélectionnez un enregistrement pour voir les actions possibles.</p>';
+    }
+    case 'gendocs': {
+      if (!rec || !m) return '<p class="muted small">Sélectionnez un enregistrement pour générer ses documents.</p>';
+      const docs = m === 'transport' ? [['transport.order', 'Ordre de mission'], ['transport.waybill', 'Lettre de transport'], ['transport.loading', 'Bon de chargement'], ['file.print', 'Fiche de la mission']]
+        : m === 'invoices' ? [['invoice.print', `Facture ${rec.reference || ''}`], ['file.print', 'Fiche de la facture']] : [['file.print', `Fiche — ${recordTitle(m, rec)}`]];
+      return `<div class="psec-title2">Documents à générer</div><ul class="doc-list">${docs.map(([cmd, label]) => `<li><button type="button" class="doc-item" data-cmd="${cmd}" ${isEnabled(cmd) ? '' : 'disabled'}><span class="pdf-badge">PDF</span><span>${esc(label)}.pdf</span>${icon('import', 15)}</button></li>`).join('')}</ul><p class="muted small">Impression ou « Enregistrer au format PDF » du système.</p>`;
     }
     case 'notifications': {
       const items = notifications().items.filter((n) => !m || n.module === m);

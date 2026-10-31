@@ -84,14 +84,14 @@ const META_SORT: Record<string, Prisma.Sql> = {
 
 function fieldExpr(module: ModuleKey, name: string): { expr: Prisma.Sql; type: string } {
   const f = MODULE_DEFS[module].fields.find((x) => x.name === name);
-  if (!f || f.sensitive) throw badRequest(`Champ « ${name} » non triable ou non filtrable`);
+  if (!f || f.sensitive || f.type === 'lines') throw badRequest(`Champ « ${name} » non triable ou non filtrable`);
   const raw = Prisma.sql`(data->>${name})`;
   if (f.type === 'number') return { expr: Prisma.sql`rtms_num(${raw})`, type: f.type };
   if (f.type === 'date') return { expr: Prisma.sql`rtms_date(${raw})`, type: f.type };
   return { expr: raw, type: f.type };
 }
 
-async function listRows(tx: Tx, companyId: string, module: ModuleKey, o: ListOptions) {
+function buildWhere(companyId: string, module: ModuleKey, o: Pick<ListOptions, 'q' | 'filters'>) {
   const pattern = `%${escapeLike(o.q.toLowerCase())}%`;
   const parts: Prisma.Sql[] = [
     Prisma.sql`company_id = ${companyId}::uuid AND module = ${module} AND cancelled_at IS NULL`,
@@ -109,7 +109,11 @@ async function listRows(tx: Tx, companyId: string, module: ModuleKey, o: ListOpt
         : Prisma.sql`lower(data->>${name}) LIKE ${`%${escapeLike(String(value).toLowerCase())}%`}`);
     }
   }
-  const where = Prisma.join(parts, ' AND ');
+  return Prisma.join(parts, ' AND ');
+}
+
+async function listRows(tx: Tx, companyId: string, module: ModuleKey, o: ListOptions) {
+  const where = buildWhere(companyId, module, o);
   const dir = o.dir === 'asc' ? Prisma.raw('ASC') : Prisma.raw('DESC');
   const sortExpr = !o.sort ? META_SORT.createdAt! : (META_SORT[o.sort] ?? fieldExpr(module, o.sort).expr);
   const rows = await tx.$queryRaw<Row[]>`
@@ -130,12 +134,20 @@ function mapUniqueViolation(e: unknown, module: ModuleKey): never {
   throw e;
 }
 
+function parseFilters(f?: string): ListOptions['filters'] {
+  if (!f) return undefined;
+  const range = z.object({ from: z.union([z.string().max(40), z.number()]).optional(), to: z.union([z.string().max(40), z.number()]).optional() }).strict();
+  const parsed = z.record(z.string().max(80), z.union([z.string().max(200), range])).refine((o) => Object.keys(o).length <= 15).safeParse((() => { try { return JSON.parse(f); } catch { return null; } })());
+  if (!parsed.success) throw badRequest('Filtres invalides');
+  return parsed.data;
+}
+
 export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
   const meta = (req: FastifyRequest) => ({ ip: req.ip, userAgent: req.headers['user-agent'] });
   const tenant = (req: FastifyRequest) => ({ companyId: req.session!.companyId, userId: req.session!.userId });
 
   app.get('/api/modules', { preHandler: requirePermission(ctx, 'dashboard', 'read') }, async () =>
-    Object.values(MODULE_DEFS).map((m) => ({ key: m.key, referenceField: m.referenceField, statusField: m.statusField, fields: m.fields.map(({ sensitive, ...f }) => ({ ...f, filterable: !sensitive })) })));
+    Object.values(MODULE_DEFS).map((m) => ({ key: m.key, referenceField: m.referenceField, statusField: m.statusField, fields: m.fields.map(({ sensitive, ...f }) => ({ ...f, filterable: !sensitive && f.type !== 'lines' })) })));
 
   // ---------- Liste paginée + recherche serveur ----------
   app.get('/api/records/:module', { preHandler: requirePermission(ctx, moduleParam, 'read') }, async (req) => {
@@ -148,15 +160,22 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
       dir: z.enum(['asc', 'desc']).default('desc'),
       f: z.string().max(4000).optional(),
     }).parse(req.query);
-    let filters: ListOptions['filters'];
-    if (p.f) {
-      const range = z.object({ from: z.union([z.string().max(40), z.number()]).optional(), to: z.union([z.string().max(40), z.number()]).optional() }).strict();
-      const parsed = z.record(z.string().max(80), z.union([z.string().max(200), range])).refine((o) => Object.keys(o).length <= 15).safeParse((() => { try { return JSON.parse(p.f!); } catch { return null; } })());
-      if (!parsed.success) throw badRequest('Filtres invalides');
-      filters = parsed.data;
-    }
+    const filters = parseFilters(p.f);
     const { rows, total } = await withTenant(ctx.prisma, tenant(req), (tx) => listRows(tx, req.session!.companyId, module, { q: p.q.trim(), limit: p.limit, offset: p.offset, sort: p.sort, dir: p.dir, filters }));
     return { items: rows.map((r) => present(ctx, module, r)), total, limit: p.limit, offset: p.offset };
+  });
+
+  // ---------- Compteurs par statut (tuiles d'en-tête des listes) ----------
+  app.get('/api/records/:module/stats', { preHandler: requirePermission(ctx, moduleParam, 'read') }, async (req) => {
+    const module = moduleParam(req);
+    const p = z.object({ q: z.string().max(100).default(''), f: z.string().max(4000).optional() }).parse(req.query);
+    const where = buildWhere(req.session!.companyId, module, { q: p.q.trim(), filters: parseFilters(p.f) });
+    const rows = await withTenant(ctx.prisma, tenant(req), (tx) => tx.$queryRaw<{ status: string | null; n: bigint }[]>`
+      SELECT status, count(*) AS n FROM records WHERE ${where} GROUP BY status`);
+    const byStatus: Record<string, number> = {};
+    let total = 0;
+    for (const r of rows) { total += Number(r.n); byStatus[r.status ?? ''] = Number(r.n); }
+    return { total, byStatus };
   });
 
   app.get('/api/records/:module/:id', { preHandler: requirePermission(ctx, moduleParam, 'read') }, async (req) => {

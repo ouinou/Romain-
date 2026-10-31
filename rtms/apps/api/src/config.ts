@@ -29,6 +29,8 @@ const schema = z.object({
   LICENSE_ENFORCEMENT: z.enum(['enforce', 'warn', 'off']).default('warn'),
   LICENSE_OFFLINE_GRACE_DAYS: z.coerce.number().int().nonnegative().default(7),
   WEB_ROOT: z.string().optional(),
+  /** Nom de l'instance affiché dans la barre d'état (ex. RAHA_PROD, RAHA_TEST). */
+  INSTANCE_NAME: z.string().max(40).default('RAHA_PROD'),
   RTMS_DEVICE_ID: z.string().optional(),
   LOG_LEVEL: z.string().default('info'),
 });

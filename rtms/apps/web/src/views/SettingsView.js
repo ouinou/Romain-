@@ -6,7 +6,7 @@ import { icon } from '../core/icons.js';
 import { PRESETS, applyWorkspace, deleteWorkspace, prefs } from '../core/prefs.js';
 import { can, session } from '../core/session.js';
 import { confirmDialog } from '../components/ModalManager.js';
-import { setCompanyInfo } from '../components/PrintService.js';
+import { MODEL_MENTIONS, setCompanyInfo } from '../components/PrintService.js';
 
 const SECTIONS = [['company', 'Société', 'store'], ['account', 'Mon compte', 'key'], ['workspace', 'Espace de travail', 'panel'], ['legacy', 'Données du prototype', 'import']];
 const formObj = (f) => Object.fromEntries(new FormData(f).entries());
@@ -64,8 +64,10 @@ export class SettingsView extends SectionedView {
         <form class="form" data-form="company"><label class="wide">Raison sociale *<input name="name" value="${esc(c.name)}" required maxlength="200" ${ro}></label>
         <label>Téléphone<input name="phone" value="${esc(c.phone || '')}" maxlength="60" ${ro}></label><label>E-mail<input name="email" type="email" value="${esc(c.email || '')}" maxlength="200" ${ro}></label>
         <label class="wide">Adresse<input name="address" value="${esc(c.address || '')}" maxlength="300" ${ro}></label>
+        <label>RCCM<input name="rccm" value="${esc(c.rccm || '')}" maxlength="80" ${ro}></label><label>N° contribuable<input name="taxId" value="${esc(c.taxId || '')}" maxlength="80" ${ro}></label>
         <label>Devise principale${sel('currency', ['FCFA', 'EUR', 'USD'], c.currency)}</label><label>Langue${sel('language', ['Français', 'English'], c.language)}</label></form>
-        ${can('settings', 'admin') ? `<div class="actions"><button type="button" class="btn" data-act="save-company">${icon('save', 15)} Enregistrer les paramètres</button></div>` : '<p class="muted small">Consultation seule pour votre profil.</p>'}`;
+        <p class="muted small">Ces mentions apparaissent dans le bandeau des factures et documents imprimés. Tant qu’elles sont vides, ce sont celles du modèle de facture fourni qui s’impriment.</p>
+        ${can('settings', 'admin') ? `<div class="actions"><button type="button" class="btn secondary" data-act="model-mentions">Reprendre les mentions du modèle de facture</button><button type="button" class="btn" data-act="save-company">${icon('save', 15)} Enregistrer les paramètres</button></div>` : '<p class="muted small">Consultation seule pour votre profil.</p>'}`;
     }
     if (s === 'account') {
       return `<h2>Mon compte</h2><p>${esc(session.me.user.fullName)} · ${esc(session.me.user.roleLabel)}</p>
@@ -100,6 +102,10 @@ export class SettingsView extends SectionedView {
         setCompanyInfo(r);
         msg.innerHTML = ok('Paramètres enregistrés.');
         emit('operation', { message: 'Paramètres de la société enregistrés' });
+      } else if (act === 'model-mentions') {
+        const f = $('[data-form=company]', this.el);
+        for (const k of ['name', 'rccm', 'taxId', 'phone', 'address']) if (f[k] && !f[k].value.trim()) f[k].value = MODEL_MENTIONS[k];
+        msg.innerHTML = '<div class="notice">Mentions reprises du modèle de facture fourni (champs vides uniquement). Vérifiez-les puis enregistrez.</div>';
       } else if (act === 'change-password') {
         const f = $('[data-form=pwd]', this.el);
         if (!f.reportValidity()) return;

@@ -14,13 +14,16 @@ import { mountWorkspaceTabs } from './WorkspaceTabs.js';
 
 export function mountApplicationShell(root) {
   root.innerHTML = `
+    <header class="titlebar">
+      <div class="logo-plate"><img src="assets/logo-raha-sm.png" alt="Raha Transport"></div>
+      <h1 class="app-title">RAHA TRANSPORT MANAGEMENT SYSTEM (RTMS)</h1>
+    </header>
     <header class="appbar">
-      <div class="brand-mini" title="RAHA TRANSPORT Management System"><strong>RAHA TRANSPORT</strong><small>RTMS</small></div>
       <nav class="menubar" role="menubar" aria-label="Menu principal"></nav>
       <div class="appbar-right">
         <div class="gs-host"></div>
-        <button type="button" class="icon-btn bell" data-bell aria-label="Notifications" title="Notifications">${icon('bell', 17)}<span class="badge" data-bell-count hidden></span></button>
-        <span class="who" data-who></span>
+        <button type="button" class="icon-btn bell" data-bell aria-label="Notifications" title="Notifications">${icon('bell', 19)}<span class="badge red" data-bell-count hidden></span></button>
+        <button type="button" class="userchip" data-user-menu title="Mon compte"><span class="avatar">${icon('users', 15)}</span><span class="who" data-who></span></button>
         <button type="button" class="icon-btn" data-cmd="session.logout" title="Déconnexion">${icon('logout', 16)}</button>
       </div>
     </header>
@@ -28,7 +31,8 @@ export function mountApplicationShell(root) {
     <div class="body">
       <aside class="toolrail" role="toolbar" aria-orientation="vertical" aria-label="Modules"></aside>
       <main class="work">
-        <div class="wtabs" role="tablist" aria-label="Onglets ouverts"></div>
+        <div class="wtabs-row"><div class="wtabs" role="tablist" aria-label="Onglets ouverts"></div>
+          <button type="button" class="icon-btn panel-toggle" data-cmd="view.togglePanel" title="Afficher / masquer les panneaux (F4)" aria-label="Afficher ou masquer les panneaux">${icon('chevronsr', 17)}</button></div>
         <div class="panes"></div>
       </main>
       <div class="splitter" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau" title="Glisser pour redimensionner · double-clic pour masquer"></div>

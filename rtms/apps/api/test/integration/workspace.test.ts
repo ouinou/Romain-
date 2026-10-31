@@ -123,3 +123,25 @@ describe('Notifications et activité', () => {
     void owner;
   });
 });
+
+describe('Compteurs par statut et mentions légales', () => {
+  it('compte par statut, en respectant les filtres de la vue', async () => {
+    const A = await adminOf();
+    await A.c.post('/api/records/transport', mission('S-1', { Statut: 'En cours' }));
+    await A.c.post('/api/records/transport', mission('S-2', { Statut: 'En cours' }));
+    await A.c.post('/api/records/transport', mission('S-3', { Statut: 'En attente', Client: 'Autre' }));
+    expect((await A.c.get('/api/records/transport/stats')).body).toEqual({ total: 3, byStatus: { 'En cours': 2, 'En attente': 1 } });
+    expect((await A.c.get(`/api/records/transport/stats?f=${f({ Client: 'autre' })}`)).body.total).toBe(1);
+  });
+  it('facture multi-lignes de bout en bout ; RCCM et contribuable enregistrés', async () => {
+    const A = await adminOf();
+    const r = await A.c.post('/api/records/invoices', { data: { 'Numéro de facture': 'ML-1', Client: 'C', Date: '2026-10-31', Statut: 'Brouillon', Chauffeur: 'Ali', 'N° de camion': 'LT 123', 'Avance (FCFA)': '100000',
+      Lignes: [{ 'Désignation': 'Transport', 'Quantité': '1', 'Prix unitaire (FCFA)': '400000' }, { 'Désignation': 'Déchargement', 'Quantité': '2', 'Prix unitaire (FCFA)': '25000' }] } });
+    expect(r.status).toBe(201);
+    expect(r.body.computed).toMatchObject({ totalTTC: 450000, reste: 350000, totalEnLettres: 'quatre cent cinquante mille francs CFA' });
+    const s = await A.c.put('/api/admin/settings', { name: 'RAHA TRANSPORT', rccm: 'CM-DLA-02-2024-B12-00521', taxId: 'M062417047737R' });
+    expect(s.status).toBe(200);
+    expect((await A.c.get('/api/admin/settings')).body.rccm).toBe('CM-DLA-02-2024-B12-00521');
+    expect((await A.c.get('/api/auth/me')).body.instance).toBe('RAHA_TEST');
+  });
+});
