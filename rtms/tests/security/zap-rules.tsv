@@ -1,0 +1,9 @@
+10038	FAIL	(Content Security Policy Header Not Set)
+10020	FAIL	(Anti-clickjacking Header)
+10021	FAIL	(X-Content-Type-Options Header Missing)
+10035	FAIL	(Strict-Transport-Security Header) - en production uniquement
+10010	FAIL	(Cookie No HttpOnly Flag)
+10054	FAIL	(Cookie without SameSite Attribute)
+40012	FAIL	(Cross Site Scripting (Reflected))
+40018	FAIL	(SQL Injection)
+10055	WARN	(CSP: style-src unsafe-inline — attributs style hérités du prototype)

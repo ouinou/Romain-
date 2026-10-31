@@ -1,0 +1,168 @@
+// RTMS — schéma de données (PostgreSQL 16)
+// Toute évolution passe par une migration versionnée (prisma/migrations).
+// Les règles de sécurité (RLS, rôles, triggers d'audit) sont dans
+// 0002_security/migration.sql : Prisma ne sait pas les exprimer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  users       User[]
+  records     Record[]
+  permissions RolePermission[]
+
+  @@map("companies")
+}
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  companyId         String    @map("company_id") @db.Uuid
+  email             String    @unique
+  fullName          String    @map("full_name")
+  passwordHash      String    @map("password_hash")
+  roleKey           String    @map("role_key")
+  status            String    @default("active") // active | disabled
+  failedLogins      Int       @default(0) @map("failed_logins")
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(3)
+  mfaEnabled        Boolean   @default(false) @map("mfa_enabled")
+  mfaSecretEnc      String?   @map("mfa_secret_enc")
+  recoveryCodes     Json      @default("[]") @map("recovery_codes") // empreintes argon2
+  passwordChangedAt DateTime  @default(now()) @map("password_changed_at") @db.Timestamptz(3)
+  lastLoginAt       DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("users")
+}
+
+model RolePermission {
+  companyId String @map("company_id") @db.Uuid
+  roleKey   String @map("role_key")
+  module    String
+  action    String
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, roleKey, module, action])
+  @@map("role_permissions")
+}
+
+/// Enregistrement métier générique (un par ligne des 14 modules du prototype).
+/// Les champs métier sont dans `data` (validés côté serveur par modules/definitions.ts).
+model Record {
+  id           String    @id @default(uuid()) @db.Uuid
+  companyId    String    @map("company_id") @db.Uuid
+  module       String
+  reference    String?
+  status       String?
+  data         Json
+  computed     Json      @default("{}")
+  version      Int       @default(1)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  String    @map("created_by") @db.Uuid
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  String?   @map("updated_by") @db.Uuid
+  cancelledAt  DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById String?  @map("cancelled_by") @db.Uuid
+  cancelReason String?   @map("cancel_reason")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, module, createdAt(sort: Desc)])
+  @@map("records")
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  companyId String?  @map("company_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  at        DateTime @default(now()) @db.Timestamptz(3)
+  prevHash  String?  @map("prev_hash")
+  hash      String?
+
+  @@index([companyId, at(sort: Desc)])
+  @@map("audit_log")
+}
+
+/// Identité de cette installation (une seule ligne).
+model Installation {
+  id             Int       @id @default(1)
+  installationId String    @unique @map("installation_id") @db.Uuid
+  licenseToken   String?   @map("license_token")
+  lastCheckAt    DateTime? @map("last_check_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("installation")
+}
+
+// ---------- Serveur de licences (éditeur) : tables accessibles au seul rôle rtms_license ----------
+
+model License {
+  id         String    @id @default(uuid()) @db.Uuid
+  keyHash    String    @unique @map("key_hash")
+  customer   String
+  plan       String
+  status     String    @default("active") // active | suspended | revoked
+  maxDevices Int       @default(1) @map("max_devices")
+  maxUsers   Int       @default(10) @map("max_users")
+  features   Json      @default("[]")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason String? @map("revoke_reason")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  activations LicenseActivation[]
+  events      LicenseEvent[]
+
+  @@map("licenses")
+}
+
+model LicenseActivation {
+  id             String    @id @default(uuid()) @db.Uuid
+  licenseId      String    @map("license_id") @db.Uuid
+  installationId String    @map("installation_id") @db.Uuid
+  deviceHash     String    @map("device_hash")
+  ip             String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt     DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  license License @relation(fields: [licenseId], references: [id])
+
+  @@unique([licenseId, installationId, deviceHash])
+  @@map("license_activations")
+}
+
+model LicenseEvent {
+  id        BigInt   @id @default(autoincrement())
+  licenseId String?  @map("license_id") @db.Uuid
+  type      String
+  ip        String?
+  detail    Json     @default("{}")
+  at        DateTime @default(now()) @db.Timestamptz(3)
+
+  license License? @relation(fields: [licenseId], references: [id])
+
+  @@index([licenseId, at(sort: Desc)])
+  @@map("license_events")
+}

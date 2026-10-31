@@ -1,0 +1,41 @@
+# Environnement de DÉVELOPPEMENT local. Production : infra/compose.prod.yml
+name: rtms-dev
+services:
+  postgres:
+    image: postgres:16.6-bookworm
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpostgres}
+      RTMS_OWNER_PASSWORD: ${RTMS_OWNER_PASSWORD:-devowner}
+      RTMS_APP_PASSWORD: ${RTMS_APP_PASSWORD:-devapp}
+      RTMS_LICENSE_PASSWORD: ${RTMS_LICENSE_PASSWORD:-devlic}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    ports: ["127.0.0.1:5432:5432"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 5s, retries: 10 }
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:6379:6379"]
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: build }
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: postgresql://rtms_owner:${RTMS_OWNER_PASSWORD:-devowner}@postgres:5432/rtms
+    depends_on: { postgres: { condition: service_healthy } }
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://rtms_app:${RTMS_APP_PASSWORD:-devapp}@postgres:5432/rtms?connection_limit=10
+      REDIS_URL: redis://redis:6379
+      DATA_ENCRYPTION_KEYS: ${DATA_ENCRYPTION_KEYS:?Générer avec openssl rand -base64 32}
+      PUBLIC_ORIGIN: http://localhost:3000
+      COOKIE_SECURE: "false"
+      LICENSE_ENFORCEMENT: warn
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+volumes:
+  pgdata:

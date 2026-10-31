@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - { package-ecosystem: npm, directory: /rtms/apps/api, schedule: { interval: weekly }, open-pull-requests-limit: 5 }
+  - { package-ecosystem: npm, directory: /rtms/apps/web, schedule: { interval: monthly } }
+  - { package-ecosystem: docker, directory: /rtms/apps/api, schedule: { interval: weekly } }
+  - { package-ecosystem: github-actions, directory: /, schedule: { interval: monthly } }

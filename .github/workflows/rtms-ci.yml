@@ -1,0 +1,186 @@
+# CI/CD du logiciel RTMS (dossier rtms/)
+name: RTMS CI/CD
+on:
+  push:
+    branches: [main]
+    tags: ["rtms-v*"]
+    paths: ["rtms/**", ".github/workflows/rtms-ci.yml"]
+  pull_request:
+    paths: ["rtms/**", ".github/workflows/rtms-ci.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rtms-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run: { working-directory: rtms/apps/api }
+
+env:
+  NODE_VERSION: "22"
+  TEST_DATABASE_URL: postgresql://rtms_app:ci_app@localhost:5432/rtms_test
+  TEST_OWNER_DATABASE_URL: postgresql://rtms_owner:ci_owner@localhost:5432/rtms_test
+  TEST_LICENSE_DATABASE_URL: postgresql://rtms_license:ci_lic@localhost:5432/rtms_test
+  TEST_SUPERUSER_DATABASE_URL: postgresql://postgres:ci_postgres@localhost:5432/rtms_test
+  TEST_REDIS_URL: redis://localhost:6379/15
+
+jobs:
+  qualite:
+    name: Typage et tests unitaires
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: rtms/apps/api/package-lock.json }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npx vitest run test/unit --coverage.enabled=false
+      - run: npm audit --audit-level=high
+
+  integration:
+    name: Tests d'intégration (PostgreSQL + Redis réels)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci_postgres }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: rtms/apps/api/package-lock.json }
+      - run: npm ci && npx prisma generate
+      - name: Rôles et bases de test
+        env: { PGPASSWORD: ci_postgres }
+        run: |
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE rtms_owner LOGIN CREATEROLE PASSWORD 'ci_owner';
+          CREATE DATABASE rtms_test OWNER rtms_owner;
+          CREATE DATABASE rtms OWNER rtms_owner;
+          SQL
+      - name: Migrations contrôlées
+        run: |
+          for db in rtms_test rtms; do DATABASE_URL=postgresql://rtms_owner:ci_owner@localhost:5432/$db npx prisma migrate deploy; done
+          PGPASSWORD=ci_postgres psql -h localhost -U postgres -c "ALTER ROLE rtms_app LOGIN PASSWORD 'ci_app'" -c "ALTER ROLE rtms_license LOGIN PASSWORD 'ci_lic'"
+      - run: npx vitest run test/integration --coverage.enabled=true --coverage.reporter=lcov --coverage.reporter=text-summary
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage, path: rtms/apps/api/coverage/lcov.info }
+      - name: Démarrage de l'application pour les tests de bout en bout
+        env:
+          DATABASE_URL: postgresql://rtms_app:ci_app@localhost:5432/rtms
+          REDIS_URL: redis://localhost:6379/1
+          COOKIE_SECURE: "false"
+          WEB_ROOT: ${{ github.workspace }}/rtms/apps/web
+          LICENSE_ENFORCEMENT: warn
+          LOG_LEVEL: warn
+        run: |
+          export DATA_ENCRYPTION_KEYS="v1:$(openssl rand -base64 32)"
+          npm run build
+          nohup node dist/main.js > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do curl -fs localhost:3000/readyz && break; sleep 1; done
+      - name: Playwright
+        working-directory: rtms/apps/web
+        env: { MIGRATION_DATABASE_URL: "postgresql://rtms_owner:ci_owner@localhost:5432/rtms" }
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: k6 (fumée de charge)
+        run: |
+          MIGRATION_DATABASE_URL=postgresql://rtms_owner:ci_owner@localhost:5432/rtms npx tsx src/scripts/loadtest-seed.ts 20 /tmp/users.json
+          curl -sSL https://github.com/grafana/k6/releases/download/v0.57.0/k6-v0.57.0-linux-amd64.tar.gz | tar xz
+          ./k6-v0.57.0-linux-amd64/k6 run --vus 20 --duration 30s -e USERS_FILE=/tmp/users.json ../../tests/load/rtms.k6.js
+      - name: OWASP ZAP (scan de base)
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:3000
+          rules_file_name: rtms/tests/security/zap-rules.tsv
+          allow_issue_writing: false
+      - if: failure()
+        run: tail -200 /tmp/api.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: playwright-report, path: rtms/apps/web/playwright-report }
+
+  securite:
+    name: Analyses de sécurité
+    runs-on: ubuntu-24.04
+    permissions: { contents: read, security-events: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Trivy (dépendances, secrets, configuration)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: rtms
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+      - name: Snyk
+        if: env.SNYK_TOKEN != ''
+        env: { SNYK_TOKEN: "${{ secrets.SNYK_TOKEN }}" }
+        uses: snyk/actions/node@master
+        with: { args: --file=rtms/apps/api/package.json --severity-threshold=high }
+      - name: SonarQube
+        if: env.SONAR_TOKEN != ''
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        with: { projectBaseDir: rtms }
+
+  image:
+    name: Image Docker
+    needs: [qualite, integration, securite]
+    runs-on: ubuntu-24.04
+    permissions: { contents: read, packages: write }
+    defaults: { run: { working-directory: rtms } }
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: echo "version=${GITHUB_REF_NAME#rtms-v}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build -f apps/api/Dockerfile --build-arg RTMS_VERSION=${{ steps.v.outputs.version }} -t rtms-api:ci .
+      - name: Trivy (image)
+        uses: aquasecurity/trivy-action@0.28.0
+        with: { image-ref: "rtms-api:ci", severity: "HIGH,CRITICAL", exit-code: "1", ignore-unfixed: true }
+      - name: Publication (tags rtms-v* uniquement)
+        if: startsWith(github.ref, 'refs/tags/rtms-v')
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          IMG=ghcr.io/${{ github.repository_owner }}/rtms-api
+          docker tag rtms-api:ci $IMG:${{ steps.v.outputs.version }}
+          docker push $IMG:${{ steps.v.outputs.version }}
+
+  deploiement-test:
+    name: Déploiement — test
+    if: startsWith(github.ref, 'refs/tags/rtms-v')
+    needs: image
+    runs-on: ubuntu-24.04
+    environment: test
+    steps:
+      - name: Déploiement réversible
+        run: |
+          install -m 600 /dev/null ~/key && echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/key
+          ssh -i ~/key -o StrictHostKeyChecking=yes ${{ secrets.DEPLOY_HOST }} "sudo /opt/rtms/infra/deploy/deploy.sh ${GITHUB_REF_NAME#rtms-v}"
+
+  deploiement-production:
+    name: Déploiement — production (validation manuelle)
+    needs: deploiement-test
+    runs-on: ubuntu-24.04
+    environment: production   # règle de protection : approbation obligatoire
+    steps:
+      - name: Déploiement réversible
+        run: |
+          install -m 600 /dev/null ~/key && echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/key
+          ssh -i ~/key -o StrictHostKeyChecking=yes ${{ secrets.DEPLOY_HOST }} "sudo /opt/rtms/infra/deploy/deploy.sh ${GITHUB_REF_NAME#rtms-v}"

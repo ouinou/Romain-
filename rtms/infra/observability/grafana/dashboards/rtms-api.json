@@ -1,0 +1,157 @@
+{
+ "title": "RTMS — API",
+ "uid": "rtms-api",
+ "schemaVersion": 39,
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "DS",
+    "type": "datasource",
+    "query": "prometheus"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "type": "timeseries",
+   "title": "Requêtes / s par statut",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (status) (rate(rtms_http_request_duration_seconds_count[5m]))",
+     "legendFormat": "{{status}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Latence p95 par route",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, route) (rate(rtms_http_request_duration_seconds_bucket[5m])))",
+     "legendFormat": "{{route}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Événements d’authentification",
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (event) (rate(rtms_auth_events_total[5m])) * 60",
+     "legendFormat": "{{event}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Mémoire du processus",
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes"
+    }
+   },
+   "targets": [
+    {
+     "expr": "rtms_process_resident_memory_bytes",
+     "legendFormat": "{{instance}}"
+    }
+   ]
+  },
+  {
+   "type": "stat",
+   "title": "Licence valide",
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 6,
+    "h": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "targets": [
+    {
+     "expr": "min(rtms_license_valid)"
+    }
+   ]
+  },
+  {
+   "type": "logs",
+   "title": "Erreurs applicatives",
+   "gridPos": {
+    "x": 6,
+    "y": 16,
+    "w": 18,
+    "h": 8
+   },
+   "datasource": {
+    "type": "loki"
+   },
+   "targets": [
+    {
+     "expr": "{container=~\".*api.*\"} | json | level >= 50"
+    }
+   ]
+  }
+ ]
+}

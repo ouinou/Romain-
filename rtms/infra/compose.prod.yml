@@ -1,0 +1,150 @@
+# Déploiement de PRODUCTION sur un serveur unique (RTMS on-premise ou VPS).
+#   docker compose -f infra/compose.prod.yml --env-file /etc/rtms/rtms.env up -d
+#   docker compose -f infra/compose.prod.yml --profile observability up -d   # supervision
+# Seul Caddy publie des ports. PostgreSQL et Redis restent sur le réseau interne.
+name: rtms
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "20m", max-file: "5", tag: "{{.Name}}" }
+
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    ports: ["80:80", "443:443"]
+    environment: { RTMS_DOMAIN: "${RTMS_DOMAIN}" }
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/certs:/etc/caddy/certs:ro      # certificat d'origine Cloudflare + CA AOP
+      - caddy_data:/data
+    depends_on: [api]
+    networks: [edge]
+    restart: unless-stopped
+    logging: *logging
+
+  api:
+    image: ghcr.io/${RTMS_IMAGE_OWNER:-raha}/rtms-api:${RTMS_VERSION:?Version obligatoire (ex. 2.0.0)}
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      NODE_ENV: production
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
+      TRUST_PROXY: "true"
+      REDIS_URL_FILE: /run/secrets/redis_url
+      DATABASE_URL_FILE: /run/secrets/database_url
+      DATA_ENCRYPTION_KEYS_FILE: /run/secrets/data_keys
+      METRICS_TOKEN_FILE: /run/secrets/metrics_token
+      LICENSE_PUBLIC_KEY_PEM_FILE: /run/secrets/license_public_key
+      LICENSE_ISSUER_URL: ${LICENSE_ISSUER_URL}
+      LICENSE_ENFORCEMENT: enforce
+      RTMS_DEVICE_ID_FILE: /run/secrets/device_id
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      # Alternative à *_FILE : VAULT_ADDR + VAULT_ROLE_ID + VAULT_SECRET_ID_FILE (voir docs/SECURITE.md)
+    secrets: [redis_url, database_url, data_keys, metrics_token, license_public_key, device_id]
+    deploy:
+      replicas: 2
+      resources: { limits: { cpus: "1.5", memory: 768M } }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [edge, backend]
+    restart: unless-stopped
+    logging: *logging
+
+  migrate:
+    image: ghcr.io/${RTMS_IMAGE_OWNER:-raha}/rtms-api:${RTMS_VERSION}
+    profiles: [migrate]
+    command: ["sh", "-c", "DATABASE_URL=$$(cat /run/secrets/migration_database_url) npx prisma migrate deploy"]
+    secrets: [migration_database_url]
+    networks: [backend]
+
+  postgres:
+    image: postgres:16.6-bookworm
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/postgresql.prod.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/pg_hba.prod.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./postgres/tls:/etc/postgresql/tls:ro
+      - ./pgbackrest/pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+      - pgbackrest_repo:/var/lib/pgbackrest
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 10s, retries: 6 }
+    networks: [backend]
+    restart: unless-stopped
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$(cat /run/secrets/redis_password)\" --rename-command FLUSHALL '' --rename-command CONFIG ''"]
+    secrets: [redis_password]
+    volumes: [redisdata:/data]
+    healthcheck: { test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" --no-auth-warning ping"], interval: 10s }
+    networks: [backend]
+    restart: unless-stopped
+
+  # ---------------- Supervision (profil observability) ----------------
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    profiles: [observability]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - promdata:/prometheus
+    secrets: [metrics_token]
+    networks: [backend]
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: [observability]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    secrets: [grafana_admin_password]
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3001:3000"]          # accès via tunnel SSH/VPN uniquement
+    networks: [backend]
+  loki:
+    image: grafana/loki:3.3.2
+    profiles: [observability]
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes: ["./observability/loki-config.yml:/etc/loki/config.yml:ro", "lokidata:/loki"]
+    networks: [backend]
+  promtail:
+    image: grafana/promtail:3.3.2
+    profiles: [observability]
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [backend]
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    profiles: [observability]
+    command: ["--config=/etc/otel/config.yml"]
+    volumes: ["./observability/otel-collector.yml:/etc/otel/config.yml:ro"]
+    networks: [backend]
+
+secrets:
+  postgres_password: { file: /etc/rtms/secrets/postgres_password }
+  database_url: { file: /etc/rtms/secrets/database_url }
+  migration_database_url: { file: /etc/rtms/secrets/migration_database_url }
+  redis_password: { file: /etc/rtms/secrets/redis_password }
+  redis_url: { file: /etc/rtms/secrets/redis_url }
+  data_keys: { file: /etc/rtms/secrets/data_keys }
+  metrics_token: { file: /etc/rtms/secrets/metrics_token }
+  license_public_key: { file: /etc/rtms/secrets/license_public_key.pem }
+  device_id: { file: /etc/machine-id }
+  grafana_admin_password: { file: /etc/rtms/secrets/grafana_admin_password }
+
+volumes: { pgdata: {}, redisdata: {}, caddy_data: {}, pgbackrest_repo: {}, promdata: {}, lokidata: {} }
+networks:
+  edge: {}
+  backend: { internal: true }
