@@ -25,6 +25,7 @@ La v2.0 a transformé le prototype (un fichier HTML qui stockait tout dans le na
 8. [Maintenance](docs/08-MAINTENANCE.md)
 9. [Interface — espace de travail](docs/09-INTERFACE.md)
 10. [Application Windows et démonstration](docs/10-APPLICATION-WINDOWS.md)
+11. [Réseau local sans Internet (petites entreprises)](docs/11-RESEAU-LOCAL-HORS-LIGNE.md)
 
 ## Démarrage rapide (développement)
 

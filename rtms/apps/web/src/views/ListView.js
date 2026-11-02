@@ -10,7 +10,7 @@ import { can, session } from '../core/session.js';
 import { COLUMNS, DATE_FIELD, LOCKED_STATUSES, MODULE_LABEL, VALIDATED_STATUS, recordTitle, viewByKey } from '../config.js';
 import { showContextMenu } from '../components/ContextMenu.js';
 import { confirmDialog, dialog, formDialog } from '../components/ModalManager.js';
-import { invoiceDoc, loadingDoc, missionOrderDoc, printHtml, tableDoc, waybillDoc } from '../components/PrintService.js';
+import { exportInvoices, invoiceDoc, loadingDoc, missionOrderDoc, printHtml, tableDoc, waybillDoc } from '../components/PrintService.js';
 
 export function statusField(module) { return session.defs[module]?.statusField; }
 export function statusOptions(module) {
@@ -414,7 +414,7 @@ export class ListView {
     if (!tr) return;
     e.preventDefault();
     if (!this.selected.has(tr.dataset.id)) this.select(tr.dataset.id);
-    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print'] : [];
+    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : [];
     showContextMenu(e.clientX, e.clientY, ['record.open', 'record.edit', 'record.duplicate', '-', 'record.status', 'record.validate', ...extra, '-', 'file.print', 'file.csv', '-', 'record.cancel']);
   }
 
@@ -454,6 +454,7 @@ export class ListView {
       case 'transport.vehicle': case 'transport.driver': return m === 'transport' && n === 1 && can(m, 'update');
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return m === 'transport' && n === 1;
       case 'invoice.print': return m === 'invoices' && n === 1;
+      case 'invoice.export': return m === 'invoices' && (n >= 1 || this.rows.length > 0);
       default: return false;
     }
   }
@@ -520,6 +521,7 @@ export class ListView {
       case 'transport.waybill': return printHtml(waybillDoc(one));
       case 'transport.loading': return printHtml(loadingDoc(one));
       case 'invoice.print': return printHtml(invoiceDoc(one));
+      case 'invoice.export': return exportInvoices(sel.length ? sel : this.rows);
       default: return undefined;
     }
   }

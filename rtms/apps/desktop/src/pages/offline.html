@@ -2,11 +2,15 @@
 <html lang="fr"><head><meta charset="utf-8"><title>RAHA TRANSPORT RTMS</title><link rel="stylesheet" href="pages.css"><script src="offline.js" defer></script></head>
 <body><main class="card">
   <img class="logo" src="/assets/logo-raha.png" alt="Raha Transport">
-  <h1>Serveur RTMS injoignable</h1>
-  <p class="sub">Le poste n’arrive pas à joindre <code id="url"></code>.</p>
-  <section class="choice">
-    <p>Vérifiez la connexion réseau du poste (câble, Wi-Fi, VPN), puis réessayez. Si le problème continue, prévenez l’administrateur : le serveur est peut-être arrêté.</p>
-    <p>Détail technique : <code id="err"></code></p>
-    <div class="row"><button id="retry" type="button">Réessayer</button><button class="secondary" id="change" type="button">Changer de serveur</button></div>
+  <h1 id="title">Poste principal injoignable</h1>
+  <p class="sub" id="sub">Le poste n’arrive pas à joindre <code id="url"></code>.</p>
+  <section class="choice" id="help">
+    <p>Vérifiez que le poste principal est allumé et que RTMS y est ouvert, puis que ce poste est bien connecté à la box (câble ou wifi). Internet n’est pas nécessaire.</p>
+    <p>Détail : <code id="err"></code></p>
   </section>
+  <section class="choice warn" id="certwarn" hidden>
+    <p><b>Le certificat du poste principal a changé.</b> Si le poste principal a été réinstallé, c’est normal : reconnectez-vous en vérifiant la nouvelle empreinte. Sinon, prévenez l’administrateur : un autre appareil se fait peut-être passer pour le poste principal.</p>
+    <p>Attendue : <code id="exp"></code><br>Reçue : <code id="rec"></code></p>
+  </section>
+  <div class="row"><button id="retry" type="button">Réessayer</button><button class="secondary" id="change" type="button">Changer de serveur</button></div>
 </main></body></html>

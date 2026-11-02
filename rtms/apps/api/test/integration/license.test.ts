@@ -117,6 +117,26 @@ describe('Serveur de licences', () => {
   });
 });
 
+describe('Licence hors ligne (poste principal sans Internet)', () => {
+  it('jeton émis par l’éditeur, installé sans réseau, sans date de renouvellement', async () => {
+    const { id } = await createLicense({ features: ['offline'] });
+    await owner.installation.deleteMany({});
+    const g = await new LicenseGuard(owner, { publicKeyPem: keys.publicKeyPem, enforcement: 'enforce', graceDays: 0, deviceId: 'poste-principal' }).init();
+    const st = g.status();
+    const r = await issuer.inject({ method: 'POST', url: `/licensing/admin/licenses/${id}/offline-token`, headers: { authorization: `Bearer ${ADMIN_TOKEN}` }, payload: { installationId: st.installationId, deviceHash: st.deviceHash } });
+    expect(r.statusCode).toBe(200);
+    await g.installToken(r.json().token);
+    expect(g.status().state).toBe('valid');
+    expect(g.status().refreshBy).toBe(g.status().expiresAt); // aucun renouvellement en ligne exigé
+    expect((await g.refresh()).state).toBe('valid'); // pas d'adresse d'éditeur : rien ne change
+  });
+  it('refusé pour une licence sans option hors ligne', async () => {
+    const { id } = await createLicense();
+    const r = await issuer.inject({ method: 'POST', url: `/licensing/admin/licenses/${id}/offline-token`, headers: { authorization: `Bearer ${ADMIN_TOKEN}` }, payload: { installationId: '00000000-0000-4000-8000-000000000000', deviceHash: 'a'.repeat(64) } });
+    expect(r.statusCode).toBe(409);
+  });
+});
+
 describe('Application de la licence par l’API', () => {
   it('sans licence (mode enforce) : lecture possible, écriture bloquée', async () => {
     await owner.installation.deleteMany({});

@@ -59,5 +59,32 @@ export function mountAuth(onReady) {
   $('#recovery [data-act=enter-app]').addEventListener('click', () => { root.classList.add('hidden'); onReady(me); });
   root.addEventListener('click', (e) => { if (e.target.closest('[data-act=auth-cancel]')) { post('/api/auth/logout').catch(() => {}); show(); } });
 
-  return { show, after };
+  // Poste principal neuf : création de la société et du premier administrateur
+  async function checkSetup() {
+    try {
+      const r = await fetch('/api/setup/status', { credentials: 'same-origin' });
+      if (!r.ok) return false;
+      const st = await r.json();
+      if (!st.needsSetup) return false;
+      root.classList.remove('hidden');
+      $('#loginform').classList.add('hidden');
+      $(st.local ? '#setupform' : '#setupwait').classList.remove('hidden');
+      return true;
+    } catch { return false; }
+  }
+  $('#setupform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    if (!f.reportValidity()) return;
+    try {
+      await post('/api/setup', Object.fromEntries(new FormData(f).entries()));
+      const email = f.email.value;
+      $('#setupform').classList.add('hidden');
+      show('Société créée. Connectez-vous avec le compte administrateur ; la double authentification va être configurée.');
+      $('#loginform [name=email]').value = email;
+      $('#loginerr').firstElementChild.className = 'ok';
+    } catch (err) { $('#loginerr').innerHTML = errorBox(err); }
+  });
+
+  return { show, after, checkSetup };
 }

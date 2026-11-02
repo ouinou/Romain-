@@ -61,6 +61,7 @@ view('transport.order', 'Ordre de mission', 'printer');
 view('transport.waybill', 'Lettre de transport', 'file');
 view('transport.loading', 'Bon de chargement', 'file');
 view('invoice.print', 'Imprimer la facture', 'receipt');
+view('invoice.export', 'Exporter en PDF (Bureau, clé USB…)', 'export');
 
 const g = (id, label, ic, key, fn, enabled) => register({ id, label, icon: ic, key, global: fn, enabled });
 let shell = null;
@@ -118,11 +119,11 @@ setMenus(() => [
     '-', { cmd: 'view.filters' }, { cmd: 'view.columns' }] },
   { label: 'Navigation', items: () => [{ cmd: 'nav.back' }, { cmd: 'tab.next' }, { cmd: 'tab.prev' }, '-', openItem('dashboard'), { cmd: 'search.global' }, '-',
     ...workspace.tabs.map((t) => ({ label: t.view.title(), icon: t.view.icon?.() || 'dashboard', checked: () => t.id === workspace.activeId, action: () => workspace.activate(t.id) }))] },
-  { label: 'Transport', items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('staff'), openItem('maintenance')] },
-  { label: 'Transit', items: () => [newItem('transit'), openItem('transit'), '-', openItem('documents')] },
-  { label: 'Import / Export', items: () => [newItem('import'), newItem('export'), '-', openItem('import'), openItem('export')] },
-  { label: 'Commerce', items: () => [newItem('commerce'), openItem('commerce'), '-', newItem('clients'), openItem('clients'), newItem('suppliers'), openItem('suppliers')] },
-  { label: 'Finance', items: () => [newItem('invoices'), openItem('invoices'), { label: 'Factures échues…', icon: 'bell', enabled: () => can('invoices'), action: () => showNotifications('invoices') }, { cmd: 'invoice.print' }, '-', newItem('finance'), openItem('finance')] },
+  { label: 'Transport', byRole: true, items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('staff'), openItem('maintenance')] },
+  { label: 'Transit', byRole: true, items: () => [newItem('transit'), openItem('transit'), '-', openItem('documents')] },
+  { label: 'Import / Export', byRole: true, items: () => [newItem('import'), newItem('export'), '-', openItem('import'), openItem('export')] },
+  { label: 'Commerce', byRole: true, items: () => [newItem('commerce'), openItem('commerce'), '-', newItem('clients'), openItem('clients'), newItem('suppliers'), openItem('suppliers')] },
+  { label: 'Finance', byRole: true, items: () => [newItem('invoices'), openItem('invoices'), { label: 'Factures échues…', icon: 'bell', enabled: () => can('invoices'), action: () => showNotifications('invoices') }, { cmd: 'invoice.print' }, { cmd: 'invoice.export' }, '-', newItem('finance'), openItem('finance')] },
   { label: 'Fenêtre', items: () => [
     { label: 'Onglet Propriétés', checked: () => (prefs().panelTab || 'props') === 'props', action: () => setPrefs({ panelTab: 'props', panelVisible: true }) },
     { label: 'Onglet Historique', checked: () => prefs().panelTab === 'history', action: () => setPrefs({ panelTab: 'history', panelVisible: true }) },
@@ -135,7 +136,7 @@ setMenus(() => [
       '-', { cmd: 'window.saveWs' }, { cmd: 'window.resetWs' }] },
     '-', { cmd: 'window.notifications' }, { cmd: 'window.oplog' }] },
   { label: 'Rapports', items: () => [openItem('reports', 'Rapports et statistiques'), openItem('dashboard'), '-', { cmd: 'file.print' }, { cmd: 'file.pdf' }] },
-  { label: 'Administration', items: () => [
+  { label: 'Administration', byRole: true, items: () => [
     { label: 'Utilisateurs', icon: 'users', enabled: () => can('users'), action: () => openSection('admin', 'users') },
     { label: 'Profils et permissions', icon: 'shield', enabled: () => can('users'), action: () => openSection('admin', 'permissions') },
     { label: 'Journal d’audit', icon: 'history', enabled: () => can('audit'), action: () => openSection('admin', 'audit') },
@@ -239,5 +240,5 @@ on('notifications', (s) => {
 });
 on('license-blocked', (d) => emit('toast', { type: 'error', message: d?.message || 'Licence invalide : consultation seule.' }));
 
-get('/api/auth/me').then((me) => (me.state === 'active' ? enterApp(me) : auth.after(me))).catch(() => auth.show());
+get('/api/auth/me').then((me) => (me.state === 'active' ? enterApp(me) : auth.after(me))).catch(async () => { if (!(await auth.checkSetup())) auth.show(); });
 void icon; void activeView;

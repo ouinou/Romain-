@@ -20,6 +20,8 @@ export interface LicenseStatus {
   reason?: string;
   enforcement: 'enforce' | 'warn' | 'off';
   installationId?: string;
+  /** Empreinte du poste, à communiquer à l'éditeur pour une licence hors ligne. */
+  deviceHash?: string;
   customer?: string;
   plan?: string;
   expiresAt?: string;
@@ -78,7 +80,7 @@ export class LicenseGuard {
   getDeviceHash() { return this.deviceHash; }
 
   private evaluate(token?: string) {
-    const base = { enforcement: this.opts.enforcement, installationId: this.installationId };
+    const base = { enforcement: this.opts.enforcement, installationId: this.installationId, deviceHash: this.deviceHash };
     if (!this.publicKey) { this.current = { ...base, state: 'unconfigured', reason: 'Clé publique de licence non configurée' }; return; }
     if (this.revoked) { this.current = { ...base, state: 'revoked', reason: 'Licence révoquée par l’éditeur' }; return; }
     if (!token) { this.current = { ...base, state: 'missing', reason: 'Aucune licence activée' }; return; }

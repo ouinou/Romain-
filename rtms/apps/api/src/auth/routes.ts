@@ -1,3 +1,4 @@
+import { dropPresence } from '../security/presence.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
@@ -196,6 +197,7 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (req.session && req.sessionToken) {
       const s = req.session;
       await ctx.sessions.destroy(req.sessionToken, s.userId);
+      await dropPresence(ctx.redis, s.companyId, req.sessionToken);
       await withTenant(ctx.prisma, s, (tx) => audit(tx, { companyId: s.companyId, userId: s.userId, action: 'auth.logout', entity: 'user', entityId: s.userId, ...meta(req) }));
     }
     reply.clearCookie(cookieName, { path: '/' });

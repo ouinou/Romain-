@@ -1,5 +1,39 @@
 # Journal des versions
 
+## 2.3.0 — 02/11/2026
+
+### Fonctionnement 100 % hors ligne en réseau local
+- Rôle « poste principal » : un PC de bureau ordinaire héberge les données (PostgreSQL intégré, accessible
+  uniquement depuis ce PC), sert l'application aux autres postes en HTTPS (certificat généré sur place),
+  sauvegarde chaque jour. Icône près de l'horloge : état, sauvegarde, restauration, pare-feu, démarrage
+  avec Windows.
+- Postes de travail : recherche automatique du poste principal sur le réseau, vérification de l'empreinte
+  du certificat (retenue ensuite ; connexion bloquée si elle change), retrouvé même si la box change son
+  adresse. Connexion directe pour les adresses locales (pas de proxy).
+- Premier démarrage : création de la société et de l'administrateur, possible uniquement depuis le poste
+  principal lui-même et seulement sur une base vide.
+- Sauvegarde/restauration logique (.rtmsbak + empreinte SHA-256), l'ancienne base est conservée.
+- Licence hors ligne (jeton signé, sans vérification en ligne).
+- Doc : `docs/11-RESEAU-LOCAL-HORS-LIGNE.md`.
+
+### Factures
+- Numéro (F-AAAA-NNNN) et date attribués automatiquement par le serveur. **Migration 0005** : table
+  `document_counters` (RLS), fonction `next_document_number`. Sans doublon entre postes, numéros de
+  factures annulées jamais réutilisés, numéros saisis à la main respectés.
+- Export PDF d'une ou plusieurs factures vers le Bureau, Documents, une clé USB détectée ou un autre dossier.
+
+### Utilisateurs
+- « Personnes connectées » (barre d'état) : nom, profil, depuis quand ; poste et adresse pour les profils
+  qui gèrent les utilisateurs. Route `GET /api/presence`.
+- Les menus vides pour un profil sont masqués.
+- Démonstration : un compte par profil (Administrateur, Direction, Comptable, Transport, Commercial,
+  Agent), avec les mêmes restrictions que le serveur.
+
+### Tests
+- API : 110/110 (dont numérotation simultanée et présence). Interface : 20/20.
+- Bureau : parcours démo + export PDF ; parcours hors ligne poste principal → poste de travail →
+  empreinte falsifiée refusée.
+
 ## 2.2.0 (bureau) — 31/10/2026
 - Application Windows (Electron) : installateur français sans droits administrateur, version portable, choix du serveur au premier lancement, écran « serveur injoignable », export PDF natif, navigation et permissions verrouillées.
 - Mode démonstration (serveur simulé dans le navigateur, données fictives) : intégré à l'application Windows et publié en ligne.

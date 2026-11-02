@@ -3,6 +3,7 @@
 // même impression : le PDF est produit par « Enregistrer au format PDF » du système.
 import { dateFr, esc, money } from '../core/dom.js';
 import { toast } from './NotificationCenter.js';
+import { dialog } from './ModalManager.js';
 
 /**
  * Mentions du pied de facture telles qu'elles figurent sur le modèle fourni par RAHA TRANSPORT
@@ -60,6 +61,54 @@ export async function printHtml(html, { pdf = false } = {}) {
   }
   if (pdf) toast('Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF ».', 'info');
   setTimeout(() => window.print(), pdf ? 300 : 50);
+}
+
+/**
+ * Export des factures en PDF (une ou plusieurs) vers le Bureau, Documents, une clé USB ou un autre dossier.
+ * Application Windows : un vrai fichier PDF A4 par facture, rangé dans « Factures RTMS ».
+ * Navigateur : impossible d'écrire directement sur une clé ; on ouvre l'impression de toutes les
+ * factures, et l'utilisateur choisit « Enregistrer au format PDF » puis la clé USB comme emplacement.
+ */
+export async function exportInvoices(records) {
+  const list = (records || []).filter(Boolean);
+  if (!list.length) return;
+  const d = window.rtmsDesktop;
+  if (!d || !d.exportTargets) {
+    toast('Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF », puis le Bureau ou la clé USB comme emplacement.', 'info');
+    return printHtml(list.map((r) => invoiceDoc(r)).join(''));
+  }
+  const targets = await d.exportTargets();
+  const body = document.createElement('div');
+  body.innerHTML = `<p style="margin-top:0">${list.length === 1 ? 'La facture sera enregistrée' : `Les ${list.length} factures seront enregistrées`} en PDF dans un dossier « Factures RTMS ».</p>
+    <div class="dest-list">${targets.map((t) => `<button type="button" class="btn ${t.kind === 'usb' ? '' : 'secondary'} dest" data-id="${esc(t.id)}">${esc(t.label)}<small>${esc(t.detail || '')}</small></button>`).join('')}
+    <button type="button" class="btn secondary dest" data-id="__choose">Autre dossier…<small>Choisir l’emplacement</small></button></div>
+    ${targets.some((t) => t.kind === 'usb') ? '' : '<p class="muted" style="font-size:12px">Aucune clé USB détectée. Branchez-la puis rouvrez cette fenêtre, ou choisissez « Autre dossier… ».</p>'}`;
+  let chosen = null;
+  const closeWith = await dialog({
+    title: 'Exporter en PDF', body, width: 520,
+    onMount: (bodyEl, close) => bodyEl.addEventListener('click', (e) => { const b = e.target.closest('.dest'); if (b) { chosen = b.dataset.id; (close || (() => {}))(chosen); } }),
+    actions: [{ label: 'Annuler', value: null, secondary: true }],
+  });
+  chosen = chosen || closeWith;
+  if (!chosen) return;
+  if (chosen === '__choose') { chosen = await d.chooseExportFolder(); if (!chosen) return; }
+  let root = document.getElementById('print-root');
+  if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
+  let folder = '';
+  let done = 0;
+  try {
+    for (const r of list) {
+      root.innerHTML = invoiceDoc(r);
+      await Promise.all([...root.querySelectorAll('img')].map((i) => (i.complete ? null : i.decode().catch(() => null))));
+      const res = await d.writePdf(chosen, pdfName(root));
+      folder = res.folder;
+      done++;
+    }
+    toast(`${done} facture(s) exportée(s) dans ${folder}`, 'success');
+    d.openFolder(chosen);
+  } catch (e) {
+    toast(`Export interrompu après ${done} facture(s) : ${e.message}`, 'error');
+  } finally { root.innerHTML = ''; }
 }
 
 /** Nom de fichier proposé : type de document + numéro. */

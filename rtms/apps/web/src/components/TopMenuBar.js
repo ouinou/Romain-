@@ -7,7 +7,10 @@ import { $, $$, clampToViewport, esc, h } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 
 let menus = () => [];
-export function setMenus(fn) { menus = fn; }
+// Un menu « par profil » n'apparaît que si la personne connectée a accès à au moins une de ses
+// entrées : un agent ne voit pas Finance ni Administration (le serveur refuse de toute façon).
+const usable = (it) => it && it !== '-' && !it.cmd && !it.submenu && (it.enabled === undefined || (typeof it.enabled === 'function' ? it.enabled() : it.enabled));
+export function setMenus(fn) { menus = () => fn().filter((m) => !m.byRole || m.items().some(usable)); }
 
 export function mountTopMenuBar(el) {
   let openIdx = -1;

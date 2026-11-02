@@ -94,6 +94,33 @@ describe('Enregistrements métier', () => {
     expect(dup.status).toBe(409);
   });
 
+  it('facture : numéro et date attribués par le serveur, sans doublon ni réutilisation', async () => {
+    const A = await adminOf();
+    const year = new Date(Date.now() + 3_600_000).getUTCFullYear();
+    const auto = (extra: Record<string, unknown> = {}) => { const b = invoice('', extra); delete (b.data as Record<string, unknown>)['Numéro de facture']; delete (b.data as Record<string, unknown>)['Date']; return b; };
+    const r1 = await A.c.post('/api/records/invoices', auto());
+    expect(r1.status).toBe(201);
+    expect(r1.body.data['Numéro de facture']).toBe(`F-${year}-0001`);
+    expect(r1.body.data['Date']).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Un numéro saisi à la main occupe la place suivante : il est sauté
+    expect((await A.c.post('/api/records/invoices', invoice(`F-${year}-0002`))).status).toBe(201);
+    // Enregistrements simultanés depuis plusieurs postes : numéros tous différents
+    const many = await Promise.all(Array.from({ length: 8 }, () => A.c.post('/api/records/invoices', auto())));
+    const nums = many.map((m) => { expect(m.status).toBe(201); return m.body.data['Numéro de facture']; });
+    expect(new Set(nums).size).toBe(8);
+    expect(nums).not.toContain(`F-${year}-0002`);
+    // Facture annulée : son numéro n'est jamais redonné
+    await A.c.post(`/api/records/invoices/${r1.body.id}/cancel`, { reason: 'test' });
+    const next = await A.c.post('/api/records/invoices', auto());
+    expect(next.body.data['Numéro de facture']).not.toBe(`F-${year}-0001`);
+    // L'année suit la date de la facture
+    const old = await A.c.post('/api/records/invoices', { data: { ...auto().data, Date: '2025-12-31' } });
+    expect(old.body.data['Numéro de facture']).toBe('F-2025-0001');
+    // Une autre société a son propre compteur
+    const B = await adminOf();
+    expect((await B.c.post('/api/records/invoices', auto())).body.data['Numéro de facture']).toBe(`F-${year}-0001`);
+  });
+
   it('validation serveur : champ inconnu, statut libre et texte vide refusés', async () => {
     const A = await adminOf();
     expect((await A.c.post('/api/records/transport', mission('X', { role: 'admin' }))).status).toBe(400);
@@ -255,5 +282,30 @@ describe('Chaîne d’audit : identifiant attribué sous verrou (régression 000
     await owner.$executeRawUnsafe(`INSERT INTO audit_log (id, company_id, action, entity) VALUES (-${Date.now()}, '${A.company.id}', 'test.course', 'test')`);
     await A.c.post('/api/records/transport', mission('ORD-1'));
     expect((await A.c.get('/api/admin/audit/verify')).body).toEqual({ intact: true, firstBrokenId: null });
+  });
+});
+
+describe('Personnes connectées', () => {
+  it('liste les sessions actives de la société, détails réservés à l’administration', async () => {
+    const A = await adminOf();
+    const agent = new Client(env.app);
+    await agent.login(await addUser(A.company.id, 'agent'));
+    await agent.get('/api/auth/me'); // première requête après connexion (l'interface le fait toujours)
+    const other = await adminOf();
+    const seen = await A.c.get('/api/presence');
+    expect(seen.status).toBe(200);
+    expect(seen.body).toHaveLength(2);
+    expect(seen.body.find((p: { me: boolean }) => p.me).roleKey).toBe('admin');
+    expect(seen.body.find((p: { roleKey: string }) => p.roleKey === 'agent')).toMatchObject({ roleLabel: 'Agent opérationnel' });
+    expect(seen.body[0].address).toBeDefined();
+    // L'agent voit qui est là, mais ni l'adresse ni le poste
+    const asAgent = await agent.get('/api/presence');
+    expect(asAgent.body).toHaveLength(2);
+    expect(asAgent.body.every((p: Record<string, unknown>) => !('address' in p) && !('device' in p))).toBe(true);
+    // Une autre société ne voit personne d'ici
+    expect((await other.c.get('/api/presence')).body).toHaveLength(1);
+    // Déconnexion : disparaît immédiatement
+    await agent.post('/api/auth/logout', {});
+    expect((await A.c.get('/api/presence')).body).toHaveLength(1);
   });
 });

@@ -10,6 +10,46 @@ import { requirePermission } from '../security/guard.js';
 import { permKey, type ModuleKey } from '../security/permissions.js';
 import { computeFields, csvCell, isModule, MODULE_DEFS, recordSchema } from './definitions.js';
 
+/**
+ * Numérotation automatique : module → préfixe. Le numéro est attribué par le serveur, dans la même
+ * transaction que l'enregistrement (compteur verrouillé : pas de doublon entre postes).
+ * Un numéro saisi à la main reste accepté (reprise d'anciennes factures), s'il est libre.
+ */
+const AUTO_NUMBER: Partial<Record<ModuleKey, { prefix: string; dateField: string }>> = {
+  invoices: { prefix: 'F', dateField: 'Date' },
+};
+const AUTO_PLACEHOLDER = '(automatique)';
+
+/** Date du jour au Cameroun (UTC+1, sans heure d'été), format AAAA-MM-JJ. */
+export function todayDouala(now = new Date()): string {
+  return new Date(now.getTime() + 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Pré-remplit la date du jour et réserve la place du numéro avant validation. */
+function prefillAuto(module: ModuleKey, raw: unknown): { data: unknown; autoNumber: boolean } {
+  const conf = AUTO_NUMBER[module];
+  if (!conf || !raw || typeof raw !== 'object' || Array.isArray(raw)) return { data: raw, autoNumber: false };
+  const d = { ...(raw as Record<string, unknown>) };
+  const refField = MODULE_DEFS[module].referenceField!;
+  if (d[conf.dateField] === undefined || d[conf.dateField] === '' || d[conf.dateField] === null) d[conf.dateField] = todayDouala();
+  const ref = d[refField];
+  const autoNumber = ref === undefined || ref === null || (typeof ref === 'string' && (ref.trim() === '' || ref.trim() === AUTO_PLACEHOLDER));
+  if (autoNumber) d[refField] = AUTO_PLACEHOLDER;
+  return { data: d, autoNumber };
+}
+
+async function assignNumber(tx: Tx, companyId: string, module: ModuleKey, data: Record<string, unknown>) {
+  const conf = AUTO_NUMBER[module]!;
+  const year = Number(String(data[conf.dateField]).slice(0, 4));
+  for (let i = 0; i < 50; i++) {
+    const [{ n }] = await tx.$queryRaw<[{ n: number }]>`SELECT next_document_number(${companyId}::uuid, ${module}, ${conf.prefix}, ${year}::int) AS n`;
+    const ref = `${conf.prefix}-${year}-${String(n).padStart(4, '0')}`;
+    const taken = await tx.$queryRaw<unknown[]>`SELECT 1 FROM records WHERE company_id = ${companyId}::uuid AND module = ${module} AND lower(reference) = lower(${ref}) AND cancelled_at IS NULL LIMIT 1`;
+    if (!taken.length) return ref; // un numéro saisi à la main occupe déjà la place : on passe au suivant
+  }
+  throw conflict('Impossible d’attribuer un numéro de facture libre');
+}
+
 /** Statuts qui « figent » un enregistrement : toute modification exige le droit `validate`. */
 const LOCKED_STATUSES = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 
@@ -189,14 +229,16 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
   // ---------- Création ----------
   app.post('/api/records/:module', { preHandler: requirePermission(ctx, moduleParam, 'create') }, async (req, reply) => {
     const module = moduleParam(req);
-    const parsed = recordSchema(module).safeParse((req.body as { data?: unknown })?.data);
+    const pre = prefillAuto(module, (req.body as { data?: unknown })?.data);
+    const parsed = recordSchema(module).safeParse(pre.data);
     if (!parsed.success) throw badRequest('Formulaire incomplet ou invalide', zodMessage(parsed.error));
     const data = parsed.data as Record<string, unknown>;
     const status = statusOf(module, data);
     if (status && LOCKED_STATUSES.has(status) && !req.perms!.has(permKey(module, 'validate'))) throw forbidden(`Le statut « ${status} » nécessite le droit de validation`);
-    const stored = encryptSensitive(ctx, module, data);
     try {
       const rec = await withTenant(ctx.prisma, tenant(req), async (tx) => {
+        if (pre.autoNumber) data[MODULE_DEFS[module].referenceField!] = await assignNumber(tx, req.session!.companyId, module, data);
+        const stored = encryptSensitive(ctx, module, data);
         const r = await tx.record.create({
           data: {
             companyId: req.session!.companyId, module, reference: referenceOf(module, data), status,

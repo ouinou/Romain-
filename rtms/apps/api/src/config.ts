@@ -10,7 +10,9 @@ const schema = z.object({
   PUBLIC_ORIGIN: z.string().url().default('http://localhost:3000'),
   TRUST_PROXY: z.string().default('loopback'),
   DATABASE_URL: z.string().min(1),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  REDIS_URL: z.string().default('redis://localhost:6379'), // « memory » : sans Redis (poste principal local)
+  /** Réseau local : l'origine admise est celle de l'adresse utilisée par le poste (IP variable). */
+  ORIGIN_MATCH_HOST: bool.default(false),
   // Clés de chiffrement des données sensibles au repos : "v1:<base64 32 octets>,v2:..."
   DATA_ENCRYPTION_KEYS: z.string().min(1),
   DATA_ENCRYPTION_ACTIVE_KEY: z.string().default('v1'),

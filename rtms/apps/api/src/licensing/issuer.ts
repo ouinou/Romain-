@@ -54,7 +54,8 @@ export async function buildIssuerApp(deps: IssuerDeps): Promise<FastifyInstance>
     const payload: LicensePayload = {
       v: 1, lid: lic.id, iid, dev, customer: lic.customer, plan: lic.plan,
       features: (lic.features as string[]) ?? [], maxUsers: lic.maxUsers,
-      iat: now, exp, refreshBy: Math.min(exp, now + refreshDays * 86400),
+      // Licence hors ligne (poste principal sans Internet) : pas de renouvellement en ligne exigé
+      iat: now, exp, refreshBy: ((lic.features as string[]) ?? []).includes('offline') ? exp : Math.min(exp, now + refreshDays * 86400),
     };
     return signLicense(payload, privateKey);
   }
@@ -184,6 +185,23 @@ export async function buildIssuerApp(deps: IssuerDeps): Promise<FastifyInstance>
     await prisma.license.update({ where: { id }, data: { expiresAt: new Date(b.expiresAt), ...(b.reactivate ? { status: 'active' } : {}) } });
     await event(id, 'renewed', req.ip, b);
     return { ok: true };
+  });
+
+  // Jeton pour un poste principal hors ligne : l'éditeur saisit les identifiants communiqués par le client
+  app.post('/licensing/admin/licenses/:id/offline-token', { preHandler: adminGuard }, async (req) => {
+    const { id } = req.params as { id: string };
+    const b = z.object({ installationId: z.string().uuid(), deviceHash: z.string().regex(/^[a-f0-9]{64}$/) }).parse(req.body);
+    const lic = await prisma.license.findUnique({ where: { id }, include: { activations: true } });
+    if (!lic) throw err(404, 'Licence inconnue');
+    if (lic.status !== 'active') throw err(403, 'Licence non active');
+    if (!((lic.features as string[]) ?? []).includes('offline')) throw err(409, 'Cette licence n’autorise pas l’usage hors ligne (option « offline »)');
+    const existing = lic.activations.find((a) => a.installationId === b.installationId && a.deviceHash === b.deviceHash);
+    if (!existing) {
+      if (lic.activations.filter((a) => !a.revokedAt).length >= lic.maxDevices) throw err(409, `Nombre maximal d’appareils atteint (${lic.maxDevices})`);
+      await prisma.licenseActivation.create({ data: { licenseId: lic.id, installationId: b.installationId, deviceHash: b.deviceHash, ip: 'hors ligne' } });
+    } else if (existing.revokedAt) throw err(403, 'Cet appareil a été révoqué');
+    await event(lic.id, 'offline_token', req.ip, { installationId: b.installationId });
+    return { token: issue(lic, b.installationId, b.deviceHash) };
   });
 
   app.post('/licensing/admin/activations/:id/revoke', { preHandler: adminGuard }, async (req) => {

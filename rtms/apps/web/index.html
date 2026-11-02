@@ -13,6 +13,15 @@
 <div class="modalbg loginbg hidden" id="loginbg"><div class="modal login">
   <img class="login-logo" src="assets/logo-raha.png" alt="Raha Transport"><h2>RAHA TRANSPORT MANAGEMENT SYSTEM</h2><p class="brandline">RTMS — connexion sécurisée</p>
   <div id="loginerr"></div>
+  <form id="setupform" class="form hidden" novalidate>
+    <p class="wide setup-intro">Première utilisation sur le <b>poste principal</b> : créez la société et le compte de l’administrateur. Ce compte gérera ensuite les autres utilisateurs.</p>
+    <label class="wide">Nom de la société<input name="companyName" value="RAHA TRANSPORT" required maxlength="200"></label>
+    <label class="wide">Nom de l’administrateur<input name="fullName" required maxlength="120" autocomplete="name"></label>
+    <label class="wide">E-mail de l’administrateur<input name="email" type="email" required maxlength="200" autocomplete="username"></label>
+    <label class="wide">Mot de passe (12 caractères minimum)<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+    <div class="actions wide"><button class="btn">Créer et continuer</button></div>
+  </form>
+  <div id="setupwait" class="hidden notice">Le poste principal n’est pas encore installé. Terminez l’installation sur le poste principal, puis rechargez cette page.</div>
   <form id="loginform" class="form" novalidate>
     <label class="wide">E-mail<input name="email" type="email" autocomplete="username" required></label>
     <label class="wide">Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>

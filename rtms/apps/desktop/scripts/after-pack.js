@@ -6,6 +6,11 @@ const path = require('node:path');
 
 exports.default = async function afterPack(ctx) {
   if (ctx.electronPlatformName !== 'win32') return;
+  // Serveur du poste principal (copié ici : electron-builder écarte les node_modules des ressources)
+  const srv = path.join(__dirname, '..', 'build-server', 'server');
+  if (!fs.existsSync(path.join(srv, 'dist', 'local', 'server.js'))) throw new Error('Serveur embarqué absent : lancer scripts/prepare-server.js');
+  fs.rmSync(path.join(ctx.appOutDir, 'resources', 'server'), { recursive: true, force: true });
+  fs.cpSync(srv, path.join(ctx.appOutDir, 'resources', 'server'), { recursive: true });
   const ResEdit = await import('resedit');
   const { NtExecutable, NtExecutableResource, Resource, Data } = ResEdit;
   const exeName = `${ctx.packager.appInfo.productFilename}.exe`;

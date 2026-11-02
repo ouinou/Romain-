@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import { MemoryRedis } from './memoryRedis.js';
 import type { Config } from './config.js';
 import type { AppContext } from './context.js';
 import { FieldCipher } from './crypto.js';
@@ -8,7 +9,10 @@ import { SessionStore } from './security/session.js';
 
 export async function createContext(config: Config, overrides: Partial<{ fetchImpl: typeof fetch; deviceId: string }> = {}): Promise<AppContext> {
   const prisma = createPrisma(config.DATABASE_URL);
-  const redis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: 3, enableAutoPipelining: true, lazyConnect: false });
+  // « memory » : poste principal hors ligne, un seul processus, pas de Redis à installer
+  const redis = config.REDIS_URL === 'memory'
+    ? (new MemoryRedis() as unknown as Redis)
+    : new Redis(config.REDIS_URL, { maxRetriesPerRequest: 3, enableAutoPipelining: true, lazyConnect: false });
   const license = await new LicenseGuard(prisma, {
     publicKeyPem: config.LICENSE_PUBLIC_KEY_PEM?.replace(/\\n/g, '\n'),
     issuerUrl: config.LICENSE_ISSUER_URL,

@@ -265,13 +265,17 @@ test('notifications : assurance expirée signalée (cloche + pastille du module)
   await page.keyboard.press('Escape');
 });
 
-test('facturation : calcul automatique, validation confirmée, impression et export', async () => {
+let invoiceNo = '';
+test('facturation : numéro et date automatiques, calcul, validation confirmée, impression et export', async () => {
   await tool('invoices').click();
   await cmd.click('record.new');
   const f = activePane();
-  await f.locator('[name="Numéro de facture"]').fill('F-E2E-001');
+  // Numéro attribué par le serveur (champ non modifiable), date du jour proposée
+  await expect(f.locator('.auto-number input')).toHaveAttribute('readonly', '');
+  await expect(f.locator('[name="Numéro de facture"]')).toHaveCount(0);
+  const d = new Date();
+  await expect(f.locator('[name="Date"]')).toHaveValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
   await f.locator('[name="Client"]').fill('SONASUT');
-  await f.locator('[name="Date"]').fill('2026-10-31');
   await f.locator('[name="Chauffeur"]').fill('Kouadio M.');
   await f.locator('[name="N° de camion"]').fill('LT 4589 BH');
   await f.locator('[data-line="0"][data-k="Désignation"]').fill('Transport conteneur');
@@ -288,6 +292,8 @@ test('facturation : calcul automatique, validation confirmée, impression et exp
   await expect(page.locator('.dlg')).toContainText('Validée');
   await page.locator('.dlg .btn', { hasText: 'Valider' }).click();
   await expect(activePane().locator('.view-head .pill')).toHaveText('Validée');
+  invoiceNo = (await activePane().locator('.record-form .fv', { hasText: 'Numéro de facture' }).locator('.fval').textContent())!.trim();
+  expect(invoiceNo).toMatch(new RegExp(`^F-${d.getFullYear()}-\\d{4}$`));
   await cmd.click('invoice.print');
   await expect(page.locator('#print-root')).toContainText('FACTURE');
   await expect(page.locator('#print-root')).toContainText(/590\s000/);
@@ -298,6 +304,10 @@ test('facturation : calcul automatique, validation confirmée, impression et exp
   await expect(page.locator('#print-root .pr-wave-text')).toContainText('RCCM');
   await cmd.click('file.pdf');
   await expect(page.locator('.toast', { hasText: 'Enregistrer au format PDF' })).toBeVisible();
+  // Export (navigateur) : impression de la facture, à enregistrer en PDF sur le Bureau ou une clé USB
+  await cmd.click('invoice.export');
+  await expect(page.locator('.toast', { hasText: 'clé USB' })).toBeVisible();
+  await expect(page.locator('#print-root .invoice')).toHaveCount(1);
   await tool('invoices').click();
   await expect(rows().first()).toContainText(/590\s000/);
   const [dl] = await Promise.all([page.waitForEvent('download'), cmd.click('file.csv')]);
@@ -309,8 +319,8 @@ test('recherche globale (Ctrl+K) groupée par catégorie, ouverture de la fiche'
   await page.keyboard.type('sonasut');
   await expect(page.locator('.gs-results')).toContainText('Missions');
   await expect(page.locator('.gs-results')).toContainText('Factures');
-  await page.locator('.gs-item', { hasText: 'F-E2E-001' }).click();
-  await expect(page.locator('.wtab.active')).toContainText('F-E2E-001');
+  await page.locator('.gs-item', { hasText: invoiceNo }).click();
+  await expect(page.locator('.wtab.active')).toContainText(invoiceNo);
   await expect(activePane().locator('.record-form.reading')).toContainText('SONASUT');
 });
 
@@ -368,6 +378,11 @@ test('rapports, paramètres, administration (utilisateurs, permissions, audit)',
   await activePane().locator('[data-section=audit]').click();
   await activePane().locator('[data-act=verify-audit]').click();
   await expect(activePane().locator('.ok')).toContainText('intègre');
+  // Personnes connectées (barre d'état)
+  await page.locator('.statusbar [data-people]').click();
+  await expect(page.locator('.dlg')).toContainText('Personnes connectées');
+  await expect(page.locator('.dlg .people')).toContainText('vous');
+  await page.keyboard.press('Escape');
 });
 
 test('transfert des données du prototype (localStorage)', async () => {

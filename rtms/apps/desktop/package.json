@@ -1,7 +1,7 @@
 {
   "name": "rtms-desktop",
   "productName": "RAHA TRANSPORT RTMS",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "RAHA TRANSPORT Management System — application de bureau",
   "author": "RAHA TRANSPORT",
   "private": true,
@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node scripts/prepare.js && electron .",
     "test": "node --test test/*.test.js",
-    "dist:win": "node scripts/prepare.js && electron-builder --win dir --x64 && node scripts/build-installer.js"
+    "dist:win": "node scripts/prepare.js && node scripts/prepare-server.js && electron-builder --win dir --x64 && node scripts/build-installer.js",
+    "test:e2e": "xvfb-run -a node test/e2e-desktop.cjs"
   },
   "devDependencies": {
     "electron": "44.9.3",

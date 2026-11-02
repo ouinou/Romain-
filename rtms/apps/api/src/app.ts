@@ -13,6 +13,7 @@ import { recordRoutes } from './modules/routes.js';
 import { dashboardRoutes } from './modules/dashboard.js';
 import { adminRoutes } from './admin/routes.js';
 import { workspaceRoutes } from './modules/workspace.js';
+import { presenceRoutes, touchPresence } from './security/presence.js';
 import { registerMetrics, licenseState } from './observability/metrics.js';
 import { captureError } from './observability/telemetry.js';
 
@@ -21,9 +22,18 @@ export { APP_VERSION };
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_EXEMPT = new Set(['/api/auth/login']);
 
-export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
+export interface BuildOptions {
+  logger?: boolean;
+  /** Certificat TLS du serveur local (poste principal). */
+  https?: { key: string; cert: string };
+  /** Routes supplémentaires (mode local : installation initiale, sauvegardes). */
+  extraRoutes?: (app: FastifyInstance) => void | Promise<void>;
+}
+
+export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promise<FastifyInstance> {
   const { config } = ctx;
   const app = Fastify({
+    ...(opts.https ? { https: { key: opts.https.key, cert: opts.https.cert, minVersion: 'TLSv1.2' as const } } : {}),
     logger: opts.logger === false ? false : {
       level: config.LOG_LEVEL,
       // Jamais de secrets dans les journaux (centralisés dans Loki)
@@ -58,7 +68,7 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     global: true,
     max: config.RATE_LIMIT_PER_MINUTE,
     timeWindow: '1 minute',
-    redis: ctx.redis,
+    ...(config.REDIS_URL === 'memory' ? {} : { redis: ctx.redis }),
     nameSpace: 'rl:',
     // Utilisateur authentifié → compteur par utilisateur (un bureau derrière une seule IP
     // publique n'est pas bridé en bloc) ; sinon compteur par IP. Les plafonds par IP
@@ -84,10 +94,12 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
       if (s) { req.session = s; req.sessionToken = token; }
     }
     const s = req.session;
+    if (s && req.sessionToken) await touchPresence(ctx.redis, s, req.sessionToken, req);
 
     if (MUTATING.has(req.method)) {
       const origin = req.headers.origin;
-      if (origin && origin !== allowedOrigin) throw new HttpError(403, 'origine_refusee', 'Origine non autorisée');
+      const sameHost = config.ORIGIN_MATCH_HOST && origin === `${req.protocol}://${req.headers.host}`;
+      if (origin && origin !== allowedOrigin && !sameHost) throw new HttpError(403, 'origine_refusee', 'Origine non autorisée');
       if (!origin && req.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'origine_refusee', 'Origine non autorisée');
       const path = req.url.split('?')[0]!;
       if (!CSRF_EXEMPT.has(path) && s) {
@@ -141,6 +153,8 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
   dashboardRoutes(app, ctx);
   adminRoutes(app, ctx, APP_VERSION);
   workspaceRoutes(app, ctx);
+  presenceRoutes(app, ctx);
+  if (opts.extraRoutes) await opts.extraRoutes(app);
 
   if (config.WEB_ROOT) {
     await app.register(fastifyStatic, { root: config.WEB_ROOT, index: ['index.html'], dotfiles: 'deny' });

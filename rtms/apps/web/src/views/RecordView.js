@@ -9,7 +9,7 @@ import { icon } from '../core/icons.js';
 import { can, session } from '../core/session.js';
 import { LOCKED_STATUSES, LOOKUPS, MODULE_LABEL, SECTIONS, VALIDATED_STATUS, recordTitle, viewByKey } from '../config.js';
 import { confirmDialog, dialog } from '../components/ModalManager.js';
-import { invoiceDoc, invoiceLines, loadingDoc, missionOrderDoc, printHtml, recordDoc, waybillDoc } from '../components/PrintService.js';
+import { exportInvoices, invoiceDoc, invoiceLines, loadingDoc, missionOrderDoc, printHtml, recordDoc, waybillDoc } from '../components/PrintService.js';
 import { cancelRecords, pillClass, statusField } from './ListView.js';
 
 const lookupCache = new Map();
@@ -27,6 +27,11 @@ async function lookupValues(field) {
 }
 on('data-changed', () => lookupCache.clear());
 
+/** Modules dont le numéro est attribué par le serveur (voir API, migration 0005). */
+const AUTO_NUMBERED = { invoices: `F-${new Date().getFullYear()}-…` };
+/** Date du jour du poste, format AAAA-MM-JJ (heure locale, pas UTC). */
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
 export class RecordView {
   constructor(tab, ws) {
     this.tab = tab;
@@ -39,6 +44,11 @@ export class RecordView {
     this.record = null;
     this.values = { ...(d.values || {}) };
     this.initial = d.mode === 'new' ? { ...(d.initial || d.values || {}) } : null;
+    // Nouvelle facture : date du jour proposée (modifiable), numéro attribué par le serveur
+    if (this.mode === 'new' && AUTO_NUMBERED[this.module] && !this.values.Date) {
+      this.values.Date = todayIso();
+      this.initial.Date = this.values.Date;
+    }
     this.errors = [];
     this.offs = [on('data-changed', (x) => {
       if (this.mode !== 'view' || !this.recordId) return;
@@ -189,6 +199,9 @@ export class RecordView {
 
   fieldHtml(f, editing) {
     if (f.type === 'lines') return this.linesHtml(editing);
+    if (editing && this.mode === 'new' && AUTO_NUMBERED[this.module] && f.name === this.defs().referenceField) {
+      return `<label class="fv auto-number"><span class="fl">${esc(f.name)}</span><input type="text" readonly tabindex="-1" placeholder="${esc(AUTO_NUMBERED[this.module])}" aria-describedby="auto-${this.tab.id}"><small id="auto-${this.tab.id}" class="hint">Attribué automatiquement à l’enregistrement, à la suite de la dernière facture.</small></label>`;
+    }
     const v = this.values[f.name];
     const wide = f.type === 'longtext' ? 'wide' : '';
     const errored = this.errors.some((e) => e.startsWith(f.name));
@@ -356,7 +369,7 @@ export class RecordView {
 
   toolbar() {
     if (this.mode === 'view') {
-      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print'] : [];
+      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : [];
       return [['record.new'], ['record.edit', 'record.duplicate'], ['record.validate'], [...extra, 'file.print', 'file.pdf'], ['record.cancel'], ['view.refresh']];
     }
     return [['form.save', 'record.validate', 'form.cancelEdit'], ['view.refresh']];
@@ -382,6 +395,7 @@ export class RecordView {
       case 'file.print': case 'file.pdf': return !editing && !!r;
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return !editing && !!r && m === 'transport';
       case 'invoice.print': return !editing && !!r && m === 'invoices';
+      case 'invoice.export': return !editing && !!r && m === 'invoices';
       case 'view.refresh': return !!this.recordId;
       default: return false;
     }
@@ -420,6 +434,7 @@ export class RecordView {
       case 'transport.waybill': return printHtml(waybillDoc(this.record));
       case 'transport.loading': return printHtml(loadingDoc(this.record));
       case 'invoice.print': return printHtml(invoiceDoc(this.record));
+      case 'invoice.export': return exportInvoices([this.record]);
       case 'view.refresh':
         if (this.isDirty() && !(await confirmDialog('Recharger et perdre les modifications en cours ?', { ok: 'Recharger', danger: true }))) return undefined;
         this.mode = this.mode === 'new' ? 'new' : 'view';

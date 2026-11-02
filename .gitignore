@@ -16,3 +16,4 @@ rtms/infra/cloudflare/*.tfstate*
 dump.rdb
 rtms/apps/desktop/dist/
 rtms/apps/desktop/webapp/
+rtms/apps/desktop/build-server/

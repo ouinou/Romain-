@@ -8,7 +8,7 @@ import { can, session } from '../core/session.js';
 import { confirmDialog } from '../components/ModalManager.js';
 import { MODEL_MENTIONS, setCompanyInfo } from '../components/PrintService.js';
 
-const SECTIONS = [['company', 'Société', 'store'], ['account', 'Mon compte', 'key'], ['workspace', 'Espace de travail', 'panel'], ['legacy', 'Données du prototype', 'import']];
+const SECTIONS = [['company', 'Société', 'store'], ['backups', 'Sauvegardes', 'database'], ['account', 'Mon compte', 'key'], ['workspace', 'Espace de travail', 'panel'], ['legacy', 'Données du prototype', 'import']];
 const formObj = (f) => Object.fromEntries(new FormData(f).entries());
 const ok = (m) => `<div class="ok">${esc(m)}</div>`;
 const err = (e) => `<div class="err">${esc(e.message)}${Array.isArray(e.body?.details) ? `<ul>${e.body.details.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}</div>`;
@@ -52,7 +52,15 @@ class SectionedView {
 export class SettingsView extends SectionedView {
   title() { return 'Paramètres'; }
   icon() { return 'settings'; }
-  sections() { return SECTIONS.filter(([k]) => (k === 'company' ? can('settings') : k === 'legacy' ? can('settings', 'admin') && !!readLegacy() : true)); }
+  sections() { return SECTIONS.filter(([k]) => (k === 'company' ? can('settings') : k === 'legacy' ? can('settings', 'admin') && !!readLegacy() : k === 'backups' ? can('settings', 'admin') && this.backupsAvailable === true : true)); }
+
+  // La rubrique Sauvegardes n'existe que sur un poste principal (serveur local hors ligne)
+  async show() {
+    if (this.backupsAvailable === undefined && can('settings', 'admin')) {
+      try { await get('/api/admin/backups'); this.backupsAvailable = true; } catch { this.backupsAvailable = false; }
+    }
+    return super.show();
+  }
 
   async render(s) {
     if (s === 'company') {
@@ -68,6 +76,19 @@ export class SettingsView extends SectionedView {
         <label>Devise principale${sel('currency', ['FCFA', 'EUR', 'USD'], c.currency)}</label><label>Langue${sel('language', ['Français', 'English'], c.language)}</label></form>
         <p class="muted small">Ces mentions apparaissent dans le bandeau des factures et documents imprimés. Tant qu’elles sont vides, ce sont celles du modèle de facture fourni qui s’impriment.</p>
         ${can('settings', 'admin') ? `<div class="actions"><button type="button" class="btn secondary" data-act="model-mentions">Reprendre les mentions du modèle de facture</button><button type="button" class="btn" data-act="save-company">${icon('save', 15)} Enregistrer les paramètres</button></div>` : '<p class="muted small">Consultation seule pour votre profil.</p>'}`;
+    }
+    if (s === 'backups') {
+      const b = await get('/api/admin/backups');
+      const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} Mo` : `${Math.max(1, Math.round(n / 1024))} Ko`);
+      return `<h2>Sauvegardes</h2><div data-msg></div>
+        <p>Une sauvegarde est faite automatiquement chaque jour sur le poste principal. Les 30 plus récentes sont conservées.</p>
+        <table class="kv"><tr><th>Dossier</th><td><code>${esc(b.directory)}</code></td></tr>
+        <tr><th>Copie de sécurité</th><td>${b.copyTo ? `<code>${esc(b.copyTo)}</code>` : '<span class="warn-text">aucune — configurez une clé USB ou un disque externe sur le poste principal</span>'}</td></tr>
+        <tr><th>Dernière sauvegarde</th><td>${b.last ? `${esc(new Date(b.last.at).toLocaleString('fr-FR'))} — ${b.last.ok ? 'réussie' : `<span class="warn-text">échec : ${esc(b.last.error || '')}</span>`}` : (b.items[0] ? esc(new Date(b.items[0].at).toLocaleString('fr-FR')) : 'aucune')}</td></tr></table>
+        <div class="actions start"><button type="button" class="btn" data-act="backup-now">${icon('save', 15)} Sauvegarder maintenant</button></div>
+        <div class="grid-wrap" style="margin-top:12px"><table class="grid dense"><thead><tr><th>Fichier</th><th>Date</th><th class="num">Taille</th></tr></thead><tbody>
+        ${b.items.map((x) => `<tr><td><code>${esc(x.name)}</code></td><td>${esc(new Date(x.at).toLocaleString('fr-FR'))}</td><td class="num">${esc(size(x.size))}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Aucune sauvegarde pour le moment.</td></tr>'}</tbody></table></div>
+        <p class="muted small">Restauration : sur le poste principal, menu de l’icône RTMS près de l’horloge › « Restaurer une sauvegarde… ». Les autres postes doivent être déconnectés pendant l’opération.</p>`;
     }
     if (s === 'account') {
       return `<h2>Mon compte</h2><p>${esc(session.me.user.fullName)} · ${esc(session.me.user.roleLabel)}</p>
@@ -102,6 +123,13 @@ export class SettingsView extends SectionedView {
         setCompanyInfo(r);
         msg.innerHTML = ok('Paramètres enregistrés.');
         emit('operation', { message: 'Paramètres de la société enregistrés' });
+      } else if (act === 'backup-now') {
+        btn.disabled = true;
+        msg.innerHTML = '<div class="notice">Sauvegarde en cours…</div>';
+        const r = await post('/api/admin/backups');
+        emit('operation', { message: 'Sauvegarde manuelle' });
+        await this.show();
+        $('[data-msg]', this.el).innerHTML = ok(`Sauvegarde réussie : ${r.file.split(/[\\/]/).pop()}`);
       } else if (act === 'model-mentions') {
         const f = $('[data-form=company]', this.el);
         for (const k of ['name', 'rccm', 'taxId', 'phone', 'address']) if (f[k] && !f[k].value.trim()) f[k].value = MODEL_MENTIONS[k];

@@ -63,7 +63,11 @@ export class AdminView extends SectionedView {
         <table class="kv"><tr><th>État</th><td><span class="pill ${l.state === 'valid' ? 'green' : 'orange'}">${esc(l.state)}</span> ${esc(l.reason || '')}</td></tr>
         ${l.customer ? `<tr><th>Titulaire</th><td>${esc(l.customer)}</td></tr><tr><th>Offre</th><td>${esc(l.plan)} · ${esc(l.maxUsers)} utilisateurs</td></tr><tr><th>Fin d’abonnement</th><td>${esc(dateTimeFr(l.expiresAt))}</td></tr>` : ''}
         <tr><th>Identifiant d’installation</th><td><code>${esc(l.installationId || '—')}</code></td></tr><tr><th>Application</th><td>${esc(l.enforcement)}</td></tr></table>
-        ${can('license', 'admin') ? `<form class="form" data-form="lic"><label class="wide">Clé de licence<input name="licenseKey" placeholder="RTMS-XXXXX-XXXXX-XXXXX-XXXXX" maxlength="64" required></label></form><div class="actions start"><button type="button" class="btn" data-act="activate">${icon('key', 15)} Activer</button></div>` : ''}`;
+        ${can('license', 'admin') ? `<h3>Activation hors ligne</h3><p class="muted small">Sans Internet : communiquez l’identifiant d’installation ci-dessus à l’éditeur, puis collez ici le jeton de licence qu’il vous remet (fichier ou message).</p>
+        <form class="form" data-form="lictoken"><label class="wide">Jeton de licence<textarea name="token" rows="4" maxlength="4096" placeholder="RTMS1.…" required></textarea></label></form>
+        <div class="actions start"><button type="button" class="btn" data-act="activate-token">${icon('key', 15)} Installer le jeton</button></div>
+        <h3>Activation en ligne</h3>
+        <form class="form" data-form="lic"><label class="wide">Clé de licence<input name="licenseKey" placeholder="RTMS-XXXXX-XXXXX-XXXXX-XXXXX" maxlength="64" required></label></form><div class="actions start"><button type="button" class="btn secondary" data-act="activate">Activer avec Internet</button></div>` : ''}`;
     }
     return '';
   }
@@ -127,6 +131,14 @@ export class AdminView extends SectionedView {
         const rows = await get('/api/admin/audit?limit=100');
         $('[data-audit]', this.el).innerHTML = `<div class="grid-wrap"><table class="grid dense"><thead><tr><th>Date</th><th>Action</th><th>Objet</th><th>IP</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(dateTimeFr(r.at))}</td><td>${esc(r.action)}</td><td>${esc(r.entity)} ${esc(r.entityId || '')}</td><td>${esc(r.ip || '')}</td></tr>`).join('')}</tbody></table></div>`;
         return undefined;
+      }
+      if (act === 'activate-token') {
+        const f = $('[data-form=lictoken]', this.el);
+        if (!f.reportValidity()) return;
+        const l = await post('/api/admin/license/activate', { token: new FormData(f).get('token').trim() });
+        session.me.license = l;
+        emit('license', l);
+        return this.show();
       }
       if (act === 'activate') {
         const f = $('[data-form=lic]', this.el);

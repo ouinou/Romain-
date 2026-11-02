@@ -8,24 +8,43 @@ import { seedRecords } from './seed.js';
 const KEY = 'rtms.demo.db.v1';
 // Démonstration uniquement : aucun compte réel n'est créé
 const DEMO_TEMP_PASS = 'demo (fictif)';
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const LOCKED = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 const defOf = (m) => DEFS.find((d) => d.key === m);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+// Un compte fictif par profil, pour voir l'interface de chaque personne connectée.
+export const DEMO_ACCOUNTS = [
+  ['demo@raha-transport.cm', 'Administrateur (démo)', 'admin'],
+  ['direction@raha-transport.cm', 'Mme Direction (démo)', 'direction'],
+  ['comptable@raha-transport.cm', 'M. Comptable (démo)', 'finance'],
+  ['transport@raha-transport.cm', 'Resp. transport (démo)', 'transport'],
+  ['commercial@raha-transport.cm', 'Commercial (démo)', 'commercial'],
+  ['agent@raha-transport.cm', 'Agent opérationnel (démo)', 'agent'],
+];
 
 let db = null;
 function load() {
   if (db) return db;
   try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { db = null; }
   if (!db) db = freshDb();
+  // Démo enregistrée par une version précédente : on ajoute les comptes manquants
+  for (const [email, fullName, roleKey] of DEMO_ACCOUNTS) {
+    if (!db.users.some((u) => u.email === email)) db.users.push({ id: uuid(), email, fullName, roleKey, status: 'active', mfaEnabled: false, lastLoginAt: null, lockedUntil: null });
+  }
+  if (db.session === true) db.session = db.users[0].id;
   return db;
 }
+const current = () => db.users.find((u) => u.id === db.session) || db.users[0];
+const allowed = (res, action) => { const u = current(); return db.grants.includes(`${u.roleKey}:${res}:${action}`); };
+const need = (res, action) => { if (!allowed(res, action)) throw new HttpErr(403, 'interdit', 'Action non autorisée pour votre profil'); };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch { /* stockage indisponible : la démo reste en mémoire */ } }
 function freshDb() {
   const userId = uuid();
   const d = {
     session: false,
     users: [{ id: userId, email: 'demo@raha-transport.cm', fullName: 'Administrateur (démo)', roleKey: 'admin', status: 'active', mfaEnabled: false, lastLoginAt: null, lockedUntil: null }],
+    presence: {},
     settings: { name: 'RAHA TRANSPORT', phone: '', email: '', address: '', rccm: '', taxId: '', currency: 'FCFA', language: 'Français' },
     grants: Object.entries(MATRIX).flatMap(([r, mtx]) => Object.entries(mtx).flatMap(([res, acts]) => (acts || []).map((a) => `${r}:${res}:${a}`))),
     records: [],
@@ -120,8 +139,21 @@ function validate(m, input, { partial = false } = {}) {
 
 // ---------------------------------------------------------------- stockage
 function audit(action, entity, entityId, before, after) {
-  db.audit.unshift({ id: String(db.seq++), userId: db.users[0].id, user: db.users[0].fullName, action, entity, entityId, before, after, at: new Date().toISOString(), ip: '127.0.0.1', hash: 'démo' });
+  const who = db.session ? current() : db.users[0];
+  db.audit.unshift({ id: String(db.seq++), userId: who.id, user: who.fullName, action, entity, entityId, before, after, at: new Date().toISOString(), ip: '127.0.0.1', hash: 'démo' });
   db.audit = db.audit.slice(0, 2000);
+}
+/** Même règle que le serveur : date du jour et numéro F-AAAA-NNNN attribués s'ils sont vides. */
+function autoNumber(m, input) {
+  if (m !== 'invoices' || !input || typeof input !== 'object') return input;
+  const d = { ...input };
+  if (!d.Date) { const t = new Date(); d.Date = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; }
+  if (String(d['Numéro de facture'] ?? '').trim()) return d;
+  const year = String(d.Date).slice(0, 4);
+  const re = new RegExp(`^F-${year}-(\\d{1,9})$`);
+  const used = db.records.filter((r) => r.module === 'invoices').map((r) => re.exec(r.reference || '')).filter(Boolean).map((x) => Number(x[1]));
+  d['Numéro de facture'] = `F-${year}-${String((used.length ? Math.max(...used) : 0) + 1).padStart(4, '0')}`;
+  return d;
 }
 function refOf(m, d) { const f = defOf(m).referenceField; const v = f ? d[f] : undefined; return typeof v === 'string' && v.trim() ? v.trim() : null; }
 function statusOf(m, d) { const f = defOf(m).statusField; return f ? d[f] ?? null : null; }
@@ -188,7 +220,7 @@ function sortRows(m, rows, sort, dir) {
 }
 
 function me() {
-  const u = db.users[0];
+  const u = current();
   const perms = db.grants.filter((g) => g.startsWith(`${u.roleKey}:`)).map((g) => g.slice(u.roleKey.length + 1));
   return { user: { id: u.id, fullName: u.fullName, role: u.roleKey, roleLabel: ROLES[u.roleKey] }, state: 'active', csrfToken: 'demo', permissions: perms, license: { state: 'unconfigured', enforcement: 'off', reason: 'Mode démonstration' }, instance: 'DÉMO', version: VERSION };
 }
@@ -241,23 +273,50 @@ async function handle(method, path, query, body) {
   if (path === '/api/auth/me' && method === 'GET') { if (!db.session) throw new HttpErr(401, 'non_authentifie', 'Authentification requise'); return me(); }
   if (path === '/api/auth/login') {
     if (!body?.password || body.password !== 'demo') throw new HttpErr(401, 'identifiants_invalides', 'Démonstration : utilisez le mot de passe « demo ».');
-    db.session = true; db.users[0].lastLoginAt = new Date().toISOString(); save(); return me();
+    const mail = String(body.email || '').trim().toLowerCase() || DEMO_ACCOUNTS[0][0]; // e-mail vide : administrateur de démo
+    const u = db.users.find((x) => x.email === mail && x.status === 'active');
+    if (!u) throw new HttpErr(401, 'identifiants_invalides', 'Compte de démonstration inconnu ou désactivé.');
+    db.session = u.id; u.lastLoginAt = new Date().toISOString();
+    db.presence = { ...(db.presence || {}), [u.id]: { since: new Date().toISOString() } };
+    save(); return me();
   }
-  if (path === '/api/auth/logout') { db.session = false; save(); return { ok: true }; }
+  if (path === '/api/auth/logout') { if (db.presence) delete db.presence[db.session]; db.session = false; save(); return { ok: true }; }
   if (!db.session) throw new HttpErr(401, 'non_authentifie', 'Authentification requise');
+  if (db.presence?.[db.session]) db.presence[db.session].lastSeen = new Date().toISOString();
+  if (path === '/api/presence') {
+    // Démonstration : un seul navigateur, donc seuls les comptes ouverts ici apparaissent
+    const seeAll = allowed('users', 'read');
+    return Object.entries(db.presence || {}).map(([id, p]) => { const u = db.users.find((x) => x.id === id); return u && { name: u.fullName, roleKey: u.roleKey, roleLabel: ROLES[u.roleKey], since: p.since, lastSeen: p.lastSeen || p.since, me: id === db.session, ...(seeAll ? { address: 'ce navigateur', device: 'Démonstration' } : {}) }; }).filter(Boolean);
+  }
+  // Droits par profil, comme sur le serveur
+  if (path.startsWith('/api/admin/')) {
+    const res = path.startsWith('/api/admin/users') || path.startsWith('/api/admin/permissions') ? 'users' : path.startsWith('/api/admin/audit') ? 'audit' : path.startsWith('/api/admin/license') ? 'license' : 'settings';
+    need(res, method === 'GET' ? 'read' : 'admin');
+  }
+  if ((m = path.match(/^\/api\/records\/([a-z]+)(?:\/([^/]+))?(?:\/([a-z]+))?$/))) {
+    const sub = m[3] || (m[2] && !/^[0-9a-f-]{8,}$/i.test(m[2]) ? m[2] : '');
+    const action = sub === 'export.csv' ? 'export' : sub === 'cancel' ? 'cancel' : method === 'GET' ? 'read' : method === 'POST' && !m[2] ? 'create' : 'update';
+    need(m[1], action);
+    if ((action === 'create' || action === 'update') && body?.data && LOCKED.has(body.data[defOf(m[1])?.statusField]) && !allowed(m[1], 'validate')) throw new HttpErr(403, 'interdit', 'Ce statut nécessite le droit de validation');
+  }
   if (path === '/api/auth/password') return { ok: true };
   if (path === '/api/modules') return DEFS;
-  if (path === '/api/dashboard') { const s = stats(); return { counts: s.counts, finance: s.finance, generatedAt: s.generatedAt }; }
-  if (path === '/api/reports/summary') return stats();
-  if (path === '/api/notifications') return notifications();
+  if (path === '/api/dashboard') { const s = stats(); return { counts: s.counts, finance: allowed('finance', 'read') || allowed('reports', 'read') ? s.finance : null, generatedAt: s.generatedAt }; }
+  if (path === '/api/reports/summary') { need('reports', 'read'); return stats(); }
+  if (path === '/api/notifications') {
+    const items = notifications().items.filter((n) => allowed(n.module, 'read'));
+    const counts = {};
+    for (const n of items) counts[n.module] = (counts[n.module] || 0) + 1;
+    return { items, counts };
+  }
   if (path === '/api/activity') {
-    return db.audit.filter((a) => a.action.startsWith('record.')).slice(0, 30).map((a) => ({ id: a.id, action: a.action, entity: a.entity, entityId: a.entityId, at: a.at, reference: db.records.find((r) => r.id === a.entityId)?.reference || null }));
+    return db.audit.filter((a) => a.action.startsWith('record.') && a.userId === db.session && allowed(a.entity, 'read')).slice(0, 30).map((a) => ({ id: a.id, action: a.action, entity: a.entity, entityId: a.entityId, at: a.at, reference: db.records.find((r) => r.id === a.entityId)?.reference || null }));
   }
   if (path === '/api/search') {
     const q = String(query.get('q') || '').trim().toLowerCase();
     if (q.length < 2) throw new HttpErr(400, 'requete_invalide', 'Requête invalide');
     const groups = new Map();
-    for (const r of db.records.filter((x) => !x.cancelledAt && JSON.stringify(Object.values(x.data)).toLowerCase().includes(q))) {
+    for (const r of db.records.filter((x) => !x.cancelledAt && allowed(x.module, 'read') && JSON.stringify(Object.values(x.data)).toLowerCase().includes(q))) {
       const sub = r.module === 'clients' ? r.data['Type (Client/Fournisseur)'] : r.module === 'importexport' ? r.data['Type (Import/Export)'] : null;
       const key = sub ? `${r.module}:${sub}` : r.module;
       if (!groups.has(key)) groups.set(key, { key, module: r.module, label: LABELS[key] || LABELS[r.module], items: [] });
@@ -299,7 +358,7 @@ async function handle(method, path, query, body) {
     for (const [mod, rows] of Object.entries(body.data || {})) {
       if (!defOf(mod)) { report.push({ module: mod, imported: 0, skipped: rows.length, warnings: ['module inconnu'] }); continue; }
       let imported = 0, skipped = 0; const warnings = [];
-      for (const raw of rows) { try { if (!body.dryRun) insert(mod, raw, db.users[0].id); imported++; } catch (e) { skipped++; warnings.push(e.message); } }
+      for (const raw of rows) { try { if (!body.dryRun) insert(mod, raw, current().id); imported++; } catch (e) { skipped++; warnings.push(e.message); } }
       report.push({ module: mod, imported, skipped, warnings });
     }
     save(); return { dryRun: !!body.dryRun, report };
@@ -327,9 +386,9 @@ async function handle(method, path, query, body) {
       return new Blob(['﻿' + [fields.map(cell).join(';'), ...active(mod).map((r) => fields.map((k) => cell(r.data[k])).join(';'))].join('\r\n')], { type: 'text/csv;charset=utf-8' });
     }
     if (!rest && method === 'POST') {
-      const data = validate(mod, body?.data);
+      const data = validate(mod, autoNumber(mod, body?.data));
       const st = statusOf(mod, data);
-      const r = insert(mod, data, db.users[0].id, st);
+      const r = insert(mod, data, current().id, st);
       save(); return { __status: 201, ...pub(r) };
     }
     const [id, sub] = rest.split('/');
