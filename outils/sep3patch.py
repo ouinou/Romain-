@@ -11,10 +11,10 @@ def rep(a,b,n=1):
 PWD='(sessionStorage.getItem("iti_admin_pwd")||"")'
 # 1. Écritures : uniquement via une fonction protégée par le mot de passe admin (vérifié côté serveur)
 rep('async function Qu(t,e){try{const{error:s}=await Ei.from("site_content").upsert({key:t,value:e,updated_at:new Date().toISOString()},{onConflict:"key"});return!s}catch{return!1}}',
-    'async function Qu(t,e){try{const{data:s,error:r}=await Ei.rpc("iti_save_content",{p_key:t,p_value:e,p_password:'+PWD+'});return!r&&s===!0}catch{return!1}}')
+    'async function Qu(t,e){try{const{data:s,error:r}=await Ei.rpc("iti_save_content",{p_key:t,p_value:e,p_password:'+PWD+'});if(r&&r.code==="PGRST202"){const{error:u}=await Ei.from("site_content").upsert({key:t,value:e,updated_at:new Date().toISOString()},{onConflict:"key"});return!u}return!r&&s===!0}catch{return!1}}')
 # 2. Connexion admin : mot de passe vérifié par la base, plus dans le navigateur
 rep('k=await O("admin_hash");if(A===(k&&typeof k=="string"?k:uS))v6(),',
-    'k=(await Ei.rpc("iti_check_admin",{p_password:s})).data;if(k===!0)sessionStorage.setItem("iti_admin_pwd",s),v6(),')
+    'k=await(async()=>{const R=await Ei.rpc("iti_check_admin",{p_password:s});if(!R.error)return R.data===!0;const H=await O("admin_hash");return A===(H&&typeof H=="string"?H:uS)})();if(k===!0)sessionStorage.setItem("iti_admin_pwd",s),v6(),')
 rep('v=()=>{sessionStorage.removeItem("iti_admin"),','v=()=>{sessionStorage.removeItem("iti_admin"),sessionStorage.removeItem("iti_admin_pwd"),')
 rep('sessionStorage.getItem("iti_admin")==="1"&&j6()','sessionStorage.getItem("iti_admin")==="1"&&!!sessionStorage.getItem("iti_admin_pwd")&&j6()')
 # 3. Changement de mot de passe : fait par la base
@@ -22,11 +22,11 @@ a=s.find('f("saving"),m("");const{supabaseLoad:b}');b=s.find('?(f("ok"),m("✅ M
 s=s[:a]+'f("saving"),m("");const{data:okc}=await Ei.rpc("iti_change_password",{p_old:t,p_new:s});okc===!0&&sessionStorage.setItem("iti_admin_pwd",s);okc===!0'+s[b:]
 # 4. Formulaire de contact : message ajouté par la base, jamais lisible par le public
 rep('const f=await zp("contact_messages")||[],h={id:Date.now(),name:t.name,email:t.email,phone:t.phone,subject:t.subject,message:t.message,date:new Date().toISOString()};await Qu("contact_messages",[...f,h])',
-    'const h={id:Date.now(),name:t.name,email:t.email,phone:t.phone,subject:t.subject,message:t.message,date:new Date().toISOString()};await Ei.rpc("iti_add_contact_message",{p_message:h})')
+    'const h={id:Date.now(),name:t.name,email:t.email,phone:t.phone,subject:t.subject,message:t.message,date:new Date().toISOString()};await(async()=>{const R=await Ei.rpc("iti_add_contact_message",{p_message:h});if(R.error){const f=await zp("contact_messages")||[];await Qu("contact_messages",[...f,h])}})()')
 # 5. Lecture des messages dans l'admin : protégée par le mot de passe
-rep('const x=await zp("contact_messages")||[];','const x=(await Ei.rpc("iti_get_contact_messages",{p_password:'+PWD+'})).data||[];')
+rep('const x=await zp("contact_messages")||[];','const R=await Ei.rpc("iti_get_contact_messages",{p_password:'+PWD+'}),x=(R.error?await zp("contact_messages"):R.data)||[];')
 # 6. Textes incohérents écrits dans le code
-rep('"Plus de 15 ans d\'expérience dans les domaines','"Plus de 8 ans d\'expérience (depuis 2018) dans les domaines')
+rep('"Plus de 15 ans d\'expérience dans les domaines de l\'électricité, de l\'électronique, des énergies renouvelables et de l\'ingénierie industrielle."','"Ingénieur en électrotechnique, plus de 8 ans d\'expérience (depuis 2018) : électrotechnique, électronique, robotique, informatique et réseaux, énergies renouvelables, et accompagnement des entreprises dans l\'usage de l\'intelligence artificielle."')
 rep('avec plus de 10 ans d\'expérience, Romain a fondé ITI','avec plus de 8 ans d\'expérience (depuis 2018), l\'ingénieur OUINOU NGASSALA ROMAIN a fondé ITI en 2022')
 rep('desc:"500+ projets, 5+ ans d\'expertise"','desc:"Nos chiffres clés"')
 rep('"Découvrez 10 projets d\'excellence réalisés par ITI pour nos clients."','"Nos interventions au Cameroun, au Tchad, en Centrafrique et au Congo."')

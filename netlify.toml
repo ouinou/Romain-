@@ -1,80 +1,20 @@
-# Site ITI – incubateurtech.tech, hébergé sur Netlify.
-# Netlify reconstruit le site à chaque modification de la branche main
-# (y compris chaque article publié depuis /admin).
+# Site ITI – incubateurtech.tech
+# Netlify publie le dossier site-en-ligne à chaque modification de la branche main.
+# Les contenus (articles, formations, FAQ…) ne sont pas ici : ils sont dans la base
+# Supabase et se modifient depuis https://incubateurtech.tech/admin, en temps réel.
 
 [build]
-  command = "npm ci && npm run build"
-  publish = "_site"
-
-[build.environment]
-  NODE_VERSION = "20"
-
-# Adresses des pages (servies par les fichiers .html générés)
-[[redirects]]
-  from = "/blog/:slug"
-  to = "/blog/:slug.html"
-  status = 200
+  publish = "site-en-ligne"
+  command = ""
 
 [[headers]]
   for = "/*"
   [headers.values]
-    Strict-Transport-Security = "max-age=31536000"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
 
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/content.json"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[redirects]]
-  from = "/about"
-  to = "/about.html"
-  status = 200
-
-[[redirects]]
-  from = "/ceo"
-  to = "/ceo.html"
-  status = 200
-
-[[redirects]]
-  from = "/services"
-  to = "/services.html"
-  status = 200
-
-[[redirects]]
-  from = "/formations"
-  to = "/formations.html"
-  status = 200
-
-[[redirects]]
-  from = "/blog"
-  to = "/blog.html"
-  status = 200
-
-[[redirects]]
-  from = "/faq"
-  to = "/faq.html"
-  status = 200
-
-[[redirects]]
-  from = "/contact"
-  to = "/contact.html"
-  status = 200
-
-[[redirects]]
-  from = "/mentions-legales"
-  to = "/mentions-legales.html"
-  status = 200
-
-[[redirects]]
-  from = "/publications"
-  to = "/publications.html"
-  status = 200
