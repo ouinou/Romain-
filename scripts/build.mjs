@@ -48,7 +48,7 @@ const articles = (fs.existsSync(dir) ? fs.readdirSync(dir) : [])
       image: data.image || DEFAULT_IMAGE,
       excerpt: data.excerpt || "",
       published: data.published !== false,
-      html: marked.parse(body),
+      html: marked.parse(body).replace(/<a href="(https?:\/\/(?!incubateurtech\.tech)[^"]+)"/g, '<a href="$1" target="_blank" rel="noopener"'),
     };
   })
   .filter((a) => a.published)
@@ -69,8 +69,15 @@ fs.writeFileSync(path.join(OUT, ".nojekyll"), "");
 if (fs.existsSync("publications/index.html")) {
   fs.writeFileSync(path.join(OUT, "publications.html"), fs.readFileSync("publications/index.html", "utf8").replaceAll("https://ouinou.github.io/Romain-/", `${DOMAIN}/publications`));
 }
+// Publications reprises dans le blog : l'ancienne adresse renvoie vers l'article
+const MOVED = { "filles-numerique-afrique-subsaharienne": "/blog/former-les-jeunes-filles-au-numerique" };
 for (const f of fs.existsSync(path.join(OUT, "a")) ? fs.readdirSync(path.join(OUT, "a")) : []) {
   const p = path.join(OUT, "a", f, "index.html");
+  if (MOVED[f]) {
+    const to = DOMAIN + MOVED[f];
+    write(p, `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Article déplacé</title><link rel="canonical" href="${to}"><meta http-equiv="refresh" content="0; url=${to}"><script>location.replace(${JSON.stringify(to)})</script></head><body><a href="${to}">Lire l'article</a></body></html>`);
+    continue;
+  }
   if (fs.existsSync(p)) fs.writeFileSync(p, fs.readFileSync(p, "utf8").replaceAll("https://ouinou.github.io/Romain-/#", `${DOMAIN}/publications#`).replaceAll("../../#", "/publications#"));
 }
 

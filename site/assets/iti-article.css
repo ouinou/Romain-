@@ -13,3 +13,7 @@
 .iti-article code{font-family:ui-monospace,Menlo,Consolas,monospace}
 .iti-article table{width:100%;border-collapse:collapse}
 .iti-article th,.iti-article td{border:1px solid #e5e7eb;padding:.5em .75em;text-align:left}
+.iti-article table{display:block;overflow-x:auto;font-size:.95rem}
+.iti-article img+em,.iti-article p>em:only-child{display:block;margin-top:-.8em;font-size:.9rem;color:#6b7280;text-align:center}
+.iti-article strong{color:#16324F}
+.iti-article img{display:block;width:auto;max-height:560px;margin-left:auto;margin-right:auto}
