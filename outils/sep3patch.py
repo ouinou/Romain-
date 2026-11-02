@@ -26,8 +26,8 @@ rep('const f=await zp("contact_messages")||[],h={id:Date.now(),name:t.name,email
 # 5. Lecture des messages dans l'admin : protégée par le mot de passe
 rep('const x=await zp("contact_messages")||[];','const x=(await Ei.rpc("iti_get_contact_messages",{p_password:'+PWD+'})).data||[];')
 # 6. Textes incohérents écrits dans le code
-rep('"Plus de 15 ans d\'expérience dans les domaines','"4 ans d\'expérience dans les domaines')
-rep('avec plus de 10 ans d\'expérience, Romain a fondé ITI','avec 4 ans d\'expérience, l\'ingénieur OUINOU NGASSALA ROMAIN a fondé ITI')
+rep('"Plus de 15 ans d\'expérience dans les domaines','"Plus de 8 ans d\'expérience (depuis 2018) dans les domaines')
+rep('avec plus de 10 ans d\'expérience, Romain a fondé ITI','avec plus de 8 ans d\'expérience (depuis 2018), l\'ingénieur OUINOU NGASSALA ROMAIN a fondé ITI en 2022')
 rep('desc:"500+ projets, 5+ ans d\'expertise"','desc:"Nos chiffres clés"')
 rep('"Découvrez 10 projets d\'excellence réalisés par ITI pour nos clients."','"Nos interventions au Cameroun, au Tchad, en Centrafrique et au Congo."')
 # Fichiers : nouveaux noms (le téléchargement Netlify avait cassé les majuscules)
