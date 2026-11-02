@@ -67,7 +67,7 @@ rep('email:"contact@iti-incubateur.com",address:"Yaoundé, Cameroun"','email:"in
 # 6. Photo du PDG absente -> médaillon aux initiales (en attendant la vraie photo)
 svg=("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 480'%3E%3Crect width='400' height='480' fill='%2316324F'/%3E"
      "%3Ctext x='200' y='265' font-family='Poppins,Arial,sans-serif' font-size='120' font-weight='700' fill='%23F04A1D' text-anchor='middle'%3EONR%3C/text%3E%3C/svg%3E")
-rep('src:"/manus-storage/pdg-iti_fb02d7f8.jpg"','src:"'+svg+'"')
+rep('src:"/manus-storage/pdg-iti_fb02d7f8.jpg"','src:"/images/pdg-iti.jpg"')
 
 # 7. Pied de page : liens morts
 for lab in ["Formation Professionnelle","Ingénierie & Projets","Solutions Technologiques","Conseil & Orientation"]:
@@ -105,6 +105,36 @@ s=s.replace(OLD,DOMAIN)
 # 10. Nettoyage des chemins internes Manus
 s=re.sub(r'"data-loc":"[^"]*",','',s);s=re.sub(r',?"data-loc":"[^"]*"','',s)
 assert '"data-loc"' not in s and 'manus.space' not in s
+
+# ---------- Mode CMS : les articles viennent de /content.json ----------
+def arr_end(k):
+    depth=0;q=None;e=False
+    while True:
+        ch=s[k]
+        if q:
+            if e:e=False
+            elif ch=='\\':e=True
+            elif ch==q:q=None
+        elif ch in '"\'`':q=ch
+        elif ch in '[{':depth+=1
+        elif ch in ']}':
+            depth-=1
+            if depth==0:return k+1
+        k+=1
+ARTS='((window.ITI_CONTENT&&window.ITI_CONTENT.articles)||[])'
+# sauvegarde des articles d'origine (version longue de BlogArticle) pour la migration
+i=s.find('function T2(');a=s.find('u=[',i)+2;b=arr_end(a)
+open(os.path.join(OUT,'..','articles-origine.js'),'w',encoding='utf-8').write('module.exports='+s[a:b]+';')
+s=s[:a]+ARTS+s[b:]
+i=s.find('function C2(');a=s.find('d=[',i)+2;b=arr_end(a);s=s[:a]+ARTS+s[b:]
+rep('f=["all","Actualités ITI","Tutoriels","Success Stories","Conseils Technologiques"],x=T.useMemo','f=["all",...new Set(d.map(b=>b.category).filter(Boolean))],x=T.useMemo')
+rep('c=u.find(f=>f.id===parseInt(r?.id||"0"))','c=u.find(f=>String(f.id)===String(r?.id||""))')
+i=s.find('n.jsx("div",{className:"prose prose-lg max-w-none",children:c.content.split(');assert i>0
+j=s.find('n.jsxs(Me,{href:"/blog",className:"inline-flex items-center gap-2 text-primary font-semibold',i);assert j>i
+s=s[:i]+'n.jsx("div",{className:"iti-article",dangerouslySetInnerHTML:{__html:c.html||""}}),'+s[j:]
+rep('const b=p.match(/^\\/blog\\/(\\d+)$/);let a=null;if(b)try{a=(la.getArticles()||[]).find(x=>String(x.id)===b[1])}catch{}',
+    'const b=p.match(/^\\/blog\\/([^/]+)$/);let a=null;if(b)a='+ARTS+'.find(x=>String(x.id)===b[1]);')
+rep('$0.createRoot(document.getElementById("root")).render(n.jsx(I2,{}));','(window.ITI_READY||Promise.resolve()).then(()=>$0.createRoot(document.getElementById("root")).render(n.jsx(I2,{})));')
 
 h=hashlib.sha1(s.encode()).hexdigest()[:8];jsname=f'index-{h}.js'
 open(f'{OUT}/assets/{jsname}','w',encoding='utf-8').write(s)
