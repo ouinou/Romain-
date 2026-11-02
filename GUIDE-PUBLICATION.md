@@ -1,43 +1,29 @@
 # Publier sur le site ITI sans toucher au code
 
-Le site incubateurtech.tech est hébergé gratuitement sur GitHub Pages. Les articles se publient depuis une page d'administration, comme sur un blog classique. Pas d'abonnement, pas de technicien.
+Le site incubateurtech.tech reste hébergé sur Netlify, avec le même domaine et les mêmes réglages DNS. Les articles se publient depuis une page d'administration, comme sur un blog classique. Pas d'abonnement, pas de technicien.
 
 ---
 
 ## 1. Mise en route (une seule fois)
 
-### a) Activer la publication automatique
+### a) Relier Netlify au dépôt GitHub (5 minutes, sans toucher au DNS)
 
-Les fichiers du site sont sur la branche `claude/compassionate-turing-hmmii9`. Il faut les fusionner dans `main` (par une « Pull Request » sur GitHub). Dès que c'est fait, GitHub construit le site et le place sur la branche `gh-pages`.
+Sur app.netlify.com, ouvrez le site relié à incubateurtech.tech :
 
-### b) Régler GitHub Pages
+1. **Site configuration** → **Build & deploy** → **Continuous deployment** → **Link repository** (ou « Link to Git provider »).
+2. Choisissez **GitHub**, autorisez Netlify si c'est demandé, puis sélectionnez le dépôt **ouinou/Romain-**.
+3. Branche à publier : **main**. Les autres réglages (commande `npm ci && npm run build`, dossier `_site`) sont lus automatiquement dans le fichier `netlify.toml`. Laissez les champs tels que Netlify les propose.
+4. Validez. Netlify lance une première construction (1 à 2 minutes).
 
-Sur github.com/ouinou/Romain- → **Settings** → **Pages** :
+Le site actuel reste en ligne pendant la construction. Netlify ne remplace l'ancienne version qu'une fois la nouvelle prête. En cas de souci, l'onglet **Deploys** permet de revenir à la version précédente en un clic (« Publish deploy »).
 
-1. **Source** : « Deploy from a branch », branche **gh-pages**, dossier **/ (root)**.
-2. **Custom domain** : `incubateurtech.tech`, puis **Save**.
-3. Cocher **Enforce HTTPS** dès que la case devient disponible (le certificat peut prendre jusqu'à 24 h).
+Le DNS chez LWS ne change pas.
 
-### c) Faire pointer le domaine vers GitHub (chez LWS)
-
-Dans l'espace client LWS → domaine incubateurtech.tech → **Zone DNS** :
-
-| Action | Type | Nom | Valeur |
-|---|---|---|---|
-| Supprimer | A | @ | 75.2.60.5 (ancien hébergement Netlify) |
-| Ajouter | A | @ | 185.199.108.153 |
-| Ajouter | A | @ | 185.199.109.153 |
-| Ajouter | A | @ | 185.199.110.153 |
-| Ajouter | A | @ | 185.199.111.153 |
-| Ajouter ou modifier | CNAME | www | ouinou.github.io. |
-
-La prise en compte demande de quelques minutes à quelques heures.
-
-### d) Activer le formulaire de contact
+### b) Activer le formulaire de contact
 
 Envoyez un premier message depuis la page Contact. Un e-mail de FormSubmit arrive sur incubateur.th@gmail.com : cliquez sur le lien d'activation. Les messages suivants arriveront directement dans cette boîte.
 
-### e) Créer votre clé de publication
+### c) Créer votre clé de publication
 
 L'espace d'administration se connecte à GitHub avec une clé personnelle (un « jeton »).
 
@@ -87,8 +73,8 @@ Rendre aussi les pages et les coordonnées modifiables depuis /admin est l'étap
 
 ## 4. En cas de problème
 
-- **L'article n'apparaît pas après 5 minutes** : sur GitHub, onglet **Actions**, ouvrez « Publier le site ». Une croix rouge signale une erreur ; le détail est affiché. Relancer : bouton « Re-run jobs ».
-- **/admin refuse la connexion** : la clé a expiré ou n'a pas le droit « Contents: Read and write ». Créez-en une nouvelle (étape 1e).
+- **L'article n'apparaît pas après 5 minutes** : sur Netlify, onglet **Deploys**. Un déploiement en rouge (« Failed ») signale une erreur ; cliquez dessus pour lire le détail. Relancer : « Retry deploy ». Le site en ligne reste celui de la dernière construction réussie.
+- **/admin refuse la connexion** : la clé a expiré ou n'a pas le droit « Contents: Read and write ». Créez-en une nouvelle (étape 1c).
 
 ---
 
@@ -98,8 +84,8 @@ Rendre aussi les pages et les coordonnées modifiables depuis /admin est l'étap
 - `content/articles/*.md` : les articles (Markdown + en-tête YAML) écrits depuis /admin.
 - `content/images/` : les images envoyées depuis /admin, publiées sous `/images/uploads/`.
 - `admin/` : l'éditeur Sveltia CMS et sa configuration (`config.yml`).
-- `scripts/build.mjs` : construit `_site/` (une page HTML par adresse avec ses balises SEO, `content.json`, sitemap, robots, CNAME).
-- `.github/workflows/deploy.yml` : à chaque modification de `main`, construit et publie sur la branche `gh-pages`.
+- `scripts/build.mjs` : construit `_site/` (une page HTML par adresse avec ses balises SEO, `content.json`, sitemap, robots).
+- `netlify.toml` : réglages Netlify (construction, adresses, en-têtes). Netlify reconstruit à chaque modification de `main`.
 - `publications/` et `a/` : les publications ITI déjà existantes, servies sur `/publications`.
 - `outils/patch.py` : le script qui a corrigé l'export Manus d'origine.
 

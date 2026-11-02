@@ -62,7 +62,6 @@ copy("admin", path.join(OUT, "admin"));
 copy("a", path.join(OUT, "a"));
 copy("img", path.join(OUT, "img"));
 fs.writeFileSync(path.join(OUT, "content.json"), JSON.stringify({ articles }));
-fs.writeFileSync(path.join(OUT, "CNAME"), "incubateurtech.tech\n");
 fs.writeFileSync(path.join(OUT, ".nojekyll"), "");
 
 // Publications existantes : /publications, avec des liens canoniques mis à jour
