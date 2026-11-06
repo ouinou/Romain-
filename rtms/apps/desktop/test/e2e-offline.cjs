@@ -55,6 +55,9 @@ function totp(secret, step = 0) {
   await wa.click('[data-act=enter-app]');
   await wa.waitForSelector('.stat-tiles', { timeout: 30_000 });
   await wa.screenshot({ path: path.join(OUT, 'off-principal.png') });
+  // Licence : 14 jours d'essai gratuit au premier démarrage
+  await wa.waitForSelector('.statusbar >> text=Version d’essai : 14 jour(s) restant(s)');
+  log.push('licence : version d’essai, 14 jours restants');
   const certPem = fs.readFileSync(path.join(hA, '.config', 'RAHA TRANSPORT RTMS', 'donnees', 'tls-cert.pem'), 'utf8');
   const mainFp = new (require('node:crypto').X509Certificate)(certPem).fingerprint256;
   log.push(`poste principal prêt, empreinte ${mainFp}`);

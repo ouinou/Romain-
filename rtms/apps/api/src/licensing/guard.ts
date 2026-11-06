@@ -13,7 +13,7 @@ import type { PrismaClient } from '@prisma/client';
 import { sha256 } from '../crypto.js';
 import { loadPublicKey, verifyLicense, type LicensePayload } from './token.js';
 
-export type LicenseState = 'valid' | 'grace' | 'missing' | 'invalid' | 'expired' | 'revoked' | 'unconfigured';
+export type LicenseState = 'valid' | 'grace' | 'trial' | 'trial_expired' | 'missing' | 'invalid' | 'expired' | 'revoked' | 'unconfigured';
 
 export interface LicenseStatus {
   state: LicenseState;
@@ -27,6 +27,13 @@ export interface LicenseStatus {
   expiresAt?: string;
   refreshBy?: string;
   maxUsers?: number;
+  /** Période d'essai (installation locale) : fin de l'essai et jours restants. */
+  trialEndsAt?: string;
+  trialDaysLeft?: number;
+  /** Code à transmettre à l'éditeur pour recevoir la licence (identifiant d'installation + empreinte). */
+  activationCode?: string;
+  /** false : le logiciel est bloqué jusqu'à l'activation d'une licence. */
+  usable?: boolean;
 }
 
 export interface LicenseGuardOptions {
@@ -37,7 +44,28 @@ export interface LicenseGuardOptions {
   deviceId?: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
+  /**
+   * Installation locale (poste principal) : jours d'essai gratuit avant que le logiciel ne se
+   * bloque, faute de licence activée. Absent (serveur hébergé) : comportement inchangé.
+   */
+  trialDays?: number;
 }
+
+/** Code d'activation : ce que l'éditeur doit connaître pour signer une licence pour CE poste. */
+export function activationCode(installationId: string, deviceHash: string) {
+  return `RTMS-ACT1.${Buffer.from(JSON.stringify({ i: installationId, d: deviceHash })).toString('base64url')}`;
+}
+
+/** Motifs de refus, en clair pour l'utilisateur. */
+const LICENSE_REASONS: Record<string, string> = {
+  format: 'le texte collé n’est pas une licence RTMS complète',
+  signature: 'la licence n’a pas été émise par l’éditeur de RTMS',
+  installation: 'cette licence a été établie pour une autre installation',
+  device: 'cette licence a été établie pour un autre ordinateur',
+  expired: 'la licence est expirée',
+  refresh_overdue: 'la licence doit être renouvelée',
+  not_yet_valid: 'la licence n’est pas encore valide (vérifiez la date du PC)',
+};
 
 export function machineId(): string {
   for (const p of ['/etc/machine-id', '/var/lib/dbus/machine-id']) {
@@ -57,13 +85,19 @@ export class LicenseGuard {
   private payload?: LicensePayload;
   private revoked = false;
   private timer?: NodeJS.Timeout;
+  private clockTimer?: NodeJS.Timeout;
+  private trialStart = 0;
+  private highWater = 0;
+  private token?: string;
 
   constructor(private prisma: PrismaClient, private opts: LicenseGuardOptions) {
     this.publicKey = opts.publicKeyPem ? loadPublicKey(opts.publicKeyPem) : undefined;
     this.current = { state: 'unconfigured', enforcement: opts.enforcement };
   }
 
-  private nowSec = () => Math.floor((this.opts.now?.() ?? Date.now()) / 1000);
+  private wallMs = () => this.opts.now?.() ?? Date.now();
+  /** Heure retenue : jamais avant la plus récente déjà vue (un recul d'horloge est ignoré). */
+  private nowSec = () => Math.floor(Math.max(this.wallMs(), this.highWater) / 1000);
 
   async init() {
     let inst = await this.prisma.installation.findUnique({ where: { id: 1 } });
@@ -72,14 +106,61 @@ export class LicenseGuard {
     }
     this.installationId = inst.installationId;
     this.deviceHash = sha256(`${this.opts.deviceId ?? machineId()}|${inst.installationId}`);
-    this.evaluate(inst.licenseToken ?? undefined);
+    this.trialStart = inst.createdAt.getTime();
+    this.highWater = Math.max(inst.clockHighWater?.getTime() ?? 0, this.trialStart);
+    this.token = inst.licenseToken ?? undefined;
+    this.evaluate(this.token);
+    if (this.opts.trialDays) await this.tick();
     return this;
+  }
+
+  /**
+   * Toutes les 5 minutes (installation locale) : mémorise l'heure la plus récente et réévalue,
+   * pour que la fin de l'essai ou de l'abonnement s'applique sans redémarrage.
+   */
+  async tick() {
+    const now = this.wallMs();
+    if (now > this.highWater + 60_000) {
+      this.highWater = now;
+      await this.prisma.installation.update({ where: { id: 1 }, data: { clockHighWater: new Date(now) } }).catch(() => {});
+    }
+    this.evaluate(this.token);
+  }
+
+  startClock(minutes = 5) {
+    if (!this.opts.trialDays) return;
+    this.clockTimer = setInterval(() => void this.tick(), minutes * 60_000);
+    this.clockTimer.unref();
   }
 
   getInstallationId() { return this.installationId; }
   getDeviceHash() { return this.deviceHash; }
 
   private evaluate(token?: string) {
+    this.evaluateLicense(token);
+    const s = this.current;
+    if (this.opts.trialDays) {
+      const licensed = s.state === 'valid' || s.state === 'grace';
+      if (!licensed && (s.state === 'missing' || s.state === 'unconfigured' || s.state === 'invalid')) {
+        // Pas de licence (ou licence d'un autre poste) : période d'essai
+        const end = this.trialStart + this.opts.trialDays * 86400_000;
+        const left = end - this.nowSec() * 1000;
+        // Horloges du serveur et de la base légèrement décalées : jamais plus que la durée d'essai
+        const days = Math.min(this.opts.trialDays, Math.max(0, Math.ceil(left / 86400_000)));
+        this.current = {
+          ...s,
+          state: left > 0 ? 'trial' : 'trial_expired',
+          reason: left > 0 ? `Version d’essai : ${days} jour(s) restant(s)` : `Période d’essai de ${this.opts.trialDays} jours terminée : activez une licence pour continuer`,
+          trialEndsAt: new Date(end).toISOString(),
+          trialDaysLeft: days,
+        };
+      }
+      this.current.usable = ['valid', 'grace', 'trial'].includes(this.current.state);
+      if (this.installationId && this.deviceHash) this.current.activationCode = activationCode(this.installationId, this.deviceHash);
+    }
+  }
+
+  private evaluateLicense(token?: string) {
     const base = { enforcement: this.opts.enforcement, installationId: this.installationId, deviceHash: this.deviceHash };
     if (!this.publicKey) { this.current = { ...base, state: 'unconfigured', reason: 'Clé publique de licence non configurée' }; return; }
     if (this.revoked) { this.current = { ...base, state: 'revoked', reason: 'Licence révoquée par l’éditeur' }; return; }
@@ -103,6 +184,12 @@ export class LicenseGuard {
   }
 
   status(): LicenseStatus { return { ...this.current }; }
+
+  /** Installation locale : false quand l'essai est terminé (ou la licence expirée) sans licence valide. */
+  usable(): boolean {
+    if (!this.opts.trialDays) return true;
+    return this.current.usable !== false;
+  }
   features(): string[] { return this.payload?.features ?? []; }
 
   /** Les écritures sont bloquées si la licence n'est pas valide (lecture et export restent possibles). */
@@ -118,12 +205,14 @@ export class LicenseGuard {
   async installToken(token: string) {
     this.revoked = false;
     const before = this.current;
-    this.evaluate(token);
+    this.evaluateLicense(token); // le jeton lui-même, sans repli sur la période d'essai
     if (this.current.state !== 'valid') {
       const reason = this.current.reason;
       this.current = before;
-      throw new Error(`Licence refusée : ${reason}`);
+      throw new Error(`Licence refusée : ${LICENSE_REASONS[reason ?? ''] ?? reason}`);
     }
+    this.token = token;
+    this.evaluate(token);
     await this.store(token);
   }
 
@@ -168,5 +257,5 @@ export class LicenseGuard {
     this.timer.unref();
   }
 
-  stop() { if (this.timer) clearInterval(this.timer); }
+  stop() { if (this.timer) clearInterval(this.timer); if (this.clockTimer) clearInterval(this.clockTimer); }
 }

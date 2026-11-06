@@ -80,6 +80,11 @@ test('structure : barre de menus (13), barre d’outils (17), onglets, panneaux,
   await expect(page.locator('.menubar .mb-item')).toHaveText(['Fichier', 'Édition', 'Affichage', 'Navigation', 'Transport', 'Transit', 'Import / Export', 'Commerce', 'Finance', 'Fenêtre', 'Rapports', 'Administration', 'Aide']);
   await expect(page.locator('.toolrail .tool')).toHaveCount(17);
   await expect(tool('dashboard')).toHaveClass(/active/);
+  // Accès rapide en tête du tableau de bord, avant les compteurs : « Nouvelle facture » en premier
+  await expect(page.locator('.quick-start .quick-big button').first()).toContainText('Nouvelle facture');
+  const qs = await page.locator('.quick-start').boundingBox();
+  const tiles = await page.locator('.stat-tiles.dash').boundingBox();
+  expect(qs!.y).toBeLessThan(tiles!.y);
   await expect(tool('suppliers')).toHaveAttribute('data-tip', 'Fournisseurs');
   await expect(page.locator('.wtab')).toHaveCount(1);
   await expect(page.locator('.rpanel .ptab')).toHaveText(['Propriétés', 'Historique', 'Documents']);
@@ -252,8 +257,12 @@ test('affectation d’un véhicule depuis le référentiel + ordre de mission im
   await expect(rows().filter({ hasText: 'M-E2E-3' })).toContainText('TD-4521-A');
   await rows().filter({ hasText: 'M-E2E-3' }).click();
   await cmd.click('transport.order');
+  // Aperçu avant impression : le document s'affiche d'abord à l'écran
+  await expect(page.locator('.pv-layer .pv-pages')).toContainText('ORDRE DE MISSION');
+  await expect(page.locator('.pv-layer .pv-pages')).toContainText('TD-4521-A');
+  await page.locator('.pv-layer [data-pv=print]').click();
+  await expect(page.locator('.pv-layer')).toHaveCount(0);
   await expect(page.locator('#print-root')).toContainText('ORDRE DE MISSION');
-  await expect(page.locator('#print-root')).toContainText('TD-4521-A');
   await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: number }).__printed)).toBeGreaterThan(0);
 });
 
@@ -288,6 +297,13 @@ test('facturation : numéro et date automatiques, calcul, validation confirmée,
   await f.locator('[name="Taxe (%)"]').fill('18');
   await f.locator('[name="Avance (FCFA)"]').fill('90000');
   await expect(f.locator('[data-computed]')).toContainText(/590\s000/);
+  // Aperçu pendant la saisie, avant enregistrement : on voit la facture telle qu'elle sortira
+  await page.keyboard.press('Control+p');
+  await expect(page.locator('.pv-layer .pv-note')).toContainText('pas encore enregistrée');
+  await expect(page.locator('.pv-pages')).toContainText('attribué à l’enregistrement');
+  await expect(page.locator('.pv-pages')).toContainText('Cinq cent quatre-vingt-dix mille francs CFA');
+  await page.locator('.pv-layer [data-pv=close]').click(); // « Fermer et corriger » : la saisie reste intacte
+  await expect(f.locator('[name="Avance (FCFA)"]')).toHaveValue('90000');
   await cmd.click('record.validate');
   await expect(page.locator('.dlg')).toContainText('Validée');
   await page.locator('.dlg .btn', { hasText: 'Valider' }).click();
@@ -295,19 +311,26 @@ test('facturation : numéro et date automatiques, calcul, validation confirmée,
   invoiceNo = (await activePane().locator('.record-form .fv', { hasText: 'Numéro de facture' }).locator('.fval').textContent())!.trim();
   expect(invoiceNo).toMatch(new RegExp(`^F-${d.getFullYear()}-\\d{4}$`));
   await cmd.click('invoice.print');
-  await expect(page.locator('#print-root')).toContainText('FACTURE');
-  await expect(page.locator('#print-root')).toContainText(/590\s000/);
-  await expect(page.locator('#print-root')).toContainText('Cinq cent quatre-vingt-dix mille francs CFA');
-  await expect(page.locator('#print-root')).toContainText('Kouadio M.');
-  await expect(page.locator('#print-root')).toContainText(/500\s000 FCFA/); // reste = 590 000 − 90 000
-  await expect(page.locator('#print-root .inv-table tbody tr')).toHaveCount(10);
-  await expect(page.locator('#print-root .pr-wave-text')).toContainText('RCCM');
+  const pv = page.locator('.pv-layer .pv-pages');
+  await expect(pv).toContainText('FACTURE');
+  await expect(pv).toContainText(invoiceNo);
+  await expect(pv).toContainText(/590\s000/);
+  await expect(pv).toContainText('Cinq cent quatre-vingt-dix mille francs CFA');
+  await expect(pv).toContainText('Kouadio M.');
+  await expect(pv).toContainText(/500\s000 FCFA/); // reste = 590 000 − 90 000
+  await expect(pv.locator('.inv-table tbody tr')).toHaveCount(10);
+  await expect(pv.locator('.pr-wave-text')).toContainText('RCCM');
+  await expect(page.locator('.pv-info')).toHaveText('1 page A4');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.pv-layer')).toHaveCount(0);
   await cmd.click('file.pdf');
+  await page.locator('.pv-layer [data-pv=pdf]').click();
   await expect(page.locator('.toast', { hasText: 'Enregistrer au format PDF' })).toBeVisible();
   // Export (navigateur) : impression de la facture, à enregistrer en PDF sur le Bureau ou une clé USB
   await cmd.click('invoice.export');
   await expect(page.locator('.toast', { hasText: 'clé USB' })).toBeVisible();
-  await expect(page.locator('#print-root .invoice')).toHaveCount(1);
+  await expect(page.locator('.pv-pages .invoice')).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await tool('invoices').click();
   await expect(rows().first()).toContainText(/590\s000/);
   const [dl] = await Promise.all([page.waitForEvent('download'), cmd.click('file.csv')]);
@@ -359,7 +382,8 @@ test('rapports, paramètres, administration (utilisateurs, permissions, audit)',
   await tool('reports').click();
   await expect(activePane()).toContainText('Volumes par activité');
   await cmd.click('file.print');
-  await expect(page.locator('#print-root')).toContainText(/rapport d’activité/i);
+  await expect(page.locator('.pv-pages')).toContainText(/rapport d’activité/i);
+  await page.keyboard.press('Escape');
   await tool('settings').click();
   await activePane().locator('[name=phone]').fill('+235 66 00 00 00');
   await activePane().locator('[data-act=save-company]').click();

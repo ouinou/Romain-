@@ -62,8 +62,10 @@ export class AdminView extends SectionedView {
       return `<h2>Licence</h2><div data-msg></div>
         <table class="kv"><tr><th>État</th><td><span class="pill ${l.state === 'valid' ? 'green' : 'orange'}">${esc(l.state)}</span> ${esc(l.reason || '')}</td></tr>
         ${l.customer ? `<tr><th>Titulaire</th><td>${esc(l.customer)}</td></tr><tr><th>Offre</th><td>${esc(l.plan)} · ${esc(l.maxUsers)} utilisateurs</td></tr><tr><th>Fin d’abonnement</th><td>${esc(dateTimeFr(l.expiresAt))}</td></tr>` : ''}
+        ${l.state === 'trial' ? `<tr><th>Version d’essai</th><td>${esc(l.trialDaysLeft)} jour(s) restant(s), jusqu’au ${esc(dateTimeFr(l.trialEndsAt))}</td></tr>` : ''}
+        ${l.activationCode ? `<tr><th>Code d’activation</th><td><code class="wrap">${esc(l.activationCode)}</code><br><span class="muted small">À envoyer au fournisseur pour recevoir la clé de licence de ce poste.</span></td></tr>` : ''}
         <tr><th>Identifiant d’installation</th><td><code>${esc(l.installationId || '—')}</code></td></tr><tr><th>Application</th><td>${esc(l.enforcement)}</td></tr></table>
-        ${can('license', 'admin') ? `<h3>Activation hors ligne</h3><p class="muted small">Sans Internet : communiquez l’identifiant d’installation ci-dessus à l’éditeur, puis collez ici le jeton de licence qu’il vous remet (fichier ou message).</p>
+        ${can('license', 'admin') ? `<h3>Activation hors ligne</h3><p class="muted small">Sans Internet : envoyez le code d’activation ci-dessus au fournisseur, puis collez ici la clé de licence qu’il vous remet (fichier ou message).</p>
         <form class="form" data-form="lictoken"><label class="wide">Jeton de licence<textarea name="token" rows="4" maxlength="4096" placeholder="RTMS1.…" required></textarea></label></form>
         <div class="actions start"><button type="button" class="btn" data-act="activate-token">${icon('key', 15)} Installer le jeton</button></div>
         <h3>Activation en ligne</h3>

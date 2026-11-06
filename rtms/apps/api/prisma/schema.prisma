@@ -122,6 +122,8 @@ model Installation {
   licenseToken   String?   @map("license_token")
   lastCheckAt    DateTime? @map("last_check_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Date la plus récente vue par le serveur (période d'essai : protège contre le recul de l'horloge)
+  clockHighWater DateTime? @map("clock_high_water") @db.Timestamptz(3)
 
   @@map("installation")
 }

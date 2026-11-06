@@ -35,7 +35,8 @@ export function mountStatusBar(el) {
       ${people && me ? `<button type="button" class="sb-item sb-op" data-people title="Personnes connectées en ce moment">${icon('users', 13)} ${people.length} connecté${people.length > 1 ? 's' : ''}</button>` : ''}
       <span class="sb-item sb-ctx">${esc(v?.status?.() || '')}</span>
       ${last ? `<button type="button" class="sb-item sb-op" data-oplog title="Historique des opérations de la session">${icon('history', 13)} ${esc(last)}</button>` : '<button type="button" class="sb-item sb-op" data-oplog title="Historique des opérations de la session">' + icon('history', 13) + ' Prêt</button>'}
-      ${lic && lic.state !== 'valid' && lic.state !== 'unconfigured' ? `<span class="sb-item sb-warn">Licence : ${esc(lic.state)}</span>` : ''}
+      ${lic && lic.state === 'trial' ? `<span class="sb-item ${lic.trialDaysLeft <= 3 ? 'sb-warn' : ''}" title="Fin de l’essai : ${esc(new Date(lic.trialEndsAt).toLocaleDateString('fr-FR'))}">Version d’essai : ${esc(lic.trialDaysLeft)} jour(s) restant(s)</span>` : ''}
+      ${lic && !['valid', 'unconfigured', 'trial'].includes(lic.state) ? `<span class="sb-item sb-warn">Licence : ${esc(lic.state)}</span>` : ''}
       <span class="sb-item ${online ? 'sb-ok' : 'sb-warn'}">${icon(online ? 'checkcircle' : 'xcircle', 14)} ${online ? 'Connecté' : 'Serveur injoignable'}</span>
       ${clock()}`;
   };

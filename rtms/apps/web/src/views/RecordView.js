@@ -9,6 +9,7 @@ import { icon } from '../core/icons.js';
 import { can, session } from '../core/session.js';
 import { LOCKED_STATUSES, LOOKUPS, MODULE_LABEL, SECTIONS, VALIDATED_STATUS, recordTitle, viewByKey } from '../config.js';
 import { confirmDialog, dialog } from '../components/ModalManager.js';
+import { amountInFrenchWords } from '../core/amount.js';
 import { exportInvoices, invoiceDoc, invoiceLines, loadingDoc, missionOrderDoc, printHtml, recordDoc, waybillDoc } from '../components/PrintService.js';
 import { cancelRecords, pillClass, statusField } from './ListView.js';
 
@@ -313,15 +314,60 @@ export class RecordView {
     return data;
   }
 
-  async save({ validate = false } = {}) {
+  /** Relit le formulaire : les listes laissées sur leur valeur par défaut n'émettent aucun événement. */
+  readForm() {
     const form = $('.record-form', this.el);
-    if (!form.reportValidity()) return false;
-    // Les listes laissées sur leur valeur par défaut n'émettent aucun événement : on relit le formulaire
+    if (!form) return;
     for (const el of form.querySelectorAll('[name]')) this.values[el.name] = el.value;
     if (this.module === 'invoices' && form.querySelector('[data-line]')) {
       const lines = this.materializeLines();
       for (const inp of form.querySelectorAll('[data-line]')) { const i = Number(inp.dataset.line); lines[i] = { ...(lines[i] || {}), [inp.dataset.k]: inp.value }; }
     }
+  }
+
+  /** Document imprimable correspondant à un enregistrement (facture, ordre de mission ou fiche). */
+  docFor(rec) {
+    if (this.module === 'invoices') return invoiceDoc(rec);
+    if (this.module === 'transport') return missionOrderDoc(rec);
+    return recordDoc(`${MODULE_LABEL[this.module]} — ${recordTitle(this.module, rec)}`, this.defs().fields, rec);
+  }
+
+  /** Aperçu de la saisie en cours, avant enregistrement : on vérifie la page, puis on corrige ou on enregistre. */
+  async previewDraft() {
+    this.readForm();
+    const data = this.payload();
+    const ref = this.defs().referenceField;
+    let computed = {};
+    if (this.module === 'invoices') {
+      const lines = invoiceLines(data);
+      const r2 = (x) => Math.round(x * 100) / 100;
+      const ht = r2(lines.reduce((sum, l) => sum + (Number(l['Quantité']) || 0) * (Number(l['Prix unitaire (FCFA)']) || 0), 0));
+      const tax = r2((ht * (Number(data['Taxe (%)']) || 0)) / 100);
+      const avance = Number(data['Avance (FCFA)']) || 0;
+      computed = { totalHT: ht, tax, totalTTC: r2(ht + tax), avance, reste: r2(ht + tax - avance), totalEnLettres: amountInFrenchWords(ht + tax) };
+      if (!data[ref]) data[ref] = this.record?.data?.[ref] || 'attribué à l’enregistrement';
+    }
+    const draft = { id: this.recordId, reference: data[ref] || null, status: data[statusField(this.module)] || null, data, computed };
+    const canSave = this.mode !== 'view';
+    return printHtml(this.docFor(draft), {
+      draft: {
+        note: this.mode === 'new'
+          ? 'Aperçu de la saisie, pas encore enregistrée. Vérifiez la page, fermez pour corriger, ou enregistrez pour obtenir le document définitif (numéro et totaux attribués par le serveur).'
+          : 'Aperçu des modifications, pas encore enregistrées. Fermez pour corriger, ou enregistrez pour obtenir le document définitif.',
+        saveLabel: 'Enregistrer, puis voir le document final',
+        onSave: canSave ? async () => {
+          const ok = await this.save();
+          if (!ok) throw new Error(this.errors.join(' · ') || 'Enregistrement annulé : corrigez le formulaire.');
+          return this.docFor(this.record);
+        } : null,
+      },
+    });
+  }
+
+  async save({ validate = false } = {}) {
+    const form = $('.record-form', this.el);
+    if (!form.reportValidity()) return false;
+    this.readForm();
     const sf = statusField(this.module);
     const data = this.payload();
     if (validate) data[sf] = VALIDATED_STATUS[this.module];
@@ -372,7 +418,7 @@ export class RecordView {
       const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : [];
       return [['record.new'], ['record.edit', 'record.duplicate'], ['record.validate'], [...extra, 'file.print', 'file.pdf'], ['record.cancel'], ['view.refresh']];
     }
-    return [['form.save', 'record.validate', 'form.cancelEdit'], ['view.refresh']];
+    return [['form.save', 'record.validate', 'form.cancelEdit'], ['record.preview'], ['view.refresh']];
   }
   labelFor(id) {
     if (id === 'record.new') return viewByKey(this.viewKey)?.newLabel;
@@ -388,13 +434,14 @@ export class RecordView {
       case 'record.new': return can(m, 'create');
       case 'form.save': return editing;
       case 'form.cancelEdit': return editing;
+      case 'record.preview': return editing || !!r;
       case 'record.edit': return !editing && !!r && can(m, 'update');
       case 'record.duplicate': return !editing && !!r && can(m, 'create');
       case 'record.validate': return !!VALIDATED_STATUS[m] && can(m, 'validate') && (editing || (r && r.status !== VALIDATED_STATUS[m]));
       case 'record.cancel': return !editing && !!r && can(m, 'cancel');
-      case 'file.print': case 'file.pdf': return !editing && !!r;
+      case 'file.print': case 'file.pdf': return editing || !!r;
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return !editing && !!r && m === 'transport';
-      case 'invoice.print': return !editing && !!r && m === 'invoices';
+      case 'invoice.print': return m === 'invoices' && (editing || !!r);
       case 'invoice.export': return !editing && !!r && m === 'invoices';
       case 'view.refresh': return !!this.recordId;
       default: return false;
@@ -406,6 +453,7 @@ export class RecordView {
     switch (id) {
       case 'record.new': return this.ws.open({ kind: 'record', mode: 'new', module: m, viewKey: this.viewKey, values: { ...(viewByKey(this.viewKey)?.preset || {}) } });
       case 'form.save': return this.save();
+      case 'record.preview': return this.mode === 'view' ? printHtml(this.docFor(this.record)) : this.previewDraft();
       case 'record.validate':
         if (this.mode !== 'view') return this.save({ validate: true });
         this.setMode('edit');
@@ -427,13 +475,15 @@ export class RecordView {
       case 'record.cancel':
         if (await cancelRecords(m, [this.record])) return this.ws.close(this.tab.id, { force: true });
         return undefined;
-      case 'file.pdf': if (m === 'invoices') return printHtml(invoiceDoc(this.record), { pdf: true });
-      // falls through
-      case 'file.print': return printHtml(recordDoc(`${MODULE_LABEL[m]} — ${recordTitle(m, this.record)}`, this.defs().fields, this.record), { pdf: id === 'file.pdf' });
+      case 'file.pdf': case 'file.print': case 'invoice.print':
+        // Pendant la saisie, imprimer = d'abord l'aperçu du brouillon (rien ne part à l'imprimante sans être vu)
+        if (this.mode !== 'view') return this.previewDraft();
+        if (id === 'invoice.print') return printHtml(invoiceDoc(this.record));
+        if (id === 'file.pdf' && m === 'invoices') return printHtml(invoiceDoc(this.record), { pdf: true });
+        return printHtml(recordDoc(`${MODULE_LABEL[m]} — ${recordTitle(m, this.record)}`, this.defs().fields, this.record), { pdf: id === 'file.pdf' });
       case 'transport.order': return printHtml(missionOrderDoc(this.record));
       case 'transport.waybill': return printHtml(waybillDoc(this.record));
       case 'transport.loading': return printHtml(loadingDoc(this.record));
-      case 'invoice.print': return printHtml(invoiceDoc(this.record));
       case 'invoice.export': return exportInvoices([this.record]);
       case 'view.refresh':
         if (this.isDirty() && !(await confirmDialog('Recharger et perdre les modifications en cours ?', { ok: 'Recharger', danger: true }))) return undefined;

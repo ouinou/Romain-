@@ -30,6 +30,8 @@ const schema = z.object({
   LICENSE_ISSUER_URL: z.string().url().optional(),
   LICENSE_ENFORCEMENT: z.enum(['enforce', 'warn', 'off']).default('warn'),
   LICENSE_OFFLINE_GRACE_DAYS: z.coerce.number().int().nonnegative().default(7),
+  /** Installation locale : jours d'essai gratuit, puis blocage sans licence. 0 = pas d'essai (serveur hébergé). */
+  LICENSE_TRIAL_DAYS: z.coerce.number().int().min(0).max(90).default(0),
   WEB_ROOT: z.string().optional(),
   /** Nom de l'instance affiché dans la barre d'état (ex. RAHA_PROD, RAHA_TEST). */
   INSTANCE_NAME: z.string().max(40).default('RAHA_PROD'),

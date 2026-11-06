@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RTMS — Générateur de licences (éditeur)</title>
+<!--
+  Outil de l'ÉDITEUR, à ne jamais remettre aux clients.
+  Il fonctionne sans Internet, dans Microsoft Edge ou Google Chrome à jour (signature Ed25519
+  du navigateur). La clé privée est lue depuis votre fichier .pem au moment de signer : elle
+  n'est ni enregistrée par cette page, ni envoyée où que ce soit.
+-->
+<style>
+  :root{--green:#123f32;--green2:#1e6a50;--orange:#ef8125;--ink:#20312b;--muted:#5f6d66;--line:#dfe6e1;--bg:#f3f6f4}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",Arial,sans-serif}
+  header{background:var(--green);color:#fff;padding:16px 24px;border-bottom:5px solid var(--orange)}
+  header h1{margin:0;font-size:20px}
+  header p{margin:2px 0 0;font-size:13px;opacity:.85}
+  main{max-width:860px;margin:0 auto;padding:20px 16px 40px;display:grid;gap:16px}
+  section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  h2{margin:0 0 10px;font-size:16px;color:var(--green)}
+  label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}
+  input,select,textarea{width:100%;font:inherit;border:1px solid #c9d4cd;border-radius:6px;padding:8px 10px;background:#fff}
+  textarea{font-family:Consolas,monospace;font-size:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){.row{grid-template-columns:1fr}}
+  .btn{display:inline-block;border:0;border-radius:7px;padding:10px 16px;font:inherit;font-weight:600;background:var(--green);color:#fff;cursor:pointer}
+  .btn.secondary{background:#e8efe9;color:var(--green)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .msg{margin-top:10px;font-size:14px}.err{color:#b42318}.ok{color:var(--green2)}
+  .warn{background:#fff4e5;border:1px solid #f3cf9a;border-radius:8px;padding:10px 12px;font-size:13px}
+  .info{font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  code{font-size:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<header>
+  <h1>RTMS — Générateur de licences</h1>
+  <p>Outil réservé à l’éditeur. Ne le donnez jamais à un client, pas plus que votre clé privée.</p>
+</header>
+<main>
+  <div class="warn" id="compat" hidden></div>
+
+  <section>
+    <h2>1. Votre clé privée</h2>
+    <p class="info">Choisissez le fichier <b>RTMS-cle-privee-EDITEUR.pem</b>. Il est lu sur ce PC uniquement, au moment de signer.</p>
+    <input type="file" id="keyfile" accept=".pem,.txt">
+    <div class="msg" id="keymsg"></div>
+  </section>
+
+  <section>
+    <h2>2. Le poste du client</h2>
+    <label for="code">Code d’activation envoyé par le client (écran « Licence requise » ou Administration › Licence)</label>
+    <textarea id="code" rows="3" placeholder="RTMS-ACT1.…" spellcheck="false"></textarea>
+    <div class="msg" id="codemsg"></div>
+    <div class="row">
+      <div><label for="customer">Client (nom de la société)</label><input id="customer" maxlength="120" placeholder="RAHA TRANSPORT"></div>
+      <div><label for="plan">Offre</label><input id="plan" maxlength="40" value="Standard"></div>
+    </div>
+    <div class="row">
+      <div><label for="users">Nombre maximum d’utilisateurs</label><input id="users" type="number" min="1" max="500" value="10"></div>
+      <div><label for="duration">Durée de la licence</label>
+        <select id="duration">
+          <option value="30">1 mois</option>
+          <option value="90">3 mois</option>
+          <option value="182">6 mois</option>
+          <option value="365" selected>1 an</option>
+          <option value="730">2 ans</option>
+          <option value="3650">Définitive (10 ans)</option>
+          <option value="custom">Jusqu’à une date…</option>
+        </select>
+      </div>
+    </div>
+    <div id="untilbox" hidden><label for="until">Fin de la licence</label><input id="until" type="date"></div>
+    <div class="actions"><button type="button" class="btn" id="gen">Générer la clé de licence</button></div>
+  </section>
+
+  <section id="result" hidden>
+    <h2>3. Clé de licence à envoyer au client</h2>
+    <p class="info">Le client la colle dans RTMS (écran « Licence requise » ou Administration › Licence), puis clique sur « Activer ». Elle ne fonctionne que sur le poste dont vous avez reçu le code.</p>
+    <textarea id="token" rows="5" readonly></textarea>
+    <div class="actions"><button type="button" class="btn" id="copy">Copier</button><button type="button" class="btn secondary" id="save">Enregistrer en fichier .txt</button></div>
+    <div class="msg" id="outmsg"></div>
+  </section>
+
+  <section>
+    <h2>Licences générées sur ce PC</h2>
+    <p class="info">Mémorisé dans ce navigateur uniquement (sans la clé privée). Gardez aussi votre propre registre.</p>
+    <table><thead><tr><th>Date</th><th>Client</th><th>Offre</th><th>Utilisateurs</th><th>Fin</th></tr></thead><tbody id="hist"></tbody></table>
+  </section>
+</main>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const DOMAIN = 'RTMS-LICENSE-v1.';
+let privateKey = null;
+
+const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+const say = (el, text, ok) => { $(el).className = `msg ${ok ? 'ok' : 'err'}`; $(el).textContent = text; };
+
+if (!window.crypto?.subtle) {
+  $('compat').hidden = false;
+  $('compat').textContent = 'Ce navigateur ne permet pas de signer. Ouvrez ce fichier avec Microsoft Edge ou Google Chrome à jour.';
+}
+
+$('keyfile').addEventListener('change', async (e) => {
+  privateKey = null;
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const pem = await f.text();
+    if (!/BEGIN PRIVATE KEY/.test(pem)) throw new Error('ce fichier n’est pas une clé privée (.pem PKCS#8)');
+    const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), (c) => c.charCodeAt(0));
+    privateKey = await crypto.subtle.importKey('pkcs8', der, { name: 'Ed25519' }, false, ['sign']);
+    say('keymsg', 'Clé privée chargée.', true);
+  } catch (err) {
+    say('keymsg', `Clé illisible : ${err.message || err}. Utilisez Edge ou Chrome à jour.`);
+  }
+});
+
+function readCode() {
+  const raw = $('code').value.trim();
+  const m = /^RTMS-ACT1\.([A-Za-z0-9_-]+)$/.exec(raw);
+  if (!m) throw new Error('code d’activation incomplet : il commence par « RTMS-ACT1. »');
+  const j = JSON.parse(new TextDecoder().decode(fromB64url(m[1])));
+  if (!/^[0-9a-f-]{36}$/i.test(j.i) || !/^[0-9a-f]{64}$/.test(j.d)) throw new Error('code d’activation invalide');
+  return { iid: j.i, dev: j.d };
+}
+$('code').addEventListener('input', () => {
+  if (!$('code').value.trim()) { $('codemsg').textContent = ''; return; }
+  try { const c = readCode(); say('codemsg', `Code valide (installation ${c.iid.slice(0, 8)}…).`, true); } catch (e) { say('codemsg', e.message); }
+});
+$('duration').addEventListener('change', () => { $('untilbox').hidden = $('duration').value !== 'custom'; });
+
+$('gen').addEventListener('click', async () => {
+  try {
+    if (!privateKey) throw new Error('chargez d’abord votre clé privée (étape 1)');
+    const { iid, dev } = readCode();
+    const customer = $('customer').value.trim();
+    if (!customer) throw new Error('indiquez le nom du client');
+    const maxUsers = Math.max(1, Math.min(500, Number($('users').value) || 1));
+    const now = Math.floor(Date.now() / 1000);
+    let exp;
+    if ($('duration').value === 'custom') {
+      if (!$('until').value) throw new Error('choisissez la date de fin');
+      exp = Math.floor(Date.parse(`${$('until').value}T23:59:59`) / 1000);
+      if (!(exp > now)) throw new Error('la date de fin doit être dans le futur');
+    } else exp = now + Number($('duration').value) * 86400;
+    const payload = { v: 1, lid: crypto.randomUUID(), iid, dev, customer, plan: $('plan').value.trim() || 'Standard', features: ['offline'], maxUsers, iat: now, exp, refreshBy: exp };
+    const body = b64url(new TextEncoder().encode(JSON.stringify(payload)));
+    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, privateKey, new TextEncoder().encode(DOMAIN + body)));
+    const token = `RTMS1.${body}.${b64url(sig)}`;
+    $('token').value = token;
+    $('result').hidden = false;
+    say('outmsg', `Licence de ${customer} valable jusqu’au ${new Date(exp * 1000).toLocaleDateString('fr-FR')}.`, true);
+    addHistory({ at: new Date().toISOString(), customer, plan: payload.plan, maxUsers, exp: new Date(exp * 1000).toISOString(), lid: payload.lid });
+    $('result').scrollIntoView({ behavior: 'smooth' });
+  } catch (err) { $('result').hidden = true; alert(`Licence non générée : ${err.message || err}`); }
+});
+
+$('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('token').value); say('outmsg', 'Copiée : collez-la dans votre message au client.', true); }
+  catch { $('token').select(); say('outmsg', 'Texte sélectionné : faites Ctrl+C.', true); }
+});
+$('save').addEventListener('click', () => {
+  const name = `Licence RTMS - ${($('customer').value.trim() || 'client').replace(/[\\/:*?"<>|]+/g, '-')}.txt`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([`${$('token').value}\r\n`], { type: 'text/plain' }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+});
+
+function readHistory() { try { return JSON.parse(localStorage.getItem('rtms.licences') || '[]'); } catch { return []; } }
+function addHistory(h) { const list = [h, ...readHistory()].slice(0, 200); try { localStorage.setItem('rtms.licences', JSON.stringify(list)); } catch { /* stockage indisponible */ } renderHistory(); }
+function renderHistory() {
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  $('hist').innerHTML = readHistory().map((h) => `<tr><td>${esc(new Date(h.at).toLocaleDateString('fr-FR'))}</td><td>${esc(h.customer)}</td><td>${esc(h.plan)}</td><td>${esc(h.maxUsers)}</td><td>${esc(new Date(h.exp).toLocaleDateString('fr-FR'))}</td></tr>`).join('') || '<tr><td colspan="5" class="info">Aucune pour le moment.</td></tr>';
+}
+renderHistory();
+</script>
+</body>
+</html>

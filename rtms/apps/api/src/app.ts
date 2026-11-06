@@ -109,6 +109,16 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
     }
   });
 
+  // ---------- Licence : installation locale bloquée à la fin de l'essai, sans licence ----------
+  // Restent ouverts : connexion, état et activation de la licence, installation, sauvegardes.
+  const LICENSE_OPEN = [/^\/api\/auth\//, /^\/api\/admin\/license(\/activate)?$/, /^\/api\/setup/, /^\/api\/admin\/backups/];
+  app.addHook('preHandler', async (req) => {
+    if (ctx.license.usable() || !req.url.startsWith('/api/')) return;
+    const path = req.url.split('?')[0]!;
+    if (LICENSE_OPEN.some((r) => r.test(path))) return;
+    throw new HttpError(402, 'licence_requise', ctx.license.status().reason ?? 'Licence requise');
+  });
+
   // ---------- Licence : écritures métier bloquées si invalide (mode enforce) ----------
   app.addHook('preHandler', async (req) => {
     if (!MUTATING.has(req.method)) return;

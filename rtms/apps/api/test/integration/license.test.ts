@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { buildIssuerApp } from '../../src/licensing/issuer.js';
 import { LicenseGuard } from '../../src/licensing/guard.js';
-import { generateLicenseKeyPair, loadPrivateKey } from '../../src/licensing/token.js';
+import { generateLicenseKeyPair, loadPrivateKey, signLicense } from '../../src/licensing/token.js';
 import { sha256 } from '../../src/crypto.js';
 import { Client, LICENSE_DB, mission, newCompany, owner, startApp } from './helpers.js';
 
@@ -81,7 +81,7 @@ describe('Serveur de licences', () => {
     const [p, body, sig] = token.split('.');
     const payload = JSON.parse(Buffer.from(body!, 'base64url').toString());
     const forged = `${p}.${Buffer.from(JSON.stringify({ ...payload, maxUsers: 9999 })).toString('base64url')}.${sig}`;
-    await expect(g.installToken(forged)).rejects.toThrow(/signature/);
+    await expect(g.installToken(forged)).rejects.toThrow(/éditeur/);
     const r = await issuer.inject({ method: 'POST', url: '/licensing/v1/refresh', payload: { token: forged } });
     expect(r.statusCode).toBe(400);
   });
@@ -155,3 +155,63 @@ describe('Application de la licence par l’API', () => {
     await env.app.close(); env.ctx.redis.disconnect(); await env.ctx.prisma.$disconnect();
   });
 });
+
+describe('Période d’essai de 14 jours (poste principal)', () => {
+  const DAY = 86400_000;
+  /** Licence hors ligne signée comme le fait le générateur de l'éditeur. */
+  const offlineToken = (iid: string, dev: string, days = 365) => {
+    const now = Math.floor(Date.now() / 1000);
+    return signLicense({ v: 1, lid: randomUUID(), iid, dev, customer: 'Client essai', plan: 'standard', features: ['offline'], maxUsers: 5, iat: now, exp: now + days * 86400, refreshBy: now + days * 86400 }, loadPrivateKey(keys.privateKeyPem));
+  };
+  const guard = (now?: () => number) => new LicenseGuard(owner, { publicKeyPem: keys.publicKeyPem, enforcement: 'warn', graceDays: 0, deviceId: 'pc-essai', trialDays: 14, now }).init();
+
+  it('essai actif puis bloqué après 14 jours ; reculer l’horloge ne rallonge pas l’essai', async () => {
+    await owner.installation.deleteMany({});
+    const g = await guard();
+    expect(g.status()).toMatchObject({ state: 'trial', trialDaysLeft: 14, usable: true });
+    expect(g.status().activationCode).toMatch(/^RTMS-ACT1\./);
+    const later = await guard(() => Date.now() + 15 * DAY);
+    expect(later.status()).toMatchObject({ state: 'trial_expired', usable: false });
+    expect(later.usable()).toBe(false);
+    // Horloge du PC remise en arrière : la date la plus récente déjà vue fait foi
+    const rewound = await guard();
+    expect(rewound.status().state).toBe('trial_expired');
+    // Licence établie pour ce poste : débloque
+    const st = rewound.status();
+    await rewound.installToken(offlineToken(st.installationId!, st.deviceHash!));
+    expect(rewound.status()).toMatchObject({ state: 'valid', usable: true });
+    // Licence d'un autre poste : refusée avec un motif clair
+    await expect(rewound.installToken(offlineToken(st.installationId!, 'b'.repeat(64)))).rejects.toThrow(/autre ordinateur/);
+  });
+
+  it('API : essai terminé = tout est bloqué sauf la connexion et l’activation de la licence', async () => {
+    await owner.installation.deleteMany({});
+    const env = await startApp({ LICENSE_TRIAL_DAYS: 14, LICENSE_PUBLIC_KEY_PEM: keys.publicKeyPem }, { deviceId: 'pc-client' });
+    const co = await newCompany();
+    const c = new Client(env.app);
+    await c.login(co.email);
+    const during = await c.get('/api/records/transport');
+    expect(during.status, JSON.stringify(during.body)).toBe(200); // pendant l'essai : normal
+    await owner.installation.update({ where: { id: 1 }, data: { createdAt: new Date(Date.now() - 15 * DAY) } });
+    await env.app.close(); env.ctx.redis.disconnect(); await env.ctx.prisma.$disconnect();
+
+    const env2 = await startApp({ LICENSE_TRIAL_DAYS: 14, LICENSE_PUBLIC_KEY_PEM: keys.publicKeyPem }, { deviceId: 'pc-client' });
+    // Même session (Redis partagé) : le compte a déjà activé la double authentification
+    const c2 = c;
+    (c2 as unknown as { app: unknown }).app = env2.app;
+    const me = await c2.get('/api/auth/me');
+    expect(me.status).toBe(200);
+    expect(me.body.license).toMatchObject({ state: 'trial_expired', usable: false });
+    const blocked = await c2.get('/api/records/transport');
+    expect(blocked.status).toBe(402);
+    expect(blocked.body.code).toBe('licence_requise');
+    expect((await c2.get('/api/dashboard')).status).toBe(402);
+    const lic = me.body.license;
+    const act = await c2.post('/api/admin/license/activate', { token: offlineToken(lic.installationId, lic.deviceHash) });
+    expect(act.status, JSON.stringify(act.body)).toBe(200);
+    expect(act.body).toMatchObject({ state: 'valid', usable: true });
+    expect((await c2.get('/api/records/transport')).status).toBe(200);
+    await env2.app.close(); env2.ctx.redis.disconnect(); await env2.ctx.prisma.$disconnect();
+  });
+});
+

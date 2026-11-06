@@ -20,6 +20,7 @@ export async function createContext(config: Config, overrides: Partial<{ fetchIm
     graceDays: config.LICENSE_OFFLINE_GRACE_DAYS,
     deviceId: overrides.deviceId ?? config.RTMS_DEVICE_ID,
     fetchImpl: overrides.fetchImpl,
+    trialDays: config.LICENSE_TRIAL_DAYS || undefined,
   }).init();
   return {
     config, prisma, redis, license,

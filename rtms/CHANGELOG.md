@@ -1,5 +1,25 @@
 # Journal des versions
 
+## 2.4.0 — 06/11/2026
+
+### Aperçu avant impression
+- Toute impression et tout export PDF passent d’abord par un **aperçu A4 à l’écran** (zoom, nombre de pages) : Imprimer, Enregistrer en PDF ou Fermer.
+- **Pendant la saisie** (avant enregistrement), « Aperçu avant impression » (Ctrl+Maj+P, ou Ctrl+P / Imprimer) montre la facture telle qu’elle sortira : totaux et montant en lettres calculés, numéro « attribué à l’enregistrement ». « Fermer et corriger » garde la saisie ; « Enregistrer, puis voir le document final » enregistre et réaffiche l’aperçu avec le vrai numéro.
+- L’impression du tableau de bord produit maintenant une synthèse (auparavant une page vide).
+
+### Tableau de bord
+- **Accès rapide en tête**, avant les compteurs : Nouvelle facture, mission, dossier de transit, importation, exportation, mouvement, client, fournisseur, article, véhicule, employé, intervention, document — selon les droits du profil.
+
+### Licence : 14 jours d’essai, puis activation obligatoire
+- Poste principal : essai gratuit de 14 jours à partir du premier démarrage. Ensuite, le serveur refuse toutes les opérations (réponse 402) sauf la connexion, l’activation de la licence, l’installation et les sauvegardes ; l’interface affiche l’écran « Licence requise » avec le **code d’activation** du poste.
+- Reculer l’horloge du PC ne rallonge pas l’essai (date la plus récente mémorisée, **migration 0006** : colonne `installation.clock_high_water`).
+- Licence hors ligne signée Ed25519, liée au poste ; motifs de refus en clair (autre ordinateur, expirée…).
+- Outil éditeur `tools/generateur-licences.html` (Edge ou Chrome, sans Internet) : signe la licence avec la clé privée de l’éditeur, jamais livrée ni versionnée. Seule la clé publique est dans l’application (`apps/desktop/src/license-public-key.pem`).
+- Décompte « Version d’essai : N jour(s) restant(s) » dans la barre d’état ; alerte à 3 jours de la fin.
+
+### Tests
+- API 112/112 (dont essai, blocage, horloge reculée, activation, licence d’un autre poste). Interface 20/20. Bureau : démo + aperçu + PDF ; réseau local complet.
+
 ## 2.3.0 — 02/11/2026
 
 ### Fonctionnement 100 % hors ligne en réseau local

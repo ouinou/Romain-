@@ -10,7 +10,8 @@
  *          node dist/local/server.js --restore FICHIER (restauration, serveur arrêté)
  * Variables : RTMS_DATA_DIR (obligatoire), RTMS_PORT (8443), RTMS_PG_PORT (54329),
  *   RTMS_BACKUP_COPY_DIR (copie des sauvegardes, ex. clé USB), RTMS_DEVICE_ID,
- *   RTMS_WEB_ROOT, RTMS_MIGRATIONS_DIR, RTMS_LICENSE_ENFORCEMENT (warn), RTMS_LICENSE_PUBLIC_KEY_PEM.
+ *   RTMS_WEB_ROOT, RTMS_MIGRATIONS_DIR, RTMS_LICENSE_ENFORCEMENT (warn), RTMS_LICENSE_PUBLIC_KEY_PEM,
+ *   RTMS_TRIAL_DAYS (14).
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -145,6 +146,8 @@ async function main() {
     WEB_ROOT,
     INSTANCE_NAME: `LOCAL · ${os.hostname()}`,
     LICENSE_ENFORCEMENT: env.RTMS_LICENSE_ENFORCEMENT || 'warn',
+    // 14 jours d'essai gratuit, puis le logiciel se bloque jusqu'à l'activation d'une licence
+    LICENSE_TRIAL_DAYS: env.RTMS_TRIAL_DAYS || '14',
     LICENSE_PUBLIC_KEY_PEM: env.RTMS_LICENSE_PUBLIC_KEY_PEM,
     LICENSE_ISSUER_URL: undefined,
     SENTRY_DSN: undefined,
@@ -153,6 +156,8 @@ async function main() {
     RTMS_DEVICE_ID: env.RTMS_DEVICE_ID,
   });
   const ctx = await createContext(config);
+  ctx.license.startClock();
+  log(`licence : ${ctx.license.status().reason ?? ctx.license.status().state}`);
   const owner = createPrisma(roleUrl('rtms_owner', s.ownerPassword, '?connection_limit=3'));
 
   // ---------- sauvegardes automatiques ----------

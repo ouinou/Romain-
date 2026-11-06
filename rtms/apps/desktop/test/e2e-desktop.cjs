@@ -41,7 +41,11 @@ const launch = () => electron.launch({ executablePath: require('electron'), args
   await app.evaluate(({ dialog, shell }, p) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: p }); shell.openPath = async () => ''; }, pdfPath);
   await w.locator('.tab-pane:not([hidden]) tbody tr', { hasText: 'F-2026-0101' }).dblclick();
   await w.waitForSelector('.tab-pane:not([hidden]) .record-form.reading');
-  await w.evaluate(() => import('./src/core/commands.js').then((m) => m.run('file.pdf')));
+  await w.evaluate(() => { import('./src/core/commands.js').then((m) => m.run('file.pdf')); });
+  // Aperçu avant impression d'abord, puis « Enregistrer en PDF »
+  await w.waitForSelector('.pv-layer .pv-pages .invoice');
+  await w.screenshot({ path: path.join(OUT, 'desk-apercu.png') });
+  await w.click('.pv-layer [data-pv=pdf]');
   for (let i = 0; i < 50 && !fs.existsSync(pdfPath); i++) await w.waitForTimeout(200);
   assert.ok(fs.existsSync(pdfPath), 'PDF non produit');
   const pdf = fs.readFileSync(pdfPath);

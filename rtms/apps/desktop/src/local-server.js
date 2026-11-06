@@ -25,6 +25,9 @@ class LocalServer extends EventEmitter {
       RTMS_WEB_ROOT: path.join(this.serverRoot, 'web'),
       RTMS_MIGRATIONS_DIR: path.join(this.serverRoot, 'prisma', 'migrations'),
       RTMS_DEVICE_ID: this.deviceId,
+      // Clé PUBLIQUE de l'éditeur (vérifie les licences). La clé privée n'est jamais livrée.
+      RTMS_LICENSE_PUBLIC_KEY_PEM: fs.readFileSync(path.join(__dirname, 'license-public-key.pem'), 'utf8'),
+      RTMS_TRIAL_DAYS: '14',
       RTMS_BACKUP_COPY_DIR: this.backupCopyDir || '',
       NODE_TLS_REJECT_UNAUTHORIZED: undefined,
       ...extra,

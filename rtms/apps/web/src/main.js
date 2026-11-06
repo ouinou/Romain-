@@ -1,5 +1,6 @@
 // Point d'entrée RTMS : connexion, enregistrement des vues, des commandes,
 // des menus et des raccourcis clavier.
+import { showLicenseLock } from './components/LicenseLock.js';
 import { emit, on } from './core/bus.js';
 import { get, post } from './core/api.js';
 import { activeView, allWithKeys, matchKey, register, run } from './core/commands.js';
@@ -47,6 +48,7 @@ view('record.cancel', 'Annuler', 'xcircle', 'Suppr');
 view('form.save', 'Enregistrer', 'save', 'Ctrl+S');
 view('form.cancelEdit', 'Annuler la saisie', 'x');
 view('file.print', 'Imprimer', 'printer', 'Ctrl+P');
+view('record.preview', 'Aperçu avant impression', 'eye', 'Ctrl+Maj+P');
 view('file.pdf', 'Exporter PDF', 'pdf');
 view('file.csv', 'Exporter Excel (CSV)', 'sheet');
 view('view.filters', 'Filtres', 'filter');
@@ -201,6 +203,8 @@ mountToasts();
 async function enterApp(me) {
   session.me = me;
   session.perms = new Set(me.permissions);
+  // Fin de l'essai (ou de l'abonnement) sans licence : écran d'activation à la place du logiciel
+  if (me.license && me.license.usable === false) { showLicenseLock(me.license, { onLogout: () => logout() }); return; }
   resetPrefsCache();
   if (!prefs().floating) setPrefs({ floating: {} }, { silent: true });
   try { const defs = await get('/api/modules'); session.defs = Object.fromEntries(defs.map((d) => [d.key, d])); } catch { session.defs = {}; }
@@ -214,7 +218,10 @@ async function enterApp(me) {
   await refreshNotifications();
   clearInterval(notifTimer);
   notifTimer = setInterval(refreshNotifications, 5 * 60_000);
-  if (me.license && !['valid', 'unconfigured'].includes(me.license.state) && me.license.enforcement === 'enforce') {
+  if (me.license?.state === 'trial' && me.license.trialDaysLeft <= 3) {
+    emit('toast', { type: 'error', message: `Version d’essai : plus que ${me.license.trialDaysLeft} jour(s). Activez la licence (Administration › Licence) pour ne pas être bloqué.` });
+  }
+  if (me.license && !['valid', 'unconfigured', 'trial'].includes(me.license.state) && me.license.enforcement === 'enforce') {
     emit('toast', { type: 'error', message: `Licence ${me.license.state} : le logiciel est en consultation seule.` });
   }
 }
@@ -232,6 +239,8 @@ async function logout(message) {
 }
 
 on('session-expired', () => logout('Votre session a expiré. Reconnectez-vous.'));
+// Le serveur bloque (fin de l'essai pendant l'utilisation) : on affiche l'écran d'activation
+on('license-blocked', (b) => { if (b?.code === 'licence_requise' && session.me) get('/api/auth/me').then((me) => showLicenseLock(me.license, { onLogout: () => logout() })).catch(() => {}); });
 on('data-changed', (d) => { workspace.invalidate(d?.module); refreshNotifications(); });
 on('notifications', (s) => {
   const n = s.items.length;

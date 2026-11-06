@@ -45,7 +45,8 @@ const dotted = (label, value, cls = '') => `<div class="pr-dot ${cls}"><span cla
 const signs = (a, b, c) => `<div class="pr-signs"><div>${esc(a)}</div><div>${esc(b)}</div><div>${esc(c)}</div></div>`;
 const a4 = (body, cls = '', style = '') => `<div class="a4 ${cls}" style="${style}"><img class="pr-watermark" src="${WATERMARK}" alt="">${body}${waveFooter()}</div>`;
 
-export async function printHtml(html, { pdf = false } = {}) {
+/** Impression ou PDF immédiat (après l'aperçu). */
+export async function printNow(html, { pdf = false } = {}) {
   let root = document.getElementById('print-root');
   if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
   root.innerHTML = html;
@@ -61,6 +62,68 @@ export async function printHtml(html, { pdf = false } = {}) {
   }
   if (pdf) toast('Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF ».', 'info');
   setTimeout(() => window.print(), pdf ? 300 : 50);
+}
+
+/**
+ * Aperçu avant impression, comme dans un traitement de texte : la page A4 s'affiche à l'écran,
+ * on vérifie, puis on imprime, on enregistre en PDF ou on ferme pour corriger.
+ * `draft` : document pas encore enregistré ({ note, saveLabel, onSave }) ; onSave enregistre
+ * puis renvoie le document définitif (numéro attribué), qui s'affiche à son tour en aperçu.
+ */
+export function printHtml(html, { pdf = false, draft = null } = {}) {
+  return new Promise((resolve) => {
+    const prevFocus = document.activeElement;
+    const layer = document.createElement('div');
+    layer.className = 'pv-layer';
+    layer.setAttribute('role', 'dialog');
+    layer.setAttribute('aria-modal', 'true');
+    layer.setAttribute('aria-label', 'Aperçu avant impression');
+    const actions = draft
+      ? `<button type="button" class="btn secondary" data-pv="close">Fermer et corriger</button>${draft.onSave ? `<button type="button" class="btn" data-pv="save">${esc(draft.saveLabel || 'Enregistrer puis imprimer')}</button>` : ''}`
+      : `<button type="button" class="btn secondary" data-pv="close">Fermer</button><button type="button" class="btn ${pdf ? '' : 'secondary'}" data-pv="pdf">Enregistrer en PDF</button><button type="button" class="btn ${pdf ? 'secondary' : ''}" data-pv="print">Imprimer</button>`;
+    layer.innerHTML = `<div class="pv-bar">
+        <strong class="pv-title">Aperçu avant impression</strong>
+        <span class="pv-info" data-pv-info></span>
+        <span class="pv-zoom"><button type="button" class="btn secondary sm" data-pv="zout" title="Réduire" aria-label="Réduire">−</button><span data-pv-pct>100 %</span><button type="button" class="btn secondary sm" data-pv="zin" title="Agrandir" aria-label="Agrandir">+</button><button type="button" class="btn secondary sm" data-pv="fit">Ajuster</button></span>
+        <span class="pv-actions">${actions}</span>
+      </div>
+      ${draft ? `<div class="pv-note">${esc(draft.note || 'Aperçu d’un document non enregistré.')}</div>` : ''}
+      <div class="pv-scroll" tabindex="0"><div class="pv-pages">${html}</div></div>`;
+    document.body.appendChild(layer);
+    const pages = layer.querySelector('.pv-pages');
+    const scroll = layer.querySelector('.pv-scroll');
+    const n = pages.querySelectorAll('.a4').length || 1;
+    layer.querySelector('[data-pv-info]').textContent = `${n} page${n > 1 ? 's' : ''} A4`;
+    let zoom = 1;
+    const setZoom = (z) => { zoom = Math.max(0.3, Math.min(2, z)); pages.style.zoom = String(zoom); layer.querySelector('[data-pv-pct]').textContent = `${Math.round(zoom * 100)} %`; };
+    const fit = () => setZoom(Math.min(1.2, (scroll.clientWidth - 48) / 794));
+    fit();
+    const close = (v) => { document.removeEventListener('keydown', onKey, true); layer.remove(); if (prevFocus && prevFocus.focus) prevFocus.focus(); resolve(v); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(null); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p' && !draft) { e.preventDefault(); e.stopPropagation(); go('print'); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    const go = async (what) => {
+      if (what === 'close') return close(null);
+      if (what === 'zin') return setZoom(zoom + 0.1);
+      if (what === 'zout') return setZoom(zoom - 0.1);
+      if (what === 'fit') return fit();
+      if (what === 'print' || what === 'pdf') { close(what); return printNow(html, { pdf: what === 'pdf' }); }
+      if (what === 'save') {
+        const b = layer.querySelector('[data-pv="save"]');
+        b.disabled = true;
+        try {
+          const finalHtml = await draft.onSave();
+          close('saved');
+          if (finalHtml) printHtml(finalHtml, { pdf });
+        } catch (e) { b.disabled = false; toast(e.message || 'Enregistrement impossible', 'error'); }
+      }
+      return undefined;
+    };
+    layer.addEventListener('click', (e) => { const b = e.target.closest('[data-pv]'); if (b) go(b.dataset.pv); });
+    (layer.querySelector('[data-pv="print"]') || layer.querySelector('[data-pv="save"]') || layer.querySelector('[data-pv="close"]')).focus();
+  });
 }
 
 /**
