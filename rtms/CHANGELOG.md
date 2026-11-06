@@ -17,6 +17,9 @@
 - Outil éditeur `tools/generateur-licences.html` (Edge ou Chrome, sans Internet) : signe la licence avec la clé privée de l’éditeur, jamais livrée ni versionnée. Seule la clé publique est dans l’application (`apps/desktop/src/license-public-key.pem`).
 - Décompte « Version d’essai : N jour(s) restant(s) » dans la barre d’état ; alerte à 3 jours de la fin.
 
+### Icône de l’application Windows
+- Le logo officiel du logiciel (FINEXA Transport Management System) devient l’icône de l’application : exécutable, raccourcis Bureau et menu Démarrer, barre des tâches, icône près de l’horloge, installateur. L’intérieur du logiciel (nom RAHA TRANSPORT MANAGEMENT SYSTEM, logo Raha, factures et documents) est inchangé. Source : `apps/desktop/build/finexa-logo-source.png`.
+
 ### Tests
 - API 112/112 (dont essai, blocage, horloge reculée, activation, licence d’un autre poste). Interface 20/20. Bureau : démo + aperçu + PDF ; réseau local complet.
 
