@@ -1,10 +1,13 @@
 # Construit l'installateur Windows de RTMS et le publie dans une « Release » GitHub,
 # téléchargeable en un seul fichier (les releases acceptent les gros fichiers).
-# Déclenchement : étiquette « installateur-v* » (ex. installateur-v2.4.0) ou à la main.
+# Déclenchement : envoi sur la branche de travail (application ou ce fichier modifiés),
+# étiquette « installateur-v* », ou à la main. La release est nommée d'après la version.
 name: RTMS installateur Windows
 on:
   push:
+    branches: [claude/pensive-keller-d1as3i]
     tags: ["installateur-v*"]
+    paths: ["rtms/apps/**", ".github/workflows/rtms-installateur.yml"]
   workflow_dispatch:
 
 permissions:
@@ -24,11 +27,15 @@ jobs:
       - run: npm run dist:win
       - run: node test/check-build.mjs
       - run: cd dist && sha256sum RTMS-Setup-*.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - id: v
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Publication de la release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('installateur-test-{0}', github.run_number) }}
-          name: RTMS — installateur Windows ${{ github.ref_name }}
+          tag_name: installateur-v${{ steps.v.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: RTMS ${{ steps.v.outputs.version }} — installateur Windows
+          make_latest: true
           body: |
             Installateur Windows de RAHA TRANSPORT MANAGEMENT SYSTEM.
 
