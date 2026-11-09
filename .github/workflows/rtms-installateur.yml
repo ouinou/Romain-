@@ -1,0 +1,44 @@
+# Construit l'installateur Windows de RTMS et le publie dans une « Release » GitHub,
+# téléchargeable en un seul fichier (les releases acceptent les gros fichiers).
+# Déclenchement : étiquette « installateur-v* » (ex. installateur-v2.4.0) ou à la main.
+name: RTMS installateur Windows
+on:
+  push:
+    tags: ["installateur-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installateur:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: rtms/apps/desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: sudo apt-get update -q && sudo apt-get install -y -q nsis
+      - run: npm ci --prefix ../api
+      - run: npm ci
+      - run: npm run dist:win
+      - run: node test/check-build.mjs
+      - run: cd dist && sha256sum RTMS-Setup-*.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Publication de la release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('installateur-test-{0}', github.run_number) }}
+          name: RTMS — installateur Windows ${{ github.ref_name }}
+          body: |
+            Installateur Windows de RAHA TRANSPORT MANAGEMENT SYSTEM.
+
+            1. Téléchargez **RTMS-Setup-….exe** ci-dessous (rubrique « Assets »).
+            2. Double-cliquez dessus. Si Windows affiche « Windows a protégé votre ordinateur » :
+               « Informations complémentaires », puis « Exécuter quand même ».
+            3. Sur le PC qui garde les données : « Ce poste est le poste principal ».
+               Sur les autres : « Se connecter au poste principal ».
+
+            Empreinte SHA-256 : voir SHA256SUMS.txt.
+          files: |
+            rtms/apps/desktop/dist/RTMS-Setup-*.exe
+            rtms/apps/desktop/dist/SHA256SUMS.txt

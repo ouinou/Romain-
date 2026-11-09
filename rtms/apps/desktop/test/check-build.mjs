@@ -17,4 +17,4 @@ console.log('groupes d’icônes :', groups.length, '· images :', icons.length)
 const fv = vi.fixedInfo; console.log('version :', `${fv.fileVersionMS >>> 16}.${fv.fileVersionMS & 0xffff}.${fv.fileVersionLS >>> 16}`, '·', strings.ProductName, '·', strings.CompanyName);
 const files = asar.listPackage(path.join(dir, 'resources', 'app.asar'));
 for (const f of ['/src/main.js', '/src/preload.js', '/src/pages/launcher.html', '/webapp/demo.html', '/webapp/src/demo/mockApi.js', '/webapp/assets/logo-raha.png']) console.log(files.includes(f) ? 'présent ' : 'ABSENT  ', f);
-console.log('fichiers sensibles :', files.filter((f) => /\.(pem|key|env)$/.test(f) || f.includes('node_modules')).length);
+console.log('fichiers sensibles :', files.filter((f) => (/\.(pem|key|env)$/.test(f) && !f.endsWith('license-public-key.pem')) || f.includes('node_modules')).length);

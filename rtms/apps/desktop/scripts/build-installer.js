@@ -11,17 +11,17 @@ const { version } = require('../package.json');
 const appDir = path.join(root, 'dist', 'win-unpacked');
 if (!fs.existsSync(path.join(appDir, 'RAHA TRANSPORT RTMS.exe'))) throw new Error('dist/win-unpacked absent : lancer d’abord electron-builder --win dir');
 
+// NSIS : celui du cache d'electron-builder s'il existe, sinon celui du système (paquet « nsis », ex. en CI)
 const cache = path.join(os.homedir(), '.cache', 'electron-builder');
-const nsisRoot = fs.readdirSync(cache).filter((d) => d.startsWith('nsis-3')).map((d) => path.join(cache, d))
-  .flatMap((d) => fs.readdirSync(d).map((x) => path.join(d, x))).find((d) => fs.existsSync(path.join(d, 'linux', 'makensis')));
-if (!nsisRoot) throw new Error('NSIS introuvable dans le cache electron-builder');
-
+const nsisRoot = fs.existsSync(cache) ? fs.readdirSync(cache).filter((d) => d.startsWith('nsis-3')).map((d) => path.join(cache, d))
+  .flatMap((d) => fs.readdirSync(d).map((x) => path.join(d, x))).find((d) => fs.existsSync(path.join(d, 'linux', 'makensis'))) : undefined;
+const makensis = nsisRoot ? path.join(nsisRoot, 'linux', 'makensis') : 'makensis';
 const out = path.join(root, 'dist', `RTMS-Setup-${version}.exe`);
-execFileSync(path.join(nsisRoot, 'linux', 'makensis'), [
+execFileSync(makensis, [
   '-V2', `-DVERSION=${version}`, `-DOUTFILE=${out}`, `-DAPPDIR=${appDir}`,
   `-DBUILDDIR=${path.join(root, 'build')}`, `-DINSTDIR_RES=${path.join(root, 'installer')}`,
   path.join(root, 'installer', 'rtms.nsi'),
-], { stdio: 'inherit', env: { ...process.env, NSISDIR: nsisRoot } });
+], { stdio: 'inherit', env: nsisRoot ? { ...process.env, NSISDIR: nsisRoot } : process.env });
 console.log(`Installateur : ${out}`);
 
 const zip = path.join(root, 'dist', `RTMS-Portable-${version}.zip`);
