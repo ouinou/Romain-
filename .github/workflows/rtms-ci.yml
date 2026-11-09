@@ -150,6 +150,8 @@ jobs:
         with: { node-version: "${{ env.NODE_VERSION }}", cache: npm, cache-dependency-path: rtms/apps/desktop/package-lock.json }
       - run: sudo apt-get update -q && sudo apt-get install -y -q nsis
       - run: npm ci --prefix ../api   # serveur du poste principal, embarqué dans l'installateur
+      - run: npx prisma generate
+        working-directory: rtms/apps/api
       - run: npm ci
       - run: npm test
       - run: xvfb-run -a node test/e2e-desktop.cjs /tmp http://127.0.0.1:9

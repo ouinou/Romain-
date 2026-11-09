@@ -23,6 +23,8 @@ jobs:
         with: { node-version: "22" }
       - run: sudo apt-get update -q && sudo apt-get install -y -q nsis
       - run: npm ci --prefix ../api
+      - run: npx prisma generate
+        working-directory: rtms/apps/api
       - run: npm ci
       - run: npm run dist:win
       - run: node test/check-build.mjs
