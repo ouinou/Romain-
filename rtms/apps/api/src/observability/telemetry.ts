@@ -1,19 +1,19 @@
 /**
  * Sentry (erreurs) et OpenTelemetry (traces) — activés seulement si configurés.
- * À importer en tout premier dans main.ts pour que l'instrumentation s'applique.
+ * Les bibliothèques sont chargées à la demande : le poste principal hors ligne (qui ne les
+ * configure jamais) n'a pas besoin de les embarquer, ce qui allège l'installateur Windows.
  */
-import * as Sentry from '@sentry/node';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
-import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+type SentryModule = typeof import('@sentry/node');
+let sentry: SentryModule | undefined;
+let sdk: { shutdown(): Promise<void> } | undefined;
 
-let sdk: NodeSDK | undefined;
-
-export function initTelemetry(env = process.env) {
+export async function initTelemetry(env = process.env) {
   if (env.OTEL_EXPORTER_OTLP_ENDPOINT) {
-    sdk = new NodeSDK({
+    const [{ NodeSDK }, { OTLPTraceExporter }, { HttpInstrumentation }, { PgInstrumentation }, { IORedisInstrumentation }] = await Promise.all([
+      import('@opentelemetry/sdk-node'), import('@opentelemetry/exporter-trace-otlp-http'), import('@opentelemetry/instrumentation-http'),
+      import('@opentelemetry/instrumentation-pg'), import('@opentelemetry/instrumentation-ioredis'),
+    ]);
+    const s = new NodeSDK({
       serviceName: env.OTEL_SERVICE_NAME ?? 'rtms-api',
       traceExporter: new OTLPTraceExporter({ url: `${env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces` }),
       instrumentations: [
@@ -22,10 +22,12 @@ export function initTelemetry(env = process.env) {
         new IORedisInstrumentation(),
       ],
     });
-    sdk.start();
+    s.start();
+    sdk = s;
   }
   if (env.SENTRY_DSN) {
-    Sentry.init({
+    sentry = await import('@sentry/node');
+    sentry.init({
       dsn: env.SENTRY_DSN,
       environment: env.NODE_ENV,
       release: env.RTMS_VERSION,
@@ -44,5 +46,5 @@ export function initTelemetry(env = process.env) {
   }
 }
 
-export const captureError = (e: unknown) => { if (process.env.SENTRY_DSN) Sentry.captureException(e); };
-export async function shutdownTelemetry() { await sdk?.shutdown(); await Sentry.close(2000).catch(() => undefined); }
+export const captureError = (e: unknown) => { sentry?.captureException(e); };
+export async function shutdownTelemetry() { await sdk?.shutdown(); await sentry?.close(2000).catch(() => undefined); }

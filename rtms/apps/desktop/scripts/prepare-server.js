@@ -57,6 +57,19 @@ for (const f of fs.readdirSync(clientDir)) if (/wasm|^edge\.|query_engine_bg/.te
 rm(path.join(out, 'node_modules', '@prisma', 'engines')); // moteurs du CLI (migrations : faites par notre propre migrateur)
 rm(path.join(out, 'node_modules', 'prisma'));
 rm(path.join(out, 'node_modules', '.bin'));
+// Allègement de l'installateur : paquets inutiles au poste principal hors ligne.
+// - supervision (Sentry, OpenTelemetry) : chargée seulement si configurée (serveur hébergé) ;
+// - outillage du CLI Prisma (TypeScript, Babel, analyseurs…) : le client n'en a pas besoin.
+const NM = path.join(out, 'node_modules');
+// @opentelemetry/api reste : prom-client (métriques) en dépend
+if (fs.existsSync(path.join(NM, '@opentelemetry'))) for (const d of fs.readdirSync(path.join(NM, '@opentelemetry'))) if (d !== 'api') rm(path.join(NM, '@opentelemetry', d));
+for (const d of ['@sentry', '@sentry-internal', 'sentry', '@grpc', '@protobufjs', 'protobufjs', 'import-in-the-middle', 'require-in-the-middle',
+  'typescript', '@babel', 'oxc-parser', '@oxc-parser', 'effect', 'fast-check', '@prisma/config', '@prisma/fetch-engine', '@prisma/get-platform', '@prisma/debug', '@types']) rm(path.join(NM, d));
+// PostgreSQL : outils graphiques et traductions des messages (le français est gardé)
+const pgNative = path.join(NM, '@embedded-postgres', `${PLATFORM === 'win32' ? 'windows' : PLATFORM}-x64`, 'native');
+if (fs.existsSync(path.join(pgNative, 'bin'))) for (const f of fs.readdirSync(path.join(pgNative, 'bin'))) if (/^wx.*\.dll$|^testplug\.dll$/i.test(f)) rm(path.join(pgNative, 'bin', f));
+const pgLocale = path.join(pgNative, 'share', 'locale');
+if (fs.existsSync(pgLocale)) for (const d of fs.readdirSync(pgLocale)) if (d !== 'fr') rm(path.join(pgLocale, d));
 const argonPrebuilds = path.join(out, 'node_modules', 'argon2', 'prebuilds');
 if (fs.existsSync(argonPrebuilds)) for (const d of fs.readdirSync(argonPrebuilds)) if (!d.startsWith(`${PLATFORM}-x64`)) rm(path.join(argonPrebuilds, d));
 (function prune(dir) {

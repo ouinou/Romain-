@@ -21,3 +21,4 @@ rtms/apps/desktop/build-server/
 # Clé privée de l’éditeur (licences) : ne jamais versionner
 *cle-privee*
 *.private.pem
+rtms/livraison/*.exe

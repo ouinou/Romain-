@@ -1,5 +1,5 @@
 import { initTelemetry, shutdownTelemetry } from './observability/telemetry.js';
-initTelemetry();
+await initTelemetry();
 
 import { buildApp } from './app.js';
 import { closeContext, createContext } from './bootstrap.js';

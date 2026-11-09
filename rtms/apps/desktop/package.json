@@ -64,6 +64,10 @@
     },
     "portable": {
       "artifactName": "RTMS-Portable-${version}.${ext}"
-    }
+    },
+    "electronLanguages": [
+      "fr",
+      "en-US"
+    ]
   }
 }
