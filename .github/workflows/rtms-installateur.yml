@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run dist:win
       - run: node test/check-build.mjs
-      - run: cd dist && sha256sum RTMS-Setup-*.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - run: cd dist && sha256sum RTMS-Setup-*.exe RTMS-Portable-*.zip > SHA256SUMS.txt && cat SHA256SUMS.txt
       - id: v
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Publication de la release
@@ -47,7 +47,11 @@ jobs:
             3. Sur le PC qui garde les données : « Ce poste est le poste principal ».
                Sur les autres : « Se connecter au poste principal ».
 
+            Version portable (sans installation) : RTMS-Portable-….zip, à décompresser
+            (clic droit > Extraire tout), puis lancer « RAHA TRANSPORT RTMS.exe ».
+
             Empreinte SHA-256 : voir SHA256SUMS.txt.
           files: |
             rtms/apps/desktop/dist/RTMS-Setup-*.exe
+            rtms/apps/desktop/dist/RTMS-Portable-*.zip
             rtms/apps/desktop/dist/SHA256SUMS.txt
