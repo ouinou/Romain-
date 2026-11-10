@@ -8,7 +8,7 @@ import { seedRecords } from './seed.js';
 const KEY = 'rtms.demo.db.v1';
 // Démonstration uniquement : aucun compte réel n'est créé
 const DEMO_TEMP_PASS = 'demo (fictif)';
-const VERSION = '2.4.1';
+const VERSION = '2.4.2';
 const LOCKED = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 const defOf = (m) => DEFS.find((d) => d.key === m);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);

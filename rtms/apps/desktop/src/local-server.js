@@ -28,6 +28,8 @@ class LocalServer extends EventEmitter {
       // Clé PUBLIQUE de l'éditeur (vérifie les licences). La clé privée n'est jamais livrée.
       RTMS_LICENSE_PUBLIC_KEY_PEM: fs.readFileSync(path.join(__dirname, 'license-public-key.pem'), 'utf8'),
       RTMS_TRIAL_DAYS: '14',
+      // le serveur s'arrête si l'application disparaît (fermeture forcée) : pas de serveur orphelin
+      RTMS_STOP_WITH_PARENT: '1',
       RTMS_BACKUP_COPY_DIR: this.backupCopyDir || '',
       NODE_TLS_REJECT_UNAUTHORIZED: undefined,
       ...extra,

@@ -15,6 +15,8 @@
  */
 import fs from 'node:fs';
 import os from 'node:os';
+import net from 'node:net';
+import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import EmbeddedPostgres from 'embedded-postgres';
@@ -35,7 +37,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const env = process.env;
 const DATA = env.RTMS_DATA_DIR;
 if (!DATA) { console.error('RTMS_DATA_DIR manquant'); process.exit(2); }
-const PORT = Number(env.RTMS_PORT || 8443);
+const BASE_PORT = Number(env.RTMS_PORT || 8443);
+let PORT = BASE_PORT;
 const PG_PORT = Number(env.RTMS_PG_PORT || 54329);
 const MIGRATIONS = env.RTMS_MIGRATIONS_DIR || path.resolve(here, '../../prisma/migrations');
 const WEB_ROOT = env.RTMS_WEB_ROOT || path.resolve(here, '../../../web');
@@ -44,6 +47,58 @@ const DB = 'rtms';
 
 const emit = (event: string, data: object = {}) => process.stdout.write(`RTMS_EVENT ${JSON.stringify({ event, ...data })}\n`);
 const log = (m: string) => emit('log', { message: m });
+
+/** pg_ctl du paquet PostgreSQL intégré (Windows ou Linux). */
+async function pgCtl(): Promise<string | null> {
+  const pkg = process.platform === 'win32' ? '@embedded-postgres/windows-x64' : process.platform === 'linux' ? '@embedded-postgres/linux-x64' : null;
+  if (!pkg) return null;
+  try { return ((await import(pkg as string)) as { pg_ctl: string }).pg_ctl; } catch { return null; }
+}
+
+/** Le port TCP est-il libre sur toutes les interfaces ? */
+function portFree(port: number) {
+  return new Promise<boolean>((resolve) => {
+    const srv = net.createServer();
+    srv.once('error', () => resolve(false));
+    srv.listen({ host: '0.0.0.0', port }, () => srv.close(() => resolve(true)));
+  });
+}
+
+/** Demande l'arrêt propre d'un ancien serveur RTMS de ce poste (même dossier de données, même jeton). */
+function askShutdown(port: number, token: string) {
+  return new Promise<boolean>((resolve) => {
+    const req = https.request({ host: '127.0.0.1', port, path: '/api/local/shutdown', method: 'POST', rejectUnauthorized: false, timeout: 3000, headers: { 'x-rtms-shutdown': token, 'content-type': 'application/json' } }, (res) => { res.resume(); resolve(res.statusCode === 200); });
+    req.on('error', () => resolve(false)); req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end('{}');
+  });
+}
+
+/**
+ * Avant de démarrer : un ancien RTMS peut être resté ouvert (application fermée de force,
+ * mise à jour par-dessus). On lui demande de s'arrêter proprement ; une base PostgreSQL restée
+ * en marche sur notre dossier est arrêtée ; enfin, si le port est pris par un autre logiciel,
+ * on prend le suivant (les autres postes retrouvent le poste principal par la découverte).
+ */
+async function freeTheWay(token: string) {
+  let asked = false;
+  for (let p = BASE_PORT; p < BASE_PORT + 10; p++) if (!(await portFree(p)) && (await askShutdown(p, token))) { asked = true; log(`ancien serveur RTMS arrêté (port ${p})`); }
+  const pid = path.join(DATA!, 'pgdata', 'postmaster.pid');
+  for (let i = 0; asked && i < 60 && fs.existsSync(pid); i++) await new Promise((r) => setTimeout(r, 500));
+  if (fs.existsSync(pid)) {
+    const ctl = await pgCtl();
+    if (ctl) {
+      try {
+        const { execFileSync } = await import('node:child_process');
+        execFileSync(ctl, ['stop', '-D', path.join(DATA!, 'pgdata'), '-m', 'fast', '-w', '-t', '30'], { stdio: 'ignore', windowsHide: true });
+        log('base de données restée ouverte : arrêtée proprement');
+      } catch { /* aucune base en marche : fichier de verrou périmé, PostgreSQL le gère */ }
+    }
+  }
+  for (let p = BASE_PORT; p < BASE_PORT + 10; p++) {
+    if (await portFree(p)) { if (p !== BASE_PORT) log(`port ${BASE_PORT} occupé par un autre logiciel : port ${p} utilisé`); return p; }
+  }
+  throw new Error(`Ports ${BASE_PORT} à ${BASE_PORT + 9} tous occupés sur ce poste`);
+}
 
 async function startPostgres(superPassword: string) {
   const dir = path.join(DATA!, 'pgdata');
@@ -69,9 +124,9 @@ async function startPostgres(superPassword: string) {
 async function stopPostgres(pgInst: EmbeddedPostgres) {
   if (process.platform === 'win32') {
     try {
-      const bin = await import('@embedded-postgres/windows-x64' as string) as { pg_ctl: string };
+      const ctl = await pgCtl();
       const { execFileSync } = await import('node:child_process');
-      execFileSync(bin.pg_ctl, ['stop', '-D', path.join(DATA!, 'pgdata'), '-m', 'fast', '-w', '-t', '30'], { stdio: 'ignore', windowsHide: true });
+      if (ctl) execFileSync(ctl, ['stop', '-D', path.join(DATA!, 'pgdata'), '-m', 'fast', '-w', '-t', '30'], { stdio: 'ignore', windowsHide: true });
     } catch { /* déjà arrêté : le repli ci-dessous suffit */ }
   }
   await pgInst.stop().catch(() => {});
@@ -128,6 +183,10 @@ async function main() {
   fs.mkdirSync(DATA!, { recursive: true });
   const s = loadOrCreateSecrets(DATA!);
   const tls = await loadOrCreateTls(DATA!);
+  PORT = await freeTheWay(s.shutdownToken!);
+  let stopping = false;
+  let stopImpl: () => Promise<void> = async () => {};
+  const stop = () => { if (!stopping) { stopping = true; void stopImpl(); } };
   const pgInst = await startPostgres(s.pgSuperPassword);
   const applied = await prepareDatabase(s);
   if (applied.length) log(`migrations appliquées : ${applied.join(', ')}`);
@@ -188,7 +247,7 @@ async function main() {
       list: () => listBackups(BACKUP_DIR),
       now: backupNow,
       info: () => ({ directory: BACKUP_DIR, copyTo: env.RTMS_BACKUP_COPY_DIR || null, last: lastBackup }),
-    }),
+    }, { token: s.shutdownToken!, run: () => void stop() }),
   });
   await app.listen({ host: '0.0.0.0', port: PORT });
 
@@ -199,10 +258,8 @@ async function main() {
   const disco = startDiscoveryResponder(() => ({ name: os.hostname(), port: PORT, fingerprint: tls.fingerprint, version: APP_VERSION, company: companyName }));
   emit('ready', { port: PORT, fingerprint: tls.fingerprint, dataDir: DATA, backups: BACKUP_DIR });
 
-  let stopping = false;
-  const stop = async () => {
-    if (stopping) return;
-    stopping = true;
+  // (déclarée plus haut pour la route d'arrêt)
+  stopImpl = async () => {
     disco.close();
     await app.close().catch(() => {});
     await closeContext(ctx).catch(() => {});
@@ -213,11 +270,13 @@ async function main() {
   };
   process.on('SIGTERM', stop);
   process.on('SIGINT', stop);
-  process.on('message', (m) => { if (m === 'stop') void stop(); });
+  process.on('message', (m) => { if (m === 'stop') stop(); });
+  // Lancé par l'application de bureau : si elle disparaît (fermeture forcée), le serveur s'arrête aussi
+  if (env.RTMS_STOP_WITH_PARENT === '1') process.stdin.on('end', stop);
   // Commandes de l'application de bureau (icône près de l'horloge)
   process.stdin.on('data', (d) => {
     const cmd = d.toString().trim();
-    if (cmd === 'stop') void stop();
+    if (cmd === 'stop') stop();
     if (cmd === 'backup') backupNow().catch(() => {});
   });
 }

@@ -17,7 +17,8 @@ const APP_SCHEME = 'rtms';
 const LOCAL = `${APP_SCHEME}://app`;
 const WEB_ROOT = path.join(__dirname, '..', 'webapp');
 const PAGES_ROOT = path.join(__dirname, 'pages');
-const MAIN_PORT = 8443;
+const MAIN_PORT = 8443; // port par défaut ; le poste principal peut en prendre un autre si celui-ci est occupé
+const mainPort = () => (server && server.info && server.info.port) || MAIN_PORT;
 const HIDDEN_START = process.argv.includes('--hidden');
 // Édition livrée aux clients : sans mode démonstration. RTMS_DEMO=1 le réactive (présentations, tests).
 const DEMO_ENABLED = process.env.RTMS_DEMO === '1';
@@ -126,7 +127,8 @@ async function startMain() {
     const info = await server.start();
     pins.set(info.fingerprint, 'ce poste');
     updateTray();
-    if (win && !win.isDestroyed()) win.loadURL(`https://127.0.0.1:${MAIN_PORT}`);
+    allowedOrigin = `https://127.0.0.1:${info.port}`;
+    if (win && !win.isDestroyed()) win.loadURL(`https://127.0.0.1:${info.port}`);
   } catch (e) {
     const q = new URLSearchParams({ err: e.message, main: '1' });
     if (win && !win.isDestroyed()) win.loadURL(`${LOCAL}/desktop/offline.html?${q}`);
@@ -210,7 +212,7 @@ function updateTray() {
     { label: 'Ouvrir RTMS', click: showWindow },
     { type: 'separator' },
     { label: `Poste principal : ${state}`, enabled: false },
-    { label: addrs.length ? `Adresse : https://${addrs[0]}:${MAIN_PORT}` : 'Aucun réseau détecté', enabled: false },
+    { label: addrs.length ? `Adresse : https://${addrs[0]}:${mainPort()}` : 'Aucun réseau détecté', enabled: false },
     { label: fp ? `Empreinte : ${fp.split(':').slice(0, 6).join(':')}…` : 'Empreinte : —', enabled: false },
     { label: 'Afficher les informations de connexion…', click: showMainInfo },
     { type: 'separator' },
@@ -231,7 +233,7 @@ async function showMainInfo() {
   const addrs = lanAddresses();
   await dialog.showMessageBox(win && win.isVisible() ? win : undefined, {
     type: 'info', title: 'Poste principal RTMS', message: 'Informations pour connecter les autres postes',
-    detail: `Les autres postes trouvent ce poste automatiquement (bouton « Rechercher »).\n\nAdresse(s) à saisir si besoin :\n${addrs.map((a) => `   https://${a}:${MAIN_PORT}`).join('\n') || '   (aucun réseau)'}\n\nEmpreinte du certificat (à comparer sur l’autre poste) :\n${fp}\n\nConseil : réservez une adresse IP fixe pour ce poste dans la box.`,
+    detail: `Les autres postes trouvent ce poste automatiquement (bouton « Rechercher »).\n\nAdresse(s) à saisir si besoin :\n${addrs.map((a) => `   https://${a}:${mainPort()}`).join('\n') || '   (aucun réseau)'}\n\nEmpreinte du certificat (à comparer sur l’autre poste) :\n${fp}\n\nConseil : réservez une adresse IP fixe pour ce poste dans la box.`,
     buttons: ['OK'],
   });
 }
@@ -265,7 +267,7 @@ async function restoreFromTray() {
 /** Règles de pare-feu (une seule fois, demande d'autorisation Windows) : réseau local uniquement. */
 function openFirewall() {
   const rules = [
-    `netsh advfirewall firewall add rule name="RTMS poste principal (HTTPS)" dir=in action=allow protocol=TCP localport=${MAIN_PORT} remoteip=localsubnet profile=any`,
+    `netsh advfirewall firewall add rule name="RTMS poste principal (HTTPS)" dir=in action=allow protocol=TCP localport=${MAIN_PORT}-${MAIN_PORT + 9} remoteip=localsubnet profile=any`,
     'netsh advfirewall firewall add rule name="RTMS poste principal (découverte)" dir=in action=allow protocol=UDP localport=41730 remoteip=localsubnet profile=any',
   ].join(' & ');
   const ps = `Start-Process -FilePath cmd.exe -ArgumentList '/c ${rules.replace(/'/g, "''")}' -Verb RunAs -WindowStyle Hidden`;
@@ -322,7 +324,7 @@ ipcMain.handle('rtms:change-server', guard(async () => {
   return true;
 }));
 ipcMain.handle('rtms:retry', guard(async () => { if (readConfig().mode === 'client') await rediscover(); loadStart(); return true; }));
-ipcMain.handle('rtms:main-info', guard(() => ({ state: server ? server.state : 'arrêté', fingerprint: server && server.info ? server.info.fingerprint : null, addresses: lanAddresses(), port: MAIN_PORT })));
+ipcMain.handle('rtms:main-info', guard(() => ({ state: server ? server.state : 'arrêté', fingerprint: server && server.info ? server.info.fingerprint : null, addresses: lanAddresses(), port: mainPort() })));
 ipcMain.handle('rtms:firewall', guard(() => { if (process.platform === 'win32') openFirewall(); return process.platform === 'win32'; }));
 
 /** Vrai fichier PDF A4 à partir de l'aperçu d'impression préparé par l'application. */

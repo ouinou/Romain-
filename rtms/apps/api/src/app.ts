@@ -111,7 +111,7 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
 
   // ---------- Licence : installation locale bloquée à la fin de l'essai, sans licence ----------
   // Restent ouverts : connexion, état et activation de la licence, installation, sauvegardes.
-  const LICENSE_OPEN = [/^\/api\/auth\//, /^\/api\/admin\/license(\/activate)?$/, /^\/api\/setup/, /^\/api\/admin\/backups/];
+  const LICENSE_OPEN = [/^\/api\/auth\//, /^\/api\/local\/shutdown$/, /^\/api\/admin\/license(\/activate)?$/, /^\/api\/setup/, /^\/api\/admin\/backups/];
   app.addHook('preHandler', async (req) => {
     if (ctx.license.usable() || !req.url.startsWith('/api/')) return;
     const path = req.url.split('?')[0]!;

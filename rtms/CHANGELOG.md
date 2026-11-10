@@ -1,5 +1,12 @@
 # Journal des versions
 
+## 2.4.2 — 10/11/2026
+Correction de l’erreur « listen EADDRINUSE: address already in use 0.0.0.0:8443 » au démarrage du poste principal.
+- Le serveur local s’arrête avec l’application, même fermée de force (plus de serveur resté ouvert en arrière-plan).
+- Au démarrage, un ancien serveur RTMS du même poste est arrêté proprement (route locale protégée par un jeton, réservée au poste lui-même), et une base PostgreSQL restée ouverte est arrêtée par `pg_ctl`.
+- Si le port 8443 est pris par un autre logiciel, le poste principal prend le suivant (jusqu’à 8452) ; les postes de travail le retrouvent par la découverte. Règle du pare-feu élargie à 8443-8452.
+- Vérifié : second démarrage, serveur tué avec sa base restée ouverte, port pris par un autre programme, application tuée brutalement ; API 112/112 ; réseau local à deux postes.
+
 ## 2.4.1 — 10/11/2026
 - Édition client **sans mode démonstration** : l'écran de démarrage ne propose plus que « poste principal » et « poste de travail » ; un ancien réglage « démo » revient à l'écran de choix. La démonstration reste activable pour les présentations et les tests (variable d'environnement `RTMS_DEMO=1`).
 - Installateur allégé (134 Mo) et publié automatiquement dans une release GitHub, avec la version portable.

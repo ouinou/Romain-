@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 /**
  * Routes propres au poste principal :
  * - installation initiale (création de la société et du premier administrateur),
@@ -15,8 +16,20 @@ import { passwordProblems } from '../security/password.js';
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
-export function localRoutes(ctx: AppContext, owner: PrismaClient, backups: { list: () => unknown; now: () => Promise<unknown>; info: () => unknown }) {
+function safeEqualStr(a: string, b: string) {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+export function localRoutes(ctx: AppContext, owner: PrismaClient, backups: { list: () => unknown; now: () => Promise<unknown>; info: () => unknown }, shutdown?: { token: string; run: () => void }) {
   return (app: FastifyInstance) => {
+    // Arrêt demandé par un nouveau démarrage de RTMS sur ce même poste (ancien serveur resté ouvert)
+    if (shutdown) app.post('/api/local/shutdown', async (req, reply) => {
+      const t = req.headers['x-rtms-shutdown'];
+      if (!LOOPBACK.has(req.ip) || typeof t !== 'string' || !safeEqualStr(t, shutdown.token)) throw new HttpError(403, 'interdit', 'Refusé');
+      setTimeout(shutdown.run, 50);
+      return reply.send({ ok: true });
+    });
     app.get('/api/setup/status', async (req) => ({ needsSetup: (await owner.company.count()) === 0, local: LOOPBACK.has(req.ip) }));
 
     app.post('/api/setup', { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req) => {
