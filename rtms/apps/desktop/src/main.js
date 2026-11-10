@@ -20,6 +20,8 @@ const PAGES_ROOT = path.join(__dirname, 'pages');
 const MAIN_PORT = 8443; // port par défaut ; le poste principal peut en prendre un autre si celui-ci est occupé
 const mainPort = () => (server && server.info && server.info.port) || MAIN_PORT;
 const HIDDEN_START = process.argv.includes('--hidden');
+// Raccourci « Choisir le rôle de ce poste » : revient à l'écran de choix (les données ne sont pas touchées)
+const CHOOSE_ROLE = (argv) => argv.includes('--choisir-role');
 // Édition livrée aux clients : sans mode démonstration. RTMS_DEMO=1 le réactive (présentations, tests).
 const DEMO_ENABLED = process.env.RTMS_DEMO === '1';
 
@@ -314,12 +316,16 @@ ipcMain.handle('rtms:use-main', guard(() => {
   return true;
 }));
 ipcMain.handle('rtms:use-demo', guard(() => { if (!DEMO_ENABLED) throw new Error('Mode démonstration non disponible'); patchConfig({ mode: 'demo' }); loadStart(); return true; }));
-ipcMain.handle('rtms:change-server', guard(async () => {
+/** Oublie le rôle du poste (principal, connecté, démo). Les données du poste principal restent en place. */
+async function forgetRole() {
   const c = readConfig();
-  if (c.mode === 'main' && server) { await server.stop(); }
+  if (server) { await server.stop().catch(() => {}); server = null; }
   delete c.mode; delete c.serverUrl; delete c.fingerprint;
   writeConfig(c);
   updateTray();
+}
+ipcMain.handle('rtms:change-server', guard(async () => {
+  await forgetRole();
   loadStart();
   return true;
 }));
@@ -400,8 +406,14 @@ function removableDrives() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', showWindow);
+  app.on('second-instance', async (_e, argv) => {
+    if (CHOOSE_ROLE(argv) && win) { await forgetRole(); loadStart(); }
+    showWindow();
+  });
   app.whenReady().then(() => {
+    // Un ancien réglage « démo » (versions 2.4.0 et antérieures) n'a plus cours dans l'édition client
+    if (readConfig().mode === 'demo' && !DEMO_ENABLED) { const c = readConfig(); delete c.mode; writeConfig(c); }
+    if (CHOOSE_ROLE(process.argv)) { const c = readConfig(); delete c.mode; delete c.serverUrl; delete c.fingerprint; writeConfig(c); }
     Menu.setApplicationMenu(null);
     session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
     installCertificatePinning();

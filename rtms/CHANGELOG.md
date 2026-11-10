@@ -1,5 +1,12 @@
 # Journal des versions
 
+## 2.4.3 — 10/11/2026
+Retour à l’écran de choix du poste quand RTMS s’ouvre directement (démonstration, ancien poste principal, ancienne adresse).
+- Nouveau raccourci « Choisir le rôle de ce poste » (menu Démarrer › RAHA TRANSPORT RTMS) : oublie le rôle enregistré et affiche l’écran de choix. Les données du poste principal et la copie de sécurité configurée ne sont pas touchées.
+- Un ancien réglage « démo » laissé par la 2.4.0 est effacé au démarrage de l’édition client.
+- Cause : le réglage du rôle est gardé dans `%APPDATA%\RAHA TRANSPORT RTMS\config.json`, qui reste après une désinstallation (volontairement : le même dossier contient la base du poste principal).
+- Vérifié : test `test/e2e-role.cjs` (réglage démo, puis poste connecté + `--choisir-role`) ; test bureau complet ; tests unitaires.
+
 ## 2.4.2 — 10/11/2026
 Correction de l’erreur « listen EADDRINUSE: address already in use 0.0.0.0:8443 » au démarrage du poste principal.
 - Le serveur local s’arrête avec l’application, même fermée de force (plus de serveur resté ouvert en arrière-plan).

@@ -59,6 +59,7 @@ Section "RTMS" SecMain
   WriteUninstaller "$INSTDIR\Desinstaller RTMS.exe"
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\${EXENAME}" 0
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\Choisir le rôle de ce poste.lnk" "$INSTDIR\${EXENAME}" "--choisir-role" "$INSTDIR\${EXENAME}" 0
   CreateShortCut "$SMPROGRAMS\${APPNAME}\Désinstaller ${APPNAME}.lnk" "$INSTDIR\Desinstaller RTMS.exe"
   CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\${EXENAME}" 0
   WriteRegStr HKCU "Software\${PUBLISHER}\RTMS" "InstallDir" "$INSTDIR"
