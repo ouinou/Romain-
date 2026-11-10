@@ -5,7 +5,7 @@ const clean = (e) => String(e && e.message ? e.message : e).replace(/^Error invo
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let pending = null;
 
-d.info().then((i) => { $('ver').textContent = i.version; });
+d.info().then((i) => { $('ver').textContent = i.version; $('demo-box').hidden = !i.demo; });
 const say = (text, cls = '') => { $('msg').className = `msg ${cls}`; $('msg').textContent = text; };
 
 async function scan() {

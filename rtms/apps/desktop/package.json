@@ -1,7 +1,7 @@
 {
   "name": "rtms-desktop",
   "productName": "RAHA TRANSPORT RTMS",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "RAHA TRANSPORT Management System — application de bureau",
   "author": "RAHA TRANSPORT",
   "private": true,

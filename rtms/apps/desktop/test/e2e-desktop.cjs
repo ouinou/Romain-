@@ -8,7 +8,7 @@ const assert = require('node:assert');
 
 const OUT = process.argv[2] || os.tmpdir();
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'rtms-desk-'));
-const launch = () => electron.launch({ executablePath: require('electron'), args: ['--no-sandbox', path.join(__dirname, '..')], env: { ...process.env, HOME: home, XDG_CONFIG_HOME: path.join(home, '.config') } });
+const launch = () => electron.launch({ executablePath: require('electron'), args: ['--no-sandbox', path.join(__dirname, '..')], env: { ...process.env, RTMS_DEMO: '1', HOME: home, XDG_CONFIG_HOME: path.join(home, '.config') } });
 
 (async () => {
   const log = []; const _push = log.push.bind(log); log.push = (x) => { console.error('…', x); return _push(x); };

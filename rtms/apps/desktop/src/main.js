@@ -19,6 +19,8 @@ const WEB_ROOT = path.join(__dirname, '..', 'webapp');
 const PAGES_ROOT = path.join(__dirname, 'pages');
 const MAIN_PORT = 8443;
 const HIDDEN_START = process.argv.includes('--hidden');
+// Édition livrée aux clients : sans mode démonstration. RTMS_DEMO=1 le réactive (présentations, tests).
+const DEMO_ENABLED = process.env.RTMS_DEMO === '1';
 
 protocol.registerSchemesAsPrivileged([{ scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: false } }]);
 
@@ -98,7 +100,7 @@ async function loadStart() {
     await applyProxyFor(new URL(cfg.serverUrl).hostname);
     return win.loadURL(cfg.serverUrl).catch(() => {});
   }
-  if (cfg.mode === 'demo') { allowedOrigin = LOCAL; return win.loadURL(`${LOCAL}/demo.html`); }
+  if (cfg.mode === 'demo' && DEMO_ENABLED) { allowedOrigin = LOCAL; return win.loadURL(`${LOCAL}/demo.html`); }
   allowedOrigin = LOCAL;
   return win.loadURL(`${LOCAL}/desktop/launcher.html`);
 }
@@ -278,7 +280,7 @@ const fromTrusted = (e) => {
 };
 const guard = (fn) => async (e, ...args) => { if (!fromTrusted(e)) throw new Error('Refusé'); return fn(e, ...args); };
 
-ipcMain.handle('rtms:info', () => { const c = readConfig(); return { version: app.getVersion(), mode: c.mode || null, server: c.serverUrl || null, platform: process.platform }; });
+ipcMain.handle('rtms:info', () => { const c = readConfig(); return { version: app.getVersion(), mode: c.mode || null, server: c.serverUrl || null, platform: process.platform, demo: DEMO_ENABLED }; });
 ipcMain.handle('rtms:discover', guard(() => discover(1800)));
 
 /** Vérifie un poste (découvert ou saisi) : adresse, certificat, réponse RTMS. */
@@ -309,7 +311,7 @@ ipcMain.handle('rtms:use-main', guard(() => {
   loadStart();
   return true;
 }));
-ipcMain.handle('rtms:use-demo', guard(() => { patchConfig({ mode: 'demo' }); loadStart(); return true; }));
+ipcMain.handle('rtms:use-demo', guard(() => { if (!DEMO_ENABLED) throw new Error('Mode démonstration non disponible'); patchConfig({ mode: 'demo' }); loadStart(); return true; }));
 ipcMain.handle('rtms:change-server', guard(async () => {
   const c = readConfig();
   if (c.mode === 'main' && server) { await server.stop(); }

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 2.4.1 — 10/11/2026
+- Édition client **sans mode démonstration** : l'écran de démarrage ne propose plus que « poste principal » et « poste de travail » ; un ancien réglage « démo » revient à l'écran de choix. La démonstration reste activable pour les présentations et les tests (variable d'environnement `RTMS_DEMO=1`).
+- Installateur allégé (134 Mo) et publié automatiquement dans une release GitHub, avec la version portable.
+
 ## 2.4.0 — 06/11/2026
 
 ### Aperçu avant impression
