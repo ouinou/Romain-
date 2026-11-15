@@ -20,5 +20,6 @@ contextBridge.exposeInMainWorld('rtmsDesktop', {
   chooseExportFolder: () => ipcRenderer.invoke('rtms:choose-export-folder'),
   writePdf: (id, name) => ipcRenderer.invoke('rtms:write-pdf', id, name),
   openFolder: (id) => ipcRenderer.invoke('rtms:open-folder', id),
+  openTracker: (url, title) => ipcRenderer.invoke('rtms:open-tracker', url, title),
   onServerLog: (fn) => ipcRenderer.on('rtms:server-log', (_e, m) => fn(String(m))),
 });

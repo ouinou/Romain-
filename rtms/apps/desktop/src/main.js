@@ -331,6 +331,32 @@ ipcMain.handle('rtms:change-server', guard(async () => {
 }));
 ipcMain.handle('rtms:retry', guard(async () => { if (readConfig().mode === 'client') await rediscover(); loadStart(); return true; }));
 ipcMain.handle('rtms:main-info', guard(() => ({ state: server ? server.state : 'arrêté', fingerprint: server && server.info ? server.info.fingerprint : null, addresses: lanAddresses(), port: mainPort() })));
+/**
+ * Plateforme du fournisseur des traceurs GPS (SinoTrack, etc.), ouverte dans une fenêtre RTMS.
+ * Fenêtre isolée : session à part (identifiants du fournisseur conservés, séparés de RTMS),
+ * aucun accès au pont rtmsDesktop, HTTPS uniquement, permissions du navigateur refusées.
+ */
+let trackerWin = null;
+function openTracker(rawUrl, title) {
+  const url = new URL(String(rawUrl));
+  if (url.protocol !== 'https:') throw new Error('Adresse https:// obligatoire');
+  if (trackerWin && !trackerWin.isDestroyed()) { trackerWin.loadURL(url.href); trackerWin.show(); trackerWin.focus(); return true; }
+  const ses = session.fromPartition('persist:traceur-gps');
+  ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+  trackerWin = new BrowserWindow({
+    width: 1280, height: 820, parent: undefined, title: `Suivi GPS en direct — ${String(title || 'plateforme du traceur').slice(0, 60)}`,
+    icon: path.join(__dirname, '..', 'build', 'icon.png'), autoHideMenuBar: true, backgroundColor: '#ffffff',
+    webPreferences: { session: ses, contextIsolation: true, sandbox: true, nodeIntegration: false, webviewTag: false, devTools: !app.isPackaged },
+  });
+  trackerWin.webContents.on('will-navigate', (e, u) => { if (!/^https:\/\//.test(u)) e.preventDefault(); });
+  // Fenêtres secondaires de la plateforme (carte, historique) : dans la même fenêtre isolée
+  trackerWin.webContents.setWindowOpenHandler(({ url: u }) => { if (/^https:\/\//.test(u)) trackerWin.loadURL(u); return { action: 'deny' }; });
+  trackerWin.on('closed', () => { trackerWin = null; });
+  if (win) win.once('closed', () => { if (trackerWin && !trackerWin.isDestroyed()) trackerWin.destroy(); });
+  trackerWin.loadURL(url.href);
+  return true;
+}
+ipcMain.handle('rtms:open-tracker', guard((_e, u, title) => openTracker(u, title)));
 ipcMain.handle('rtms:firewall', guard(() => { if (process.platform === 'win32') openFirewall(); return process.platform === 'win32'; }));
 
 /** Vrai fichier PDF A4 à partir de l'aperçu d'impression préparé par l'application. */

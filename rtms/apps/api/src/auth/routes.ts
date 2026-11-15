@@ -12,6 +12,7 @@ import { burnDummyVerify, hashPassword, passwordProblems, verifyPassword } from 
 import { loadPermissions, requireSession, SESSION_COOKIE } from '../security/guard.js';
 import { ROLES } from '../security/permissions.js';
 import { APP_VERSION } from '../version.js';
+import { publicCompanySettings } from '../admin/routes.js';
 import type { SessionData } from '../security/session.js';
 
 authenticator.options = { window: 1, step: 30, digits: 6 };
@@ -43,10 +44,13 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   async function publicSession(s: SessionData) {
     const perms = s.state === 'active' ? [...(await loadPermissions(ctx, s.companyId, s.roleKey))] : [];
+    const company = s.state === 'active'
+      ? await withTenant(ctx.prisma, { companyId: s.companyId }, async (tx) => publicCompanySettings((await tx.company.findUnique({ where: { id: s.companyId }, select: { settings: true } }))?.settings))
+      : null;
     return {
       user: { id: s.userId, fullName: s.fullName, role: s.roleKey, roleLabel: ROLES[s.roleKey as keyof typeof ROLES] ?? s.roleKey },
       state: s.state, csrfToken: s.csrf, permissions: perms, license: ctx.license.status(),
-      instance: ctx.config.INSTANCE_NAME, version: APP_VERSION,
+      instance: ctx.config.INSTANCE_NAME, version: APP_VERSION, company,
     };
   }
 

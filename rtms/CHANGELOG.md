@@ -1,5 +1,18 @@
 # Journal des versions
 
+## 2.6.0 — 15/11/2026
+Suite de la visite chez RAHA TRANSPORT. Détails : `docs/14-CLIENTS-CAISSE-BL-DOUANE.md`.
+- Clients enregistrés automatiquement à la facture, à la mission, au dossier de transit ou au BL (téléphone repris de la facture, sans doublon, tracé dans l'audit).
+- Classement des clients : commandes, chiffre d'affaires, régularité (régulier, occasionnel, nouveau, ponctuel, inactif) et tendance ; impression et PDF.
+- Caisse : écran des mouvements en espèces, solde de caisse et mouvements du jour, solde sur le tableau de bord ; date du jour proposée pour les mouvements ; total des listes de trésorerie = recettes − dépenses. Profil renommé « Comptable / Caisse ».
+- Nouveau module « BL et douane » : BL, LTA, lettres de voiture ; conteneurs, déclaration en douane, droits et taxes, mainlevée, livraison ; alertes de fin de franchise et d'arrivée.
+- Commerce général masqué par défaut, réactivable dans Paramètres (données conservées).
+- Traceurs GPS : N° de traceur sur la fiche véhicule, plateforme du fournisseur (SinoTrack…) ouverte dans RTMS (« Suivi en direct »).
+- Jusqu'à 25 onglets ouverts (20 auparavant).
+- Corrigé : l'écran Suivi GPS déjà ouvert ne connaissait pas un véhicule ajouté ensuite.
+- Migration `0008_bl_clients` : module BL ajouté et droits par défaut pour les sociétés existantes ; aucune donnée modifiée.
+- Vérifié : API 131/131, navigateur 25/25, application de bureau, réseau local hors ligne à deux postes.
+
 ## 2.5.0 — 15/11/2026
 Suivi GPS des trajets, rattaché au parc automobile. Voir `docs/13-SUIVI-GPS-TRAJETS.md`.
 - Import de traces GPX, KML (horodaté) ou CSV depuis la fiche du véhicule ou le nouvel écran « Suivi GPS » (barre latérale, groupe Ressources, et menu Transport).

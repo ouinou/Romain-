@@ -623,3 +623,17 @@ code.wrap{word-break:break-all;white-space:normal}
 .gps-fs .form-actions.left{justify-content:flex-start;position:static;background:none;padding-top:8px}
 .gps-print .gps-map{max-height:120mm}
 .gps-print .gps-stats{grid-template-columns:repeat(4,1fr);font-size:11px}
+
+/* ---------- Classement des clients, caisse (2.6) ---------- */
+.ranking-summary{margin:4px 0 12px}
+.ranking-panel{overflow:auto}
+.ranking-table td,.ranking-table th{white-space:nowrap}
+.ranking-table td:nth-child(2){white-space:normal;min-width:180px}
+.pill.cat{font-size:11px}
+.trend-up{color:#1e9e5a;font-weight:650}.trend-down{color:#c0392b;font-weight:650}.trend-flat{color:var(--muted)}
+td.num.neg{color:#c0392b;font-weight:650}
+.pr-table{border-collapse:collapse;width:100%;font-size:8.5pt}
+.pr-table th,.pr-table td{border-bottom:.25mm solid #ccc;padding:1.5mm 1mm;text-align:left}
+.pr-table .num{text-align:right}
+.form label.check{display:flex;flex-direction:row;align-items:center;gap:8px;font-weight:600}
+.form h3.wide{grid-column:1/-1;margin:14px 0 0;font-size:13px;color:var(--green)}

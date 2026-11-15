@@ -7,7 +7,7 @@ import { activeView, allWithKeys, matchKey, register, run } from './core/command
 import { $, esc } from './core/dom.js';
 import { icon } from './core/icons.js';
 import { PANEL_SECTIONS, PRESETS, SECTION_LABELS, applyWorkspace, clearSessionState, prefs, resetPrefsCache, saveWorkspace, setPrefs } from './core/prefs.js';
-import { can, session } from './core/session.js';
+import { applyCompany, can, session } from './core/session.js';
 import { VIEWS, viewByKey } from './config.js';
 import { mountApplicationShell } from './components/ApplicationShell.js';
 import { closeContextMenu } from './components/ContextMenu.js';
@@ -27,6 +27,7 @@ import { RecordView } from './views/RecordView.js';
 import { ReportsView } from './views/ReportsView.js';
 import { SettingsView } from './views/SettingsView.js';
 import { TracksView } from './views/TracksView.js';
+import { ClientRankingView } from './views/ClientRankingView.js';
 
 const APP_VERSION = '2.2.0';
 
@@ -37,6 +38,7 @@ registerView('reports', (t, ws) => new ReportsView(t, ws));
 registerView('settings', (t, ws) => new SettingsView(t, ws));
 registerView('admin', (t, ws) => new AdminView(t, ws));
 registerView('tracks', (t, ws) => new TracksView(t, ws));
+registerView('ranking', (t, ws) => new ClientRankingView(t, ws));
 
 // ---------------------------------------------------------------- commandes
 const view = (id, label, ic, key) => register({ id, label, icon: ic, key });
@@ -71,6 +73,8 @@ view('gps.import', 'Importer un trajet GPS', 'upload');
 view('gps.edit', 'Modifier le trajet', 'pencil');
 view('gps.cancel', 'Retirer le trajet', 'xcircle');
 view('gps.gpx', 'Exporter le trajet (GPX)', 'export');
+view('gps.live', 'Suivi en direct (plateforme GPS)', 'satellite');
+view('clients.ranking', 'Classement des clients', 'trophy');
 
 const g = (id, label, ic, key, fn, enabled) => register({ id, label, icon: ic, key, global: fn, enabled });
 let shell = null;
@@ -129,10 +133,10 @@ setMenus(() => [
   { label: 'Navigation', items: () => [{ cmd: 'nav.back' }, { cmd: 'tab.next' }, { cmd: 'tab.prev' }, '-', openItem('dashboard'), { cmd: 'search.global' }, '-',
     ...workspace.tabs.map((t) => ({ label: t.view.title(), icon: t.view.icon?.() || 'dashboard', checked: () => t.id === workspace.activeId, action: () => workspace.activate(t.id) }))] },
   { label: 'Transport', byRole: true, items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('tracks'), openItem('staff'), openItem('maintenance')] },
-  { label: 'Transit', byRole: true, items: () => [newItem('transit'), openItem('transit'), '-', openItem('documents')] },
+  { label: 'Transit', byRole: true, items: () => [newItem('transit'), openItem('transit'), '-', newItem('bl'), openItem('bl'), '-', openItem('documents')] },
   { label: 'Import / Export', byRole: true, items: () => [newItem('import'), newItem('export'), '-', openItem('import'), openItem('export')] },
-  { label: 'Commerce', byRole: true, items: () => [newItem('commerce'), openItem('commerce'), '-', newItem('clients'), openItem('clients'), newItem('suppliers'), openItem('suppliers')] },
-  { label: 'Finance', byRole: true, items: () => [newItem('invoices'), openItem('invoices'), { label: 'Factures échues…', icon: 'bell', enabled: () => can('invoices'), action: () => showNotifications('invoices') }, { cmd: 'invoice.print' }, { cmd: 'invoice.export' }, '-', newItem('finance'), openItem('finance')] },
+  { label: 'Clients', byRole: true, items: () => [newItem('clients'), openItem('clients'), openItem('ranking'), '-', newItem('suppliers'), openItem('suppliers'), ...(can('commerce') ? ['-', newItem('commerce'), openItem('commerce')] : [])] },
+  { label: 'Finance', byRole: true, items: () => [newItem('invoices'), openItem('invoices'), { label: 'Factures échues…', icon: 'bell', enabled: () => can('invoices'), action: () => showNotifications('invoices') }, { cmd: 'invoice.print' }, { cmd: 'invoice.export' }, '-', newItem('cash'), openItem('cash'), '-', newItem('finance'), openItem('finance')] },
   { label: 'Fenêtre', items: () => [
     { label: 'Onglet Propriétés', checked: () => (prefs().panelTab || 'props') === 'props', action: () => setPrefs({ panelTab: 'props', panelVisible: true }) },
     { label: 'Onglet Historique', checked: () => prefs().panelTab === 'history', action: () => setPrefs({ panelTab: 'history', panelVisible: true }) },
@@ -209,7 +213,7 @@ mountToasts();
 
 async function enterApp(me) {
   session.me = me;
-  session.perms = new Set(me.permissions);
+  applyCompany(me);
   // Fin de l'essai (ou de l'abonnement) sans licence : écran d'activation à la place du logiciel
   if (me.license && me.license.usable === false) { showLicenseLock(me.license, { onLogout: () => logout() }); return; }
   resetPrefsCache();

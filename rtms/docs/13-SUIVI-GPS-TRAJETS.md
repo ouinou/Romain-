@@ -25,6 +25,8 @@ Pour voir les camions en direct, il faudrait :
 
 C'est faisable dans une version ultérieure, mais c'est un choix d'équipement et de coût à faire avec le client.
 
+Depuis la 2.6, si les camions ont déjà des traceurs (SinoTrack ou autre), la plateforme web du fournisseur s'ouvre dans RTMS (bouton « Suivi en direct ») : voir `14-CLIENTS-CAISSE-BL-DOUANE.md`, partie 6.
+
 ## D'où viennent les fichiers
 
 | Source | Comment récupérer le fichier | Remarques |

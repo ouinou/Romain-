@@ -6,7 +6,7 @@
  */
 export const MODULES = [
   'transport', 'transit', 'importexport', 'commerce', 'clients', 'fleet', 'staff',
-  'maintenance', 'invoices', 'finance', 'documents',
+  'maintenance', 'invoices', 'finance', 'documents', 'bl',
 ] as const;
 export const SCREENS = ['dashboard', 'reports', 'settings', 'audit', 'users', 'license'] as const;
 export const ACTIONS = ['read', 'create', 'update', 'validate', 'cancel', 'export', 'print', 'admin'] as const;
@@ -22,7 +22,7 @@ export const ROLES = {
   transit: 'Responsable transit',
   importexport: 'Responsable import-export',
   commercial: 'Commercial',
-  finance: 'Comptable / Finance',
+  finance: 'Comptable / Caisse',
   stock: 'Gestionnaire de stock',
   agent: 'Agent opérationnel',
 } as const;
@@ -41,13 +41,13 @@ const everything = (a: Action[]): Matrix =>
 export const DEFAULT_MATRIX: Record<RoleKey, Matrix> = {
   admin: everything(ALL),
   direction: { ...everything(READ), invoices: ['read', 'validate', 'cancel', 'export', 'print'], finance: ['read', 'validate', 'export', 'print'], audit: ['read'], settings: [], users: [], license: ['read'] },
-  transport: { dashboard: ['read'], transport: WORK, fleet: EDIT, staff: EDIT, maintenance: EDIT, documents: EDIT, clients: ['read'] },
-  transit: { dashboard: ['read'], transit: WORK, documents: EDIT, clients: ['read'] },
-  importexport: { dashboard: ['read'], importexport: WORK, documents: EDIT, clients: ['read'] },
+  transport: { dashboard: ['read'], transport: WORK, fleet: EDIT, staff: EDIT, maintenance: EDIT, documents: EDIT, clients: ['read'], bl: ['read'] },
+  transit: { dashboard: ['read'], transit: WORK, bl: WORK, documents: EDIT, clients: ['read'] },
+  importexport: { dashboard: ['read'], importexport: WORK, bl: WORK, documents: EDIT, clients: ['read'] },
   commercial: { dashboard: ['read'], clients: EDIT, commerce: ['read'], invoices: ['read', 'create', 'update', 'print'] },
-  finance: { dashboard: ['read'], reports: READ, invoices: WORK, finance: WORK, clients: ['read', 'export'], documents: EDIT },
+  finance: { dashboard: ['read'], reports: READ, invoices: WORK, finance: WORK, clients: ['read', 'export'], documents: EDIT, bl: READ },
   stock: { dashboard: ['read'], commerce: WORK, clients: ['read'] },
-  agent: { dashboard: ['read'], transport: ['read', 'create', 'update'], transit: ['read', 'create', 'update'], documents: ['read', 'create'] },
+  agent: { dashboard: ['read'], transport: ['read', 'create', 'update'], transit: ['read', 'create', 'update'], documents: ['read', 'create'], bl: ['read', 'create', 'update'] },
 };
 
 export function defaultPermissionRows(companyId: string) {

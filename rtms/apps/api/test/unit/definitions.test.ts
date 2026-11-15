@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { amountInFrenchWords, computeFields, csvCell, recordSchema, MODULE_DEFS } from '../../src/modules/definitions.js';
 
 describe('Validation serveur des modules', () => {
-  it('reprend les 11 modules de saisie du prototype', () => {
-    expect(Object.keys(MODULE_DEFS).sort()).toEqual(['clients', 'commerce', 'documents', 'finance', 'fleet', 'importexport', 'invoices', 'maintenance', 'staff', 'transit', 'transport']);
+  it('reprend les 11 modules de saisie du prototype, plus le suivi des BL (2.6)', () => {
+    expect(Object.keys(MODULE_DEFS).sort()).toEqual(['bl', 'clients', 'commerce', 'documents', 'finance', 'fleet', 'importexport', 'invoices', 'maintenance', 'staff', 'transit', 'transport']);
   });
   it('refuse un champ inconnu (pas d’injection de clés)', () => {
     const r = recordSchema('clients').safeParse({ 'Type (Client/Fournisseur)': 'Client', 'Nom / raison sociale': 'X', isAdmin: true });

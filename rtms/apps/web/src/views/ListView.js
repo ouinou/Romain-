@@ -3,7 +3,7 @@
 // actions groupées, colonnes personnalisables, export et impression.
 import { emit, on } from '../core/bus.js';
 import { fetchBlob, get, patch, post } from '../core/api.js';
-import { $, $$, csvCell, debounce, download, esc } from '../core/dom.js';
+import { $, $$, csvCell, debounce, download, esc, money } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { prefs, setPrefs } from '../core/prefs.js';
 import { can, session } from '../core/session.js';
@@ -188,6 +188,7 @@ export class ListView {
       if (Object.keys(sf).length) statsQ.set('f', JSON.stringify(sf));
       const [r, stats] = await Promise.all([get(`/api/records/${this.module}?${this.query()}`), get(`/api/records/${this.module}/stats?${statsQ}`).catch(() => null)]);
       this.stats = stats;
+      if (this.cfg.key === 'cash') this.cash = (await get('/api/dashboard').catch(() => null))?.cash || null;
       this.renderTiles();
       this.rows = r.items;
       this.total = r.total;
@@ -244,10 +245,12 @@ export class ListView {
     if (!cols.some((c) => c.key in sums)) return '';
     const cells = cols.map((c) => {
       if (!(c.key in sums)) return '<td></td>';
-      const total = this.rows.reduce((s, r) => s + (Number(c.key === '__ttc' ? r.computed?.totalTTC : r.data[c.key]) || 0), 0);
+      // Trésorerie et caisse : recettes moins dépenses (un total qui additionnerait les deux n'a pas de sens)
+      const sign = (r) => (this.module === 'finance' && r.data['Type (Recette/Dépense)'] === 'Dépense' ? -1 : 1);
+      const total = this.rows.reduce((s, r) => s + sign(r) * (Number(c.key === '__ttc' ? r.computed?.totalTTC : r.data[c.key]) || 0), 0);
       return `<td class="num">${esc(total.toLocaleString('fr-FR'))}</td>`;
     });
-    return `<tfoot><tr><td class="chk"></td>${cells.join('').replace('<td></td>', '<td class="muted">Total page</td>')}</tr></tfoot>`;
+    return `<tfoot><tr><td class="chk"></td>${cells.join('').replace('<td></td>', `<td class="muted">${this.module === 'finance' ? 'Solde de la page (recettes − dépenses)' : 'Total page'}</td>`)}</tr></tfoot>`;
   }
 
   renderPager() {
@@ -277,6 +280,13 @@ export class ListView {
     if (!st) { box.innerHTML = ''; return; }
     const cur = this.state.filters[sf] || '';
     const tiles = [`<button type="button" class="tile t-total ${cur ? '' : 'on'}" data-tile="">${icon(this.cfg.icon, 26)}<span><b>${st.total}</b><small>${esc(this.cfg.key === 'transport' ? 'Missions totales' : 'Total')}</small></span></button>`];
+    if (this.cfg.key === 'cash' && this.cash) {
+      // Caisse : solde des espèces (toutes dates) et mouvements du jour, calculés par le serveur
+      const c = this.cash;
+      tiles.push(`<div class="tile ${c.solde < 0 ? 't-red' : 't-green'}">${icon('cash', 26)}<span><b>${esc(money(c.solde))}</b><small>Solde de caisse (FCFA)</small></span></div>`,
+        `<div class="tile t-blue">${icon('import', 26)}<span><b>${esc(money(c.entreesJour))}</b><small>Entrées du jour</small></span></div>`,
+        `<div class="tile t-orange">${icon('export', 26)}<span><b>${esc(money(c.sortiesJour))}</b><small>Sorties du jour</small></span></div>`);
+    }
     if (sf) {
       // Ordre de la maquette : en cours, terminés/validés, en attente, annulés, puis le reste ; 5 tuiles au plus
       const rank = (o) => (o === 'Brouillon' ? 5 : { 't-green': 0, 't-blue': 1, 't-orange': 2, 't-red': 3, 't-gray': 4 }[tileClass(o)]);
@@ -414,7 +424,7 @@ export class ListView {
     if (!tr) return;
     e.preventDefault();
     if (!this.selected.has(tr.dataset.id)) this.select(tr.dataset.id);
-    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['fleet.tracks'] : [];
+    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['fleet.tracks'] : this.module === 'clients' ? ['clients.ranking'] : [];
     showContextMenu(e.clientX, e.clientY, ['record.open', 'record.edit', 'record.duplicate', '-', 'record.status', 'record.validate', ...extra, '-', 'file.print', 'file.csv', '-', 'record.cancel']);
   }
 
@@ -454,6 +464,7 @@ export class ListView {
       case 'transport.vehicle': case 'transport.driver': return m === 'transport' && n === 1 && can(m, 'update');
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return m === 'transport' && n === 1;
       case 'fleet.tracks': return m === 'fleet';
+      case 'clients.ranking': return m === 'clients';
       case 'invoice.print': return m === 'invoices' && n === 1;
       case 'invoice.export': return m === 'invoices' && (n >= 1 || this.rows.length > 0);
       default: return false;
@@ -520,6 +531,7 @@ export class ListView {
       }
       case 'transport.order': return printHtml(missionOrderDoc(one));
       case 'fleet.tracks': return (await import('./TracksView.js')).openTracks(this.ws, one ? one.id : '');
+      case 'clients.ranking': return (await import('../components/LeftToolBar.js')).openViewTab('ranking');
       case 'transport.waybill': return printHtml(waybillDoc(one));
       case 'transport.loading': return printHtml(loadingDoc(one));
       case 'invoice.print': return printHtml(invoiceDoc(one));

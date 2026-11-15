@@ -30,6 +30,7 @@ export function labelOf(module: ModuleKey, data: Record<string, unknown>): { tit
     case 'invoices': return { title: d('Numéro de facture'), subtitle: `${d('Client')} · ${d('Statut')}` };
     case 'finance': return { title: d('Libellé'), subtitle: `${d('Type (Recette/Dépense)')} · ${d('Montant (FCFA)')} FCFA` };
     case 'documents': return { title: `${d('Référence')} — ${d('Intitulé')}`, subtitle: d('Catégorie') };
+    case 'bl': return { title: d('N° BL'), subtitle: `${d('Client')} · ${d('Statut')}${d('N° conteneur(s)') ? ` · ${d('N° conteneur(s)')}` : ''}` };
   }
 }
 
@@ -133,6 +134,20 @@ export function workspaceRoutes(app: FastifyInstance, ctx: AppContext) {
         SELECT 'maintenance', id, reference, 'warning',
                'Entretien à prévoir — ' || coalesce(data->>'Véhicule', ''), data->>'Prochain entretien'
           FROM r WHERE module = 'maintenance' AND rtms_date(data->>'Prochain entretien') <= current_date + 15
+        UNION ALL
+        -- BL : arrivée imminente, franchise qui se termine (frais de magasinage), BL arrivé sans déclaration
+        SELECT 'bl', id, reference,
+               CASE WHEN rtms_date(data->>'Fin de franchise') < current_date THEN 'danger' ELSE 'warning' END,
+               CASE WHEN rtms_date(data->>'Fin de franchise') < current_date THEN 'Franchise dépassée (magasinage) — BL '
+                    ELSE 'Fin de franchise proche — BL ' END || coalesce(reference, '') || ' (' || coalesce(data->>'Client', '') || ')',
+               data->>'Fin de franchise'
+          FROM r WHERE module = 'bl' AND rtms_date(data->>'Fin de franchise') <= current_date + 3
+                   AND coalesce(status, '') NOT IN ('Mainlevée obtenue', 'Livré', 'Clôturé')
+        UNION ALL
+        SELECT 'bl', id, reference, 'warning',
+               'Arrivée prévue — BL ' || coalesce(reference, '') || ' (' || coalesce(data->>'Client', '') || ')', data->>'Arrivée prévue'
+          FROM r WHERE module = 'bl' AND coalesce(status, '') = 'Attendu'
+                   AND rtms_date(data->>'Arrivée prévue') BETWEEN current_date - 2 AND current_date + 3
         ORDER BY due NULLS LAST
         LIMIT 200`);
       await ctx.redis.set(key, JSON.stringify(all), 'EX', 600);

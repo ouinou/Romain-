@@ -4,7 +4,7 @@ import { get, post, put } from '../core/api.js';
 import { $, esc } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { PRESETS, applyWorkspace, deleteWorkspace, prefs } from '../core/prefs.js';
-import { can, session } from '../core/session.js';
+import { applyCompany, can, session } from '../core/session.js';
 import { confirmDialog } from '../components/ModalManager.js';
 import { MODEL_MENTIONS, setCompanyInfo } from '../components/PrintService.js';
 
@@ -73,7 +73,14 @@ export class SettingsView extends SectionedView {
         <label>Téléphone<input name="phone" value="${esc(c.phone || '')}" maxlength="60" ${ro}></label><label>E-mail<input name="email" type="email" value="${esc(c.email || '')}" maxlength="200" ${ro}></label>
         <label class="wide">Adresse<input name="address" value="${esc(c.address || '')}" maxlength="300" ${ro}></label>
         <label>RCCM<input name="rccm" value="${esc(c.rccm || '')}" maxlength="80" ${ro}></label><label>N° contribuable<input name="taxId" value="${esc(c.taxId || '')}" maxlength="80" ${ro}></label>
-        <label>Devise principale${sel('currency', ['FCFA', 'EUR', 'USD'], c.currency)}</label><label>Langue${sel('language', ['Français', 'English'], c.language)}</label></form>
+        <label>Devise principale${sel('currency', ['FCFA', 'EUR', 'USD'], c.currency)}</label><label>Langue${sel('language', ['Français', 'English'], c.language)}</label>
+        <h3 class="wide">Activités affichées</h3>
+        <label class="wide check"><input type="checkbox" name="commerceEnabled" ${c.commerceEnabled ? 'checked' : ''} ${can('settings', 'admin') ? '' : 'disabled'}> Commerce général (articles et stocks)</label>
+        <p class="muted small wide">Masqué tant que l’entreprise ne fait pas de commerce. Les données déjà saisies sont conservées et réapparaissent dès l’activation.</p>
+        <h3 class="wide">Traceurs GPS des véhicules</h3>
+        <label>Fournisseur des traceurs<input name="trackerName" value="${esc(c.trackerName || '')}" maxlength="60" placeholder="ex. SinoTrack" ${ro}></label>
+        <label>Adresse de la plateforme de suivi<input name="trackerUrl" type="url" value="${esc(c.trackerUrl || '')}" maxlength="300" placeholder="https://…" ${ro}></label>
+        <p class="muted small wide">La plateforme web du fournisseur (celle de son application mobile) s’ouvre dans RTMS, depuis « Suivi GPS » et la fiche de chaque véhicule. Internet est nécessaire pour ce suivi en direct ; le reste de RTMS continue de fonctionner hors ligne.</p></form>
         <p class="muted small">Ces mentions apparaissent dans le bandeau des factures et documents imprimés. Tant qu’elles sont vides, ce sont celles du modèle de facture fourni qui s’impriment.</p>
         ${can('settings', 'admin') ? `<div class="actions"><button type="button" class="btn secondary" data-act="model-mentions">Reprendre les mentions du modèle de facture</button><button type="button" class="btn" data-act="save-company">${icon('save', 15)} Enregistrer les paramètres</button></div>` : '<p class="muted small">Consultation seule pour votre profil.</p>'}`;
     }
@@ -119,8 +126,11 @@ export class SettingsView extends SectionedView {
       if (act === 'save-company') {
         const f = $('[data-form=company]', this.el);
         if (!f.reportValidity()) return;
-        const r = await put('/api/admin/settings', formObj(f));
+        const body = { ...formObj(f), commerceEnabled: f.commerceEnabled.checked };
+        const r = await put('/api/admin/settings', body);
         setCompanyInfo(r);
+        // Le menu, la barre latérale et le tableau de bord suivent le nouveau réglage
+        try { const me = await get('/api/auth/me'); session.me = me; applyCompany(me); emit('session', me); } catch { /* rechargé à la prochaine connexion */ }
         msg.innerHTML = ok('Paramètres enregistrés.');
         emit('operation', { message: 'Paramètres de la société enregistrés' });
       } else if (act === 'backup-now') {

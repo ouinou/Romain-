@@ -9,7 +9,7 @@ import { analyse, sampleRoute } from './gpsDemo.js';
 const KEY = 'rtms.demo.db.v1';
 // Démonstration uniquement : aucun compte réel n'est créé
 const DEMO_TEMP_PASS = 'demo (fictif)';
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 const LOCKED = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 const defOf = (m) => DEFS.find((d) => d.key === m);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -34,6 +34,8 @@ function load() {
     if (!db.users.some((u) => u.email === email)) db.users.push({ id: uuid(), email, fullName, roleKey, status: 'active', mfaEnabled: false, lastLoginAt: null, lockedUntil: null });
   }
   if (db.session === true) db.session = db.users[0].id;
+  // Démo d'une version précédente : droits du module BL (2.6) ajoutés
+  if (!db.grants.some((g) => g.includes(':bl:'))) for (const [r, mtx] of Object.entries(MATRIX)) for (const a of mtx.bl || []) db.grants.push(`${r}:bl:${a}`);
   return db;
 }
 const current = () => db.users.find((u) => u.id === db.session) || db.users[0];
@@ -220,10 +222,58 @@ function sortRows(m, rows, sort, dir) {
   });
 }
 
+// Même règle que le serveur : facture, mission, dossier ou BL au nom d'un client inconnu = fiche créée
+const AUTO_SRC = { invoices: ['Contacts', 'facture'], transport: [null, 'mission'], transit: [null, 'dossier de transit'], bl: [null, 'BL'] };
+const norm = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+function autoClient(m, d, ref) {
+  const conf = AUTO_SRC[m]; const name = String(d.Client || '').trim().replace(/\s+/g, ' ');
+  if (!conf || name.length < 2) return;
+  const phone = conf[0] ? String(d[conf[0]] || '').trim() : '';
+  const ex = active('clients').find((c) => c.data['Type (Client/Fournisseur)'] === 'Client' && norm(c.data['Nom / raison sociale']) === norm(name));
+  if (ex) { if (phone && !ex.data['Téléphone']) { ex.data = { ...ex.data, 'Téléphone': phone }; ex.version++; } return; }
+  insert('clients', { 'Type (Client/Fournisseur)': 'Client', 'Nom / raison sociale': name, ...(phone ? { 'Téléphone': phone } : {}), 'Origine de la fiche': `Créée automatiquement (${conf[1]}${ref ? ` ${ref}` : ''})` }, current().id, null);
+}
+function ranking() {
+  const today = Date.now(), ev = new Map();
+  for (const r of db.records.filter((x) => !x.cancelledAt && ['invoices', 'transport', 'transit', 'bl'].includes(x.module) && !['Annulée', 'Annulé'].includes(x.status))) {
+    const name = String(r.data.Client || '').trim().replace(/\s+/g, ' '); if (name.length < 2) continue;
+    const k = name.toLowerCase(); const e = ev.get(k) || { name, invoices: 0, missions: 0, dossiers: 0, revenue: 0, outstanding: 0, dates: [] };
+    const d = r.data.Date || r.data['Date de départ'] || r.data['Date ouverture'] || r.createdAt.slice(0, 10);
+    e.dates.push(d);
+    if (r.module === 'invoices') { e.invoices++; e.revenue += Number(r.computed.totalTTC || 0); if (r.status !== 'Payée') e.outstanding += Number(r.computed.reste || 0); }
+    else if (r.module === 'transport') e.missions++; else e.dossiers++;
+    ev.set(k, e);
+  }
+  const days = (d) => (today - Date.parse(d)) / 86400000;
+  const clients = [...ev.entries()].map(([k, e]) => {
+    const first = e.dates.reduce((a, b) => (a < b ? a : b)), last = e.dates.reduce((a, b) => (a > b ? a : b));
+    const months12 = new Set(e.dates.filter((d) => days(d) < 365).map((d) => d.slice(0, 7))).size;
+    const recent = e.dates.filter((d) => days(d) < 182).length, prev = e.dates.filter((d) => days(d) >= 182 && days(d) < 365).length;
+    const category = days(last) > 120 ? 'Inactif' : months12 >= 6 ? 'Régulier' : days(first) <= 90 ? 'Nouveau' : months12 >= 2 ? 'Occasionnel' : 'Ponctuel';
+    const trend = recent === 0 && prev === 0 ? 'stable' : recent >= prev * 1.25 + 1 ? 'hausse' : recent <= prev * 0.75 - 1 ? 'baisse' : 'stable';
+    const c = active('clients').find((x) => x.data['Type (Client/Fournisseur)'] === 'Client' && norm(x.data['Nom / raison sociale']) === k);
+    return { name: e.name, clientId: c?.id || null, phone: c?.data['Téléphone'] || null, orders: Math.max(e.invoices, e.missions) + e.dossiers, invoices: e.invoices, missions: e.missions, dossiers: e.dossiers,
+      ...(allowed('invoices', 'read') ? { revenue: e.revenue, outstanding: e.outstanding } : {}), first, last, monthsActive12: months12, category, trend };
+  }).sort((a, b) => b.orders - a.orders || (b.revenue || 0) - (a.revenue || 0) || a.name.localeCompare(b.name)).map((c, i) => ({ rank: i + 1, ...c }));
+  const byCategory = {}; for (const c of clients) byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+  return { clients, byCategory, withAmounts: allowed('invoices', 'read'), generatedAt: new Date().toISOString() };
+}
+function cash() {
+  const today = new Date(Date.now() + 3600000).toISOString().slice(0, 10);
+  const c = { solde: 0, entreesJour: 0, sortiesJour: 0, mouvementsJour: 0 };
+  for (const r of active('finance').filter((x) => x.data['Mode de paiement'] === 'Espèces')) {
+    const v = Number(r.data['Montant (FCFA)'] || 0), rec = r.data['Type (Recette/Dépense)'] === 'Recette';
+    c.solde += rec ? v : -v;
+    if (r.data.Date === today) { c.mouvementsJour++; if (rec) c.entreesJour += v; else c.sortiesJour += v; }
+  }
+  return c;
+}
+const companyPublic = () => ({ commerceEnabled: db.settings.commerceEnabled === true, trackerName: db.settings.trackerName || '', trackerUrl: /^https:\/\//.test(db.settings.trackerUrl || '') ? db.settings.trackerUrl : '' });
+
 function me() {
   const u = current();
   const perms = db.grants.filter((g) => g.startsWith(`${u.roleKey}:`)).map((g) => g.slice(u.roleKey.length + 1));
-  return { user: { id: u.id, fullName: u.fullName, role: u.roleKey, roleLabel: ROLES[u.roleKey] }, state: 'active', csrfToken: 'demo', permissions: perms, license: { state: 'unconfigured', enforcement: 'off', reason: 'Mode démonstration' }, instance: 'DÉMO', version: VERSION };
+  return { user: { id: u.id, fullName: u.fullName, role: u.roleKey, roleLabel: ROLES[u.roleKey] }, state: 'active', csrfToken: 'demo', permissions: perms, license: { state: 'unconfigured', enforcement: 'off', reason: 'Mode démonstration' }, instance: 'DÉMO', version: VERSION, company: companyPublic() };
 }
 
 const LABELS = { transport: 'Missions', transit: 'Dossiers de transit', 'importexport:Import': 'Importations', 'importexport:Export': 'Exportations', commerce: 'Articles', 'clients:Client': 'Clients', 'clients:Fournisseur': 'Fournisseurs', fleet: 'Véhicules', staff: 'Personnel', maintenance: 'Maintenance', invoices: 'Factures', finance: 'Mouvements financiers', documents: 'Documents' };
@@ -250,6 +300,7 @@ function notifications() {
     if (r.module === 'documents' && d['Date d’expiration'] && d['Date d’expiration'] <= in30) items.push({ module: 'documents', id: r.id, reference: r.reference, level: d['Date d’expiration'] < today ? 'danger' : 'warning', message: `Document ${d['Date d’expiration'] < today ? 'expiré' : 'bientôt expiré'} — ${d['Intitulé'] || r.reference}`, due: d['Date d’expiration'] });
     if (r.module === 'invoices' && d['Échéance'] && d['Échéance'] < today && !['Payée', 'Annulée'].includes(r.status)) items.push({ module: 'invoices', id: r.id, reference: r.reference, level: 'danger', message: `Facture échue — ${r.reference} (${d.Client || ''})`, due: d['Échéance'] });
     if (r.module === 'commerce' && d['Quantité en stock'] !== undefined && d['Stock minimum'] !== undefined && Number(d['Quantité en stock']) <= Number(d['Stock minimum'])) items.push({ module: 'commerce', id: r.id, reference: r.reference, level: 'warning', message: `Stock sous le seuil — ${d['Désignation'] || r.reference}`, due: null });
+    if (r.module === 'bl' && d['Fin de franchise'] && d['Fin de franchise'] <= new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10) && !['Mainlevée obtenue', 'Livré', 'Clôturé'].includes(r.status)) items.push({ module: 'bl', id: r.id, reference: r.reference, level: d['Fin de franchise'] < today ? 'danger' : 'warning', message: `${d['Fin de franchise'] < today ? 'Franchise dépassée (magasinage)' : 'Fin de franchise proche'} — BL ${r.reference} (${d.Client || ''})`, due: d['Fin de franchise'] });
     if (r.module === 'maintenance' && d['Prochain entretien'] && d['Prochain entretien'] <= in15) items.push({ module: 'maintenance', id: r.id, reference: r.reference, level: 'warning', message: `Entretien à prévoir — ${d['Véhicule'] || ''}`, due: d['Prochain entretien'] });
   }
   items.sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')));
@@ -302,7 +353,8 @@ async function handle(method, path, query, body) {
   }
   if (path === '/api/auth/password') return { ok: true };
   if (path === '/api/modules') return DEFS;
-  if (path === '/api/dashboard') { const s = stats(); return { counts: s.counts, finance: allowed('finance', 'read') || allowed('reports', 'read') ? s.finance : null, generatedAt: s.generatedAt }; }
+  if (path === '/api/dashboard') { const s = stats(); return { counts: s.counts, finance: allowed('finance', 'read') || allowed('reports', 'read') ? s.finance : null, cash: allowed('finance', 'read') ? cash() : null, generatedAt: s.generatedAt }; }
+  if (path === '/api/reports/clients') { need('clients', 'read'); return ranking(); }
   if (path === '/api/reports/summary') { need('reports', 'read'); return stats(); }
   if (path === '/api/notifications') {
     const items = notifications().items.filter((n) => allowed(n.module, 'read'));
@@ -327,7 +379,7 @@ async function handle(method, path, query, body) {
     return { query: q, groups: [...groups.values()] };
   }
   // ----- administration
-  if (path === '/api/admin/settings') { if (method === 'PUT') { db.settings = { ...db.settings, ...body }; audit('settings.update', 'company', null, null, body); save(); return db.settings; } return db.settings; }
+  if (path === '/api/admin/settings') { if (method === 'PUT') { if (body.trackerUrl && !/^https:\/\//.test(body.trackerUrl)) throw new HttpErr(400, 'requete_invalide', 'Adresse https:// obligatoire'); db.settings = { ...db.settings, ...body }; audit('settings.update', 'company', null, null, body); save(); return db.settings; } return db.settings; }
   if (path === '/api/admin/users' && method === 'GET') return db.users;
   if (path === '/api/admin/users' && method === 'POST') {
     if (db.users.some((u) => u.email === String(body.email).toLowerCase())) throw new HttpErr(409, 'conflit', 'E-mail déjà utilisé');
@@ -392,6 +444,7 @@ async function handle(method, path, query, body) {
       const data = validate(mod, autoNumber(mod, body?.data));
       const st = statusOf(mod, data);
       const r = insert(mod, data, current().id, st);
+      autoClient(mod, data, r.reference);
       save(); return { __status: 201, ...pub(r) };
     }
     const [id, sub] = rest.split('/');
@@ -413,7 +466,7 @@ async function handle(method, path, query, body) {
       checkUnique(mod, refOf(mod, data), rec.id);
       const before = rec.data;
       Object.assign(rec, { data, reference: refOf(mod, data), status: statusOf(mod, data), computed: compute(mod, data), version: rec.version + 1, updatedAt: new Date().toISOString() });
-      audit('record.update', mod, id, before, data); save(); return pub(rec);
+      audit('record.update', mod, id, before, data); autoClient(mod, data, rec.reference); save(); return pub(rec);
     }
     if (sub === 'cancel') {
       rec.cancelledAt = new Date().toISOString(); rec.version += 1;

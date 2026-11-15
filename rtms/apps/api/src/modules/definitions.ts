@@ -27,6 +27,9 @@ export interface ModuleDef {
 
 // Statuts proposés à partir du §7 du CdC — à valider par RAHA TRANSPORT.
 const GENERIC_STATUS = ['Brouillon', 'En attente', 'En cours', 'Validé', 'Clôturé', 'Annulé'] as const;
+// Étapes d'un BL, de l'annonce à la livraison (à confirmer avec RAHA TRANSPORT).
+export const BL_STATUS = ['Attendu', 'Arrivé', 'Déclaration déposée', 'En vérification', 'Mainlevée obtenue', 'Livré', 'Clôturé'] as const;
+const BL_TYPES = ['Connaissement maritime (B/L)', 'Lettre de transport aérien (LTA)', 'Lettre de voiture (CMR / route)', 'Bon de livraison'] as const;
 
 const t = (name: string, extra: Partial<FieldDef> = {}): FieldDef => ({ name, type: 'text', ...extra });
 const d = (name: string, extra: Partial<FieldDef> = {}): FieldDef => ({ name, type: 'date', ...extra });
@@ -53,11 +56,11 @@ export const MODULE_DEFS: Record<ModuleKey, ModuleDef> = {
   },
   clients: {
     key: 'clients',
-    fields: [e('Type (Client/Fournisseur)', ['Client', 'Fournisseur'], req), t('Nom / raison sociale', req), t('Téléphone'), t('E-mail'), t('Adresse'), t('N° contribuable', { sensitive: true }), t('Personne à contacter')],
+    fields: [e('Type (Client/Fournisseur)', ['Client', 'Fournisseur'], req), t('Nom / raison sociale', req), t('Téléphone'), t('E-mail'), t('Adresse'), t('N° contribuable', { sensitive: true }), t('Personne à contacter'), t('Origine de la fiche')],
   },
   fleet: {
     key: 'fleet', referenceField: 'Immatriculation', statusField: 'Statut',
-    fields: [t('Immatriculation', req), t('Marque / modèle', req), t('Type'), n('Année', { min: 1950 }), n('Kilométrage'), n('Capacité'), d('Assurance valide jusqu’au'), e('Statut', ['Disponible', 'En mission', 'En maintenance', 'Hors service'], req)],
+    fields: [t('Immatriculation', req), t('Marque / modèle', req), t('Type'), n('Année', { min: 1950 }), n('Kilométrage'), n('Capacité'), d('Assurance valide jusqu’au'), e('Statut', ['Disponible', 'En mission', 'En maintenance', 'Hors service'], req), t('N° traceur GPS (IMEI)'), t('Fournisseur du traceur')],
   },
   staff: {
     key: 'staff', referenceField: 'Matricule', statusField: 'Statut',
@@ -79,6 +82,14 @@ export const MODULE_DEFS: Record<ModuleKey, ModuleDef> = {
   finance: {
     key: 'finance', statusField: undefined,
     fields: [e('Type (Recette/Dépense)', ['Recette', 'Dépense'], req), t('Libellé', req), t('Catégorie'), n('Montant (FCFA)', req), e('Mode de paiement', ['Espèces', 'Virement', 'Chèque', 'Mobile money', 'Autre']), d('Date', req), t('Référence')],
+  },
+  // Suivi des BL (connaissements, LTA, lettres de voiture) jusqu'à la mainlevée douanière et la livraison.
+  bl: {
+    key: 'bl', referenceField: 'N° BL', statusField: 'Statut',
+    fields: [t('N° BL', req), e('Type de titre', BL_TYPES, req), t('Client', req), t('Dossier lié'), t('Navire / transporteur'), t('Lieu de chargement'), t('Lieu de déchargement'),
+      d('Arrivée prévue'), d('Arrivée effective'), d('Fin de franchise'), t('N° conteneur(s)'), n('Nombre de colis'), n('Poids (kg)'), t('Marchandise'),
+      t('N° déclaration en douane'), d('Date de déclaration'), t('Bureau de douane'), t('Régime douanier'), n('Droits et taxes (FCFA)'), t('N° quittance'),
+      d('Date de mainlevée (BAE)'), d('Date de livraison'), { name: 'Observations', type: 'longtext' }, e('Statut', BL_STATUS, req)],
   },
   documents: {
     key: 'documents', referenceField: 'Référence',

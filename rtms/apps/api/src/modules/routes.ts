@@ -50,6 +50,49 @@ async function assignNumber(tx: Tx, companyId: string, module: ModuleKey, data: 
   throw conflict('Impossible d’attribuer un numéro de facture libre');
 }
 
+/**
+ * Enregistrement automatique des clients : une facture, une mission, un dossier de transit ou un BL
+ * au nom d'un client absent du répertoire crée sa fiche (type « Client »), avec le téléphone de la
+ * facture s'il est saisi. Fait par le serveur, dans la même transaction : l'utilisateur n'a pas
+ * besoin du droit de création sur les clients, et rien n'est créé si l'enregistrement est refusé.
+ * Un verrou par nom évite les doublons quand deux postes enregistrent en même temps.
+ */
+const CLIENT_SOURCES: Partial<Record<ModuleKey, { phone?: string; label: string }>> = {
+  invoices: { phone: 'Contacts', label: 'facture' },
+  transport: { label: 'mission' },
+  transit: { label: 'dossier de transit' },
+  bl: { label: 'BL' },
+};
+type AutoClientCtx = { ctx: AppContext; companyId: string; userId: string; ip?: string; userAgent?: string };
+export async function ensureClient(tx: Tx, a: AutoClientCtx, module: ModuleKey, data: Record<string, unknown>, ref: string | null) {
+  const conf = CLIENT_SOURCES[module];
+  const name = typeof data['Client'] === 'string' ? data['Client'].trim().replace(/\s+/g, ' ') : '';
+  if (!conf || name.length < 2) return null;
+  const phone = conf.phone && typeof data[conf.phone] === 'string' ? (data[conf.phone] as string).trim().slice(0, 120) : '';
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`client:${a.companyId}:${name.toLowerCase()}`}))`;
+  const found = await tx.$queryRaw<{ id: string; data: Record<string, unknown>; version: number }[]>`
+    SELECT id, data, version FROM records
+     WHERE company_id = ${a.companyId}::uuid AND module = 'clients' AND cancelled_at IS NULL
+       AND data->>'Type (Client/Fournisseur)' = 'Client'
+       AND lower(regexp_replace(trim(data->>'Nom / raison sociale'), '\\s+', ' ', 'g')) = ${name.toLowerCase()}
+     ORDER BY created_at LIMIT 1`;
+  const origin = `Créée automatiquement (${conf.label}${ref ? ` ${ref}` : ''})`;
+  if (found.length) {
+    const c = found[0]!;
+    if (phone && !c.data['Téléphone']) { // fiche existante sans téléphone : on le complète
+      const next = { ...c.data, 'Téléphone': phone };
+      await tx.record.update({ where: { id: c.id }, data: { data: next as Prisma.InputJsonValue, version: { increment: 1 }, updatedById: a.userId } });
+      await audit(tx, { companyId: a.companyId, userId: a.userId, action: 'record.update', entity: 'clients', entityId: c.id, before: c.data, after: next, ip: a.ip, userAgent: a.userAgent });
+    }
+    return { id: c.id, created: false };
+  }
+  const d: Record<string, unknown> = { 'Type (Client/Fournisseur)': 'Client', 'Nom / raison sociale': name.slice(0, 500), 'Origine de la fiche': origin };
+  if (phone) d['Téléphone'] = phone;
+  const r = await tx.record.create({ data: { companyId: a.companyId, module: 'clients', reference: null, status: null, data: d as Prisma.InputJsonValue, computed: {}, createdById: a.userId } });
+  await audit(tx, { companyId: a.companyId, userId: a.userId, action: 'record.create', entity: 'clients', entityId: r.id, after: { ...d, automatique: true }, ip: a.ip, userAgent: a.userAgent });
+  return { id: r.id, created: true };
+}
+
 /** Statuts qui « figent » un enregistrement : toute modification exige le droit `validate`. */
 const LOCKED_STATUSES = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 
@@ -246,6 +289,7 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
           },
         });
         await audit(tx, { ...tenant(req), action: 'record.create', entity: module, entityId: r.id, after: stored, ...meta(req) });
+        await ensureClient(tx, { ctx, ...tenant(req), ...meta(req) }, module, data, r.reference);
         return r;
       });
       await bumpCompanyGeneration(ctx, req.session!.companyId);
@@ -286,6 +330,7 @@ export function recordRoutes(app: FastifyInstance, ctx: AppContext) {
         });
         if (res.count === 0) throw conflict('Cet enregistrement a été modifié par un autre utilisateur. Rechargez avant de modifier.', { currentVersion: cur.version });
         await audit(tx, { ...tenant(req), action: 'record.update', entity: module, entityId: id, before: cur.data, after: stored, ...meta(req) });
+        await ensureClient(tx, { ctx, ...tenant(req), ...meta(req) }, module, full.data as Record<string, unknown>, referenceOf(module, full.data as Record<string, unknown>));
         return tx.record.findUniqueOrThrow({ where: { id } });
       });
       await bumpCompanyGeneration(ctx, req.session!.companyId);

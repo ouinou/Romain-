@@ -5,7 +5,7 @@ import { dateTimeFr, esc, money } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { printHtml, reportDoc } from '../components/PrintService.js';
 
-const VOL = { Transport: 'transport', Transit: 'transit', 'Import / Export': 'importexport', Commerce: 'commerce', Facturation: 'invoices', 'Finance (mouvements)': 'finance', Véhicules: 'fleet', Personnel: 'staff', Maintenance: 'maintenance', Documents: 'documents', 'Clients et fournisseurs': 'clients' };
+const VOL = { Transport: 'transport', Transit: 'transit', 'Import / Export': 'importexport', Commerce: 'commerce', Facturation: 'invoices', 'Finance (mouvements)': 'finance', Véhicules: 'fleet', Personnel: 'staff', Maintenance: 'maintenance', Documents: 'documents', 'BL et douane': 'bl', 'Clients et fournisseurs': 'clients' };
 
 export class ReportsView {
   constructor(tab, ws) { this.tab = tab; this.ws = ws; this.offs = [on('data-changed', () => { this.stale = true; })]; }

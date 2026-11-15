@@ -13,7 +13,7 @@ import { workspace } from './MainWorkspace.js';
 import { notificationListHtml, notifications } from './NotificationCenter.js';
 
 const ICONS = { properties: 'info', history: 'history', documents: 'link', quick: 'zap', notifications: 'bell', activity: 'activity' };
-const DETAILS = { transport: 'Détails de la mission', transit: 'Détails du dossier', importexport: 'Détails de l’opération', commerce: 'Détails de l’article', clients: 'Détails du tiers', fleet: 'Détails du véhicule', staff: 'Détails de l’employé', maintenance: 'Détails de l’intervention', invoices: 'Détails de la facture', finance: 'Détails du mouvement', documents: 'Détails du document' };
+const DETAILS = { transport: 'Détails de la mission', transit: 'Détails du dossier', importexport: 'Détails de l’opération', commerce: 'Détails de l’article', clients: 'Détails du tiers', fleet: 'Détails du véhicule', staff: 'Détails de l’employé', maintenance: 'Détails de l’intervention', invoices: 'Détails de la facture', finance: 'Détails du mouvement', documents: 'Détails du document', bl: 'Détails du BL' };
 const ACTIONS = { 'record.create': 'Création', 'record.update': 'Modification', 'record.cancel': 'Suppression', 'record.export': 'Export' };
 const cache = new Map();
 async function cached(key, fn) { if (!cache.has(key)) cache.set(key, fn().catch((e) => { cache.delete(key); throw e; })); return cache.get(key); }

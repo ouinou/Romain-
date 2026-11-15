@@ -7,7 +7,7 @@ import { can, session } from '../core/session.js';
 import { confirmDialog, dialog, formDialog } from '../components/ModalManager.js';
 import { SectionedView, errorHtml, okHtml } from './SettingsView.js';
 
-const RES_LABELS = { transport: 'Transport', transit: 'Transit', importexport: 'Import / Export', commerce: 'Commerce', clients: 'Clients / fournisseurs', fleet: 'Parc', staff: 'Personnel', maintenance: 'Maintenance', invoices: 'Facturation', finance: 'Finance', documents: 'Documents', dashboard: 'Tableau de bord', reports: 'Rapports', settings: 'Paramètres', audit: 'Journal d’audit', users: 'Utilisateurs', license: 'Licence' };
+const RES_LABELS = { transport: 'Transport', transit: 'Transit', importexport: 'Import / Export', commerce: 'Commerce', clients: 'Clients / fournisseurs', fleet: 'Parc', staff: 'Personnel', maintenance: 'Maintenance', invoices: 'Facturation', finance: 'Finance', documents: 'Documents', bl: 'BL et douane', dashboard: 'Tableau de bord', reports: 'Rapports', settings: 'Paramètres', audit: 'Journal d’audit', users: 'Utilisateurs', license: 'Licence' };
 const ACT_LABELS = { read: 'Consulter', create: 'Créer', update: 'Modifier', validate: 'Valider', cancel: 'Annuler', export: 'Exporter', print: 'Imprimer', admin: 'Administrer' };
 
 export class AdminView extends SectionedView {

@@ -24,7 +24,22 @@ const settingsSchema = z.object({
   taxId: z.string().trim().max(80).optional().default(''),
   currency: z.enum(['FCFA', 'EUR', 'USD']).default('FCFA'),
   language: z.enum(['Français', 'English']).default('Français'),
+  // Activités affichées : le commerce général reste dans le logiciel, masqué tant qu'il n'est pas activé
+  commerceEnabled: z.boolean().optional().default(false),
+  // Plateforme du fournisseur des traceurs GPS (SinoTrack, etc.), ouverte dans RTMS. HTTPS uniquement.
+  trackerName: z.string().trim().max(60).optional().default(''),
+  trackerUrl: z.union([z.literal(''), z.string().trim().max(300).url().refine((u) => u.startsWith('https://'), 'Adresse https:// obligatoire')]).optional().default(''),
 }).strict();
+
+/** Réglages utiles à toute l'interface (pas seulement à l'administrateur). */
+export function publicCompanySettings(settings: unknown) {
+  const s = (settings && typeof settings === 'object' ? settings : {}) as Record<string, unknown>;
+  return {
+    commerceEnabled: s.commerceEnabled === true,
+    trackerName: typeof s.trackerName === 'string' ? s.trackerName : '',
+    trackerUrl: typeof s.trackerUrl === 'string' && s.trackerUrl.startsWith('https://') ? s.trackerUrl : '',
+  };
+}
 
 export function adminRoutes(app: FastifyInstance, ctx: AppContext, appVersion: string) {
   const meta = (req: FastifyRequest) => ({ ip: req.ip, userAgent: req.headers['user-agent'] });

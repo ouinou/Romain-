@@ -5,10 +5,19 @@ import { fetchBlob, get, patch, post } from '../core/api.js';
 import { $, download, esc, h } from '../core/dom.js';
 import { readTrackFile } from '../core/gpsParse.js';
 import { icon } from '../core/icons.js';
-import { can } from '../core/session.js';
+import { can, session } from '../core/session.js';
 import { dayFr, fmtDuration, fmtKm, osmLink, timeFr, trackSvg } from '../components/GpsMap.js';
 import { dialog, formDialog } from '../components/ModalManager.js';
 import { gpsDoc, printHtml } from '../components/PrintService.js';
+
+/** Plateforme du fournisseur des traceurs (réglée dans Paramètres) : suivi en direct, Internet nécessaire. */
+export const liveConfigured = () => !!session.company?.trackerUrl;
+export function openLive() {
+  const { trackerUrl, trackerName } = session.company || {};
+  if (!trackerUrl) { emit('toast', { type: 'error', message: 'Indiquez d’abord l’adresse de la plateforme des traceurs dans Paramètres › Société.' }); return; }
+  if (window.rtmsDesktop?.openTracker) window.rtmsDesktop.openTracker(trackerUrl, trackerName).catch((e) => emit('toast', { type: 'error', message: e.message }));
+  else window.open(trackerUrl, '_blank', 'noopener');
+}
 
 const SOURCE = { gpx: 'Fichier GPX', kml: 'Fichier KML', csv: 'Fichier CSV', telephone: 'Téléphone' };
 const avgKmh = (t) => (t.movingS > 0 ? (t.distanceM / t.movingS) * 3.6 : 0);
@@ -76,12 +85,19 @@ export class TracksView {
     this.filter = { vehicle: st.vehicle || '', from: st.from || '', to: st.to || '' };
     this.selectedId = st.selected || null;
     this.rows = []; this.detail = null;
-    this.offs = [on('data-changed', (x) => { if (!x?.module || x.module === 'gps' || x.module === 'fleet') { this.stale = true; if (this.ws.active() === this.tab) this.load(); } })];
+    this.offs = [on('data-changed', (x) => { if (!x?.module || x.module === 'gps' || x.module === 'fleet') { this.stale = true; if (this.ws.active() === this.tab) this.load(); } }),
+      // Réglage « plateforme de suivi » modifié dans Paramètres : le bouton apparaît ou disparaît
+      on('session', () => { if (this.el && this.vehicles) this.render(); })];
   }
   title() { const v = this.vehicles?.find((x) => x.id === this.filter.vehicle); return v ? `Trajets GPS — ${v.label}` : 'Suivi GPS des trajets'; }
   icon() { return 'route'; }
   serialize() { return { id: this.tab.id, kind: 'tracks', viewKey: 'tracks', state: { ...this.filter, selected: this.selectedId } }; }
-  setVehicle(id) { this.filter.vehicle = id || ''; this.selectedId = null; this.render(); this.load(); }
+  async setVehicle(id) {
+    this.filter.vehicle = id || ''; this.selectedId = null;
+    // Véhicule ajouté au parc après l'ouverture de cet onglet : on recharge la liste
+    if (id && !(this.vehicles || []).some((v) => v.id === id)) this.vehicles = await loadOptions('fleet', 'Immatriculation');
+    this.render(); await this.load(); emit('tab-changed');
+  }
 
   async mount(el) {
     this.el = el;
@@ -117,6 +133,7 @@ export class TracksView {
         <label>Du<input type="date" data-filter="from" value="${esc(this.filter.from)}"></label>
         <label>Au<input type="date" data-filter="to" value="${esc(this.filter.to)}"></label>
         <span class="spacer"></span>
+        ${liveConfigured() ? `<button type="button" class="btn green" data-cmd="gps.live" title="Plateforme ${esc(session.company.trackerName || 'du fournisseur')} — Internet nécessaire">${icon('satellite', 15)} Suivi en direct${session.company.trackerName ? ` (${esc(session.company.trackerName)})` : ''}</button>` : ''}
         ${can('fleet', 'update') ? `<button type="button" class="btn" data-cmd="gps.import">${icon('upload', 15)} Importer un trajet</button>` : ''}
       </div>
       <div class="gps-layout"><section class="panel gps-list" data-list><div class="empty">Chargement…</div></section><section class="panel gps-detail" data-detail></section></div>`;
@@ -196,13 +213,14 @@ export class TracksView {
       ${this.detailHtml(t)}`;
   }
 
-  activate() { if (this.stale) this.load(); }
+  activate() { if (this.stale) { loadOptions('fleet', 'Immatriculation').then((v) => { this.vehicles = v; this.render(); this.load(); }); } }
   refresh() { return this.load(); }
   destroy() { this.offs.forEach((f) => f()); }
-  toolbar() { return [['gps.import'], ['gps.edit', 'gps.cancel'], ['file.print', 'file.pdf'], ['view.refresh'], ['gps.gpx']]; }
+  toolbar() { return [['gps.live', 'gps.import'], ['gps.edit', 'gps.cancel'], ['file.print', 'file.pdf'], ['view.refresh'], ['gps.gpx']]; }
   supports(id) {
     if (id === 'view.refresh') return true;
     if (id === 'gps.import') return can('fleet', 'update');
+    if (id === 'gps.live') return liveConfigured();
     if (!this.detail) return false;
     return { 'gps.edit': can('fleet', 'update'), 'gps.cancel': can('fleet', 'cancel'), 'gps.gpx': can('fleet', 'export'), 'file.print': can('fleet', 'print'), 'file.pdf': can('fleet', 'print') }[id] ?? false;
   }
@@ -210,6 +228,7 @@ export class TracksView {
   async exec(id) {
     const t = this.detail;
     if (id === 'view.refresh') return this.load();
+    if (id === 'gps.live') return openLive();
     if (id === 'gps.import') { const nid = await importTrackDialog(this.filter.vehicle); if (nid) { this.selectedId = nid; await this.load(); } return undefined; }
     if (!t) return undefined;
     if (id === 'gps.gpx') return download(`Trajet ${t.vehicle || ''} ${new Date(t.startedAt).toISOString().slice(0, 10)}.gpx`.replace(/[\\/:*?"<>|]+/g, '-'), await fetchBlob(`/api/gps/tracks/${t.id}/gpx`));

@@ -76,9 +76,10 @@ test('connexion + enrôlement MFA obligatoire pour l’administrateur', async ()
   await expect(activePane().locator('h1')).toContainText('Tableau de bord');
 });
 
-test('structure : barre de menus (13), barre d’outils (18), onglets, panneaux, barre d’état', async () => {
-  await expect(page.locator('.menubar .mb-item')).toHaveText(['Fichier', 'Édition', 'Affichage', 'Navigation', 'Transport', 'Transit', 'Import / Export', 'Commerce', 'Finance', 'Fenêtre', 'Rapports', 'Administration', 'Aide']);
-  await expect(page.locator('.toolrail .tool')).toHaveCount(18);
+test('structure : barre de menus (13), barre d’outils (20, commerce masqué), onglets, panneaux, barre d’état', async () => {
+  await expect(page.locator('.menubar .mb-item')).toHaveText(['Fichier', 'Édition', 'Affichage', 'Navigation', 'Transport', 'Transit', 'Import / Export', 'Clients', 'Finance', 'Fenêtre', 'Rapports', 'Administration', 'Aide']);
+  await expect(page.locator('.toolrail .tool')).toHaveCount(20);
+  await expect(tool('commerce')).toHaveCount(0);
   await expect(tool('dashboard')).toHaveClass(/active/);
   // Accès rapide en tête du tableau de bord, avant les compteurs : « Nouvelle facture » en premier
   await expect(page.locator('.quick-start .quick-big button').first()).toContainText('Nouvelle facture');
@@ -123,12 +124,12 @@ test('chaque menu s’ouvre et propose des commandes ; navigation au clavier', a
 });
 
 test('tous les modules s’ouvrent dans leur propre onglet', async () => {
-  for (const key of ['transport', 'transit', 'import', 'export', 'commerce', 'clients', 'suppliers', 'invoices', 'finance', 'fleet', 'tracks', 'staff', 'maintenance', 'documents', 'reports', 'admin', 'settings']) {
+  for (const key of ['transport', 'transit', 'bl', 'import', 'export', 'clients', 'ranking', 'suppliers', 'invoices', 'finance', 'cash', 'fleet', 'tracks', 'staff', 'maintenance', 'documents', 'reports', 'admin', 'settings']) {
     await tool(key).click();
     await expect(tool(key)).toHaveClass(/active/);
     await expect(activePane().locator('h1, h2').first()).toBeVisible();
   }
-  await expect(page.locator('.wtab')).toHaveCount(18);
+  await expect(page.locator('.wtab')).toHaveCount(20);
   // Fermer tous les onglets puis rouvrir le tableau de bord
   await menu('Fichier', 'Fermer tous les onglets');
   await expect(page.locator('.wtab')).toHaveCount(0);
@@ -421,6 +422,79 @@ test('transfert des données du prototype (localStorage)', async () => {
   await expect(activePane().locator('.ok')).toContainText('1 importé');
   await tool('fleet').click();
   await expect(activePane().locator('tbody')).toContainText('TD-OLD-01');
+});
+
+test('client enregistré automatiquement par la facture, classement des clients', async () => {
+  await tool('invoices').click();
+  await cmd.click('record.new');
+  const f = activePane();
+  await f.locator('[name="Client"]').fill('NOUVEAU CLIENT AUTO SARL');
+  await f.locator('[name="Contacts"]').fill('+237 690 55 44 33');
+  await f.locator('[data-line="0"][data-k="Désignation"]').fill('Transport Douala - Edéa');
+  await f.locator('[data-line="0"][data-k="Quantité"]').fill('1');
+  await f.locator('[data-line="0"][data-k="Prix unitaire (FCFA)"]').fill('450000');
+  await page.keyboard.press('Control+s');
+  await expect(activePane().locator('.record-form.reading')).toBeVisible();
+  await tool('clients').click();
+  await cmd.click('view.refresh');
+  await expect(activePane().locator('tbody')).toContainText('NOUVEAU CLIENT AUTO SARL');
+  await expect(activePane().locator('tbody tr', { hasText: 'NOUVEAU CLIENT AUTO SARL' })).toContainText('+237 690 55 44 33');
+  await tool('ranking').click();
+  await expect(activePane().locator('h1')).toContainText('Classement des clients');
+  await expect(activePane().locator('.ranking-table')).toContainText('NOUVEAU CLIENT AUTO SARL');
+  await expect(activePane().locator('.ranking-table tbody tr', { hasText: 'NOUVEAU CLIENT AUTO SARL' })).toContainText('Nouveau');
+});
+
+test('BL et douane : enregistrement d’un BL, client créé, alerte de fin de franchise', async () => {
+  await tool('bl').click();
+  await cmd.click('record.new');
+  const f = activePane();
+  await f.locator('[name="N° BL"]').fill('MEDUE2E0001');
+  await f.locator('[name="Type de titre"]').selectOption('Connaissement maritime (B/L)');
+  await f.locator('[name="Client"]').fill('IMPORTATEUR E2E SA');
+  await f.locator('[name="N° conteneur(s)"]').fill('MSCU7654321');
+  const soon = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  await f.locator('[name="Fin de franchise"]').fill(soon);
+  await f.locator('[name="Statut"]').selectOption('Arrivé');
+  await page.keyboard.press('Control+s');
+  await expect(activePane().locator('.record-form.reading')).toBeVisible();
+  await expect(activePane()).toContainText('Déclaration en douane');
+  await page.evaluate(() => fetch('/api/notifications').then((r) => r.json())).then((n) => expect(JSON.stringify(n)).toContain('Fin de franchise proche'));
+  await tool('clients').click();
+  await cmd.click('view.refresh');
+  await expect(activePane().locator('tbody')).toContainText('IMPORTATEUR E2E SA');
+});
+
+test('caisse : mouvement en espèces et solde du jour', async () => {
+  await tool('cash').click();
+  await cmd.click('record.new');
+  const f = activePane();
+  await expect(f.locator('[name="Mode de paiement"]')).toHaveValue('Espèces');
+  await f.locator('[name="Type (Recette/Dépense)"]').selectOption('Recette');
+  await f.locator('[name="Libellé"]').fill('Encaissement comptoir');
+  await f.locator('[name="Montant (FCFA)"]').fill('125000');
+  await page.keyboard.press('Control+s');
+  await expect(activePane().locator('.record-form.reading')).toBeVisible();
+  await tool('cash').click();
+  await cmd.click('view.refresh');
+  await expect(activePane().locator('.stat-tiles')).toContainText('Solde de caisse');
+  await expect(activePane().locator('.stat-tiles')).toContainText('125');
+});
+
+test('paramètres : commerce général réactivable, plateforme GPS', async () => {
+  await tool('settings').click();
+  await activePane().locator('[data-section=company]').click();
+  const f = activePane().locator('[data-form=company]');
+  await f.locator('[name=commerceEnabled]').check();
+  await f.locator('[name=trackerName]').fill('SinoTrack');
+  await f.locator('[name=trackerUrl]').fill('https://exemple-traceur.test');
+  await activePane().locator('[data-act=save-company]').click();
+  await expect(tool('commerce')).toHaveCount(1);
+  await f.locator('[name=commerceEnabled]').uncheck();
+  await activePane().locator('[data-act=save-company]').click();
+  await expect(tool('commerce')).toHaveCount(0);
+  await tool('tracks').click();
+  await expect(activePane().locator('[data-cmd="gps.live"]')).toContainText('SinoTrack');
 });
 
 test('suivi GPS : import d’un trajet GPX sur la fiche véhicule, tracé, chiffres et impression', async () => {

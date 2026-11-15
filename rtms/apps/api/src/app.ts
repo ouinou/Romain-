@@ -15,6 +15,7 @@ import { adminRoutes } from './admin/routes.js';
 import { workspaceRoutes } from './modules/workspace.js';
 import { presenceRoutes, touchPresence } from './security/presence.js';
 import { gpsRoutes } from './gps/routes.js';
+import { clientRankingRoutes } from './modules/clientRanking.js';
 import { registerMetrics, licenseState } from './observability/metrics.js';
 import { captureError } from './observability/telemetry.js';
 
@@ -166,6 +167,7 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
   workspaceRoutes(app, ctx);
   presenceRoutes(app, ctx);
   gpsRoutes(app, ctx);
+  clientRankingRoutes(app, ctx);
   if (opts.extraRoutes) await opts.extraRoutes(app);
 
   if (config.WEB_ROOT) {

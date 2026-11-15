@@ -38,11 +38,11 @@ export class DashboardView {
       const [d, act] = await Promise.all([get('/api/dashboard'), get('/api/activity').catch(() => [])]);
       this.data = d;
       const c = (k) => d.counts[k] || 0;
-      const kpis = this.kpis = [['Missions', 'transport', 'truck', 't-green'], ['Dossiers de transit', 'transit', 'transit', 't-blue'], ['Import / Export', 'importexport', 'import', 't-orange'], ['Factures', 'invoices', 'receipt', 't-gray'], ['Tiers', 'clients', 'users', 't-green'], ['Véhicules', 'fleet', 'car', 't-blue'], ['Articles', 'commerce', 'store', 't-orange'], ['Documents', 'documents', 'folder', 't-gray']];
+      const kpis = this.kpis = [['Missions', 'transport', 'truck', 't-green'], ['Dossiers de transit', 'transit', 'transit', 't-blue'], ['Import / Export', 'importexport', 'import', 't-orange'], ['Factures', 'invoices', 'receipt', 't-gray'], ['Tiers', 'clients', 'users', 't-green'], ['Véhicules', 'fleet', 'car', 't-blue'], ['BL et douane', 'bl', 'anchor', 't-orange'], ['Documents', 'documents', 'folder', 't-gray']].concat(can('commerce') ? [['Articles', 'commerce', 'store', 't-orange']] : []);
       const bars = [['Transport', c('transport')], ['Transit', c('transit')], ['Import/Export', c('importexport')], ['Factures', c('invoices')], ['Véhicules', c('fleet')], ['Maintenance', c('maintenance')]];
       const max = Math.max(1, ...bars.map((b) => b[1]));
       // Accès rapide, en haut : on commence à travailler dès l'ouverture, sans chercher dans les menus
-      const ORDER = ['invoices', 'transport', 'transit', 'import', 'export', 'finance', 'clients', 'suppliers', 'commerce', 'fleet', 'staff', 'maintenance', 'documents'];
+      const ORDER = ['invoices', 'transport', 'bl', 'cash', 'transit', 'import', 'export', 'finance', 'clients', 'suppliers', 'commerce', 'fleet', 'staff', 'maintenance', 'documents'];
       const quick = ORDER.map((k) => VIEWS.find((v) => v.key === k)).filter((v) => v && v.kind === 'list' && can(v.module, 'create'));
       root.innerHTML = `
         <div class="view-head"><h1>${icon('dashboard', 20)} Tableau de bord</h1><span class="muted small">Vue synthétique des activités de RAHA TRANSPORT · ${esc(dateTimeFr(d.generatedAt))}</span></div>
@@ -52,6 +52,7 @@ export class DashboardView {
         </section>
         <div class="stat-tiles dash">${kpis.map(([l, k, ic, cls]) => `<button type="button" class="tile ${cls}" data-openview="${k === 'importexport' ? 'import' : k}" ${can(k) ? '' : 'disabled'}>${icon(ic, 26)}<span><b>${c(k)}</b><small>${esc(l)}</small></span></button>`).join('')}</div>
         <div class="kpis">
+          ${d.cash ? `<button type="button" class="kpi money cash ${d.cash.solde < 0 ? 'neg' : ''}" data-openview="cash" title="Mouvements en espèces : ${esc(money(d.cash.entreesJour))} entrés et ${esc(money(d.cash.sortiesJour))} sortis aujourd’hui"><span class="kl">Solde de caisse</span><span class="kv">${esc(money(d.cash.solde))}</span></button>` : ''}
           ${d.finance ? `<div class="kpi money"><span class="kl">Recettes</span><span class="kv">${esc(money(d.finance.recettes))}</span></div><div class="kpi money"><span class="kl">Dépenses</span><span class="kv">${esc(money(d.finance.depenses))}</span></div><div class="kpi money ${d.finance.solde < 0 ? 'neg' : ''}"><span class="kl">Solde (FCFA)</span><span class="kv">${esc(money(d.finance.solde))}</span></div>` : ''}
         </div>
         <div class="dash-grid">

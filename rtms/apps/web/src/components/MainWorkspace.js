@@ -6,7 +6,7 @@ import { $, debounce, h, uid } from '../core/dom.js';
 import { loadTabs, saveTabs } from '../core/prefs.js';
 import { confirmDialog } from './ModalManager.js';
 
-const MAX_TABS = 20;
+const MAX_TABS = 25;
 const factories = {};
 export function registerView(kind, factory) { factories[kind] = factory; }
 

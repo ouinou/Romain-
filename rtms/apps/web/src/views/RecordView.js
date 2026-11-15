@@ -46,7 +46,8 @@ export class RecordView {
     this.values = { ...(d.values || {}) };
     this.initial = d.mode === 'new' ? { ...(d.initial || d.values || {}) } : null;
     // Nouvelle facture : date du jour proposée (modifiable), numéro attribué par le serveur
-    if (this.mode === 'new' && AUTO_NUMBERED[this.module] && !this.values.Date) {
+    // Mouvements de trésorerie et de caisse : date du jour proposée aussi (le comptable saisit au fil de la journée)
+    if (this.mode === 'new' && (AUTO_NUMBERED[this.module] || this.module === 'finance') && !this.values.Date) {
       this.values.Date = todayIso();
       this.initial.Date = this.values.Date;
     }
@@ -179,7 +180,7 @@ export class RecordView {
       box.innerHTML = `<legend>Trajets GPS</legend>
         <p class="small">${r.total ? `<b>${r.total}</b> trajet(s) suivi(s) · <b>${esc(fmtKm(r.totals.distanceM))}</b> parcourus · ${esc(fmtDuration(r.totals.movingS))} de roulage` : 'Aucun trajet GPS pour ce véhicule.'}</p>
         ${r.rows.length ? `<table class="mini wide-table"><thead><tr><th>Date</th><th>Chauffeur</th><th>Mission</th><th class="num">Distance</th></tr></thead><tbody>${r.rows.map((t) => `<tr><td>${esc(dayFr(t.startedAt))}</td><td>${esc(t.driver || '—')}</td><td>${esc(t.mission || '—')}</td><td class="num">${esc(fmtKm(t.distanceM))}</td></tr>`).join('')}</tbody></table>` : ''}
-        <div class="form-actions left"><button type="button" class="btn secondary" data-cmd="fleet.tracks">${icon('route', 15)} Voir les trajets sur le tracé</button>${can('fleet', 'update') ? `<button type="button" class="btn secondary" data-cmd="gps.import">${icon('upload', 15)} Importer un trajet</button>` : ''}</div>`;
+        <div class="form-actions left">${this.record.data['N° traceur GPS (IMEI)'] && session.company?.trackerUrl ? `<button type="button" class="btn green" data-cmd="gps.live">${icon('satellite', 15)} Suivi en direct</button>` : ''}<button type="button" class="btn secondary" data-cmd="fleet.tracks">${icon('route', 15)} Voir les trajets sur le tracé</button>${can('fleet', 'update') ? `<button type="button" class="btn secondary" data-cmd="gps.import">${icon('upload', 15)} Importer un trajet</button>` : ''}</div>`;
     } catch (e) { box.innerHTML = `<legend>Trajets GPS</legend><div class="muted small">${esc(e.message)}</div>`; }
   }
 
@@ -430,7 +431,7 @@ export class RecordView {
 
   toolbar() {
     if (this.mode === 'view') {
-      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['fleet.tracks', 'gps.import'] : [];
+      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['gps.live', 'fleet.tracks', 'gps.import'] : [];
       return [['record.new'], ['record.edit', 'record.duplicate'], ['record.validate'], [...extra, 'file.print', 'file.pdf'], ['record.cancel'], ['view.refresh']];
     }
     return [['form.save', 'record.validate', 'form.cancelEdit'], ['record.preview'], ['view.refresh']];
@@ -460,6 +461,7 @@ export class RecordView {
       case 'invoice.export': return !editing && !!r && m === 'invoices';
       case 'fleet.tracks': return !editing && !!r && m === 'fleet';
       case 'gps.import': return !editing && !!r && m === 'fleet' && can('fleet', 'update');
+      case 'gps.live': return !editing && !!r && m === 'fleet' && !!session.company?.trackerUrl;
       case 'view.refresh': return !!this.recordId;
       default: return false;
     }
@@ -503,6 +505,7 @@ export class RecordView {
       case 'transport.loading': return printHtml(loadingDoc(this.record));
       case 'invoice.export': return exportInvoices([this.record]);
       case 'fleet.tracks': return (await import('./TracksView.js')).openTracks(this.ws, this.recordId);
+      case 'gps.live': { const imei = this.record.data['N° traceur GPS (IMEI)']; if (imei) { try { await navigator.clipboard.writeText(imei); emit('toast', { type: 'info', message: `N° du traceur ${imei} copié : collez-le dans la recherche de la plateforme.` }); } catch { /* presse-papiers indisponible */ } } return (await import('./TracksView.js')).openLive(); }
       case 'gps.import': { const v = await import('./TracksView.js'); if (await v.importTrackDialog(this.recordId)) this.loadGps(); return undefined; }
       case 'view.refresh':
         if (this.isDirty() && !(await confirmDialog('Recharger et perdre les modifications en cours ?', { ok: 'Recharger', danger: true }))) return undefined;
