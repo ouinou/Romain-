@@ -76,9 +76,9 @@ test('connexion + enrôlement MFA obligatoire pour l’administrateur', async ()
   await expect(activePane().locator('h1')).toContainText('Tableau de bord');
 });
 
-test('structure : barre de menus (13), barre d’outils (17), onglets, panneaux, barre d’état', async () => {
+test('structure : barre de menus (13), barre d’outils (18), onglets, panneaux, barre d’état', async () => {
   await expect(page.locator('.menubar .mb-item')).toHaveText(['Fichier', 'Édition', 'Affichage', 'Navigation', 'Transport', 'Transit', 'Import / Export', 'Commerce', 'Finance', 'Fenêtre', 'Rapports', 'Administration', 'Aide']);
-  await expect(page.locator('.toolrail .tool')).toHaveCount(17);
+  await expect(page.locator('.toolrail .tool')).toHaveCount(18);
   await expect(tool('dashboard')).toHaveClass(/active/);
   // Accès rapide en tête du tableau de bord, avant les compteurs : « Nouvelle facture » en premier
   await expect(page.locator('.quick-start .quick-big button').first()).toContainText('Nouvelle facture');
@@ -123,12 +123,12 @@ test('chaque menu s’ouvre et propose des commandes ; navigation au clavier', a
 });
 
 test('tous les modules s’ouvrent dans leur propre onglet', async () => {
-  for (const key of ['transport', 'transit', 'import', 'export', 'commerce', 'clients', 'suppliers', 'invoices', 'finance', 'fleet', 'staff', 'maintenance', 'documents', 'reports', 'admin', 'settings']) {
+  for (const key of ['transport', 'transit', 'import', 'export', 'commerce', 'clients', 'suppliers', 'invoices', 'finance', 'fleet', 'tracks', 'staff', 'maintenance', 'documents', 'reports', 'admin', 'settings']) {
     await tool(key).click();
     await expect(tool(key)).toHaveClass(/active/);
     await expect(activePane().locator('h1, h2').first()).toBeVisible();
   }
-  await expect(page.locator('.wtab')).toHaveCount(17);
+  await expect(page.locator('.wtab')).toHaveCount(18);
   // Fermer tous les onglets puis rouvrir le tableau de bord
   await menu('Fichier', 'Fermer tous les onglets');
   await expect(page.locator('.wtab')).toHaveCount(0);
@@ -421,6 +421,60 @@ test('transfert des données du prototype (localStorage)', async () => {
   await expect(activePane().locator('.ok')).toContainText('1 importé');
   await tool('fleet').click();
   await expect(activePane().locator('tbody')).toContainText('TD-OLD-01');
+});
+
+test('suivi GPS : import d’un trajet GPX sur la fiche véhicule, tracé, chiffres et impression', async () => {
+  await tool('fleet').click();
+  await cmd.click('record.new');
+  const f = activePane();
+  await f.locator('[name="Immatriculation"]').fill('LT 7777 GP');
+  await f.locator('[name="Marque / modèle"]').fill('Mercedes Actros');
+  await f.locator('[name="Statut"]').selectOption('Disponible');
+  await page.keyboard.press('Control+s');
+  await expect(activePane().locator('[data-gps]')).toContainText('Aucun trajet GPS');
+  // Trace de 50 min à ~60 km/h vers l'est, avec un arrêt de 10 min au milieu
+  const t0 = Date.UTC(2026, 10, 12, 6, 0, 0);
+  const pts: string[] = [];
+  let lon = 9.7, t = t0;
+  for (let i = 0; i < 300; i++) {
+    const stopped = i >= 120 && i < 180;
+    if (!stopped) lon += 0.0015;
+    pts.push(`<trkpt lat="4.05" lon="${lon.toFixed(6)}"><time>${new Date(t).toISOString()}</time></trkpt>`);
+    t += 10_000;
+  }
+  const gpx = `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>${pts.join('')}</trkseg></trk></gpx>`;
+  await activePane().locator('[data-gps] [data-cmd="gps.import"]').click();
+  const dlg = page.locator('.dlg');
+  await dlg.locator('input[type=file]').setInputFiles({ name: 'trajet-test.gpx', mimeType: 'application/gpx+xml', buffer: Buffer.from(gpx) });
+  await dlg.locator('[name=driver]').fill('Abba Moussa');
+  await dlg.locator('[name=label]').fill('Essai Douala – Edéa');
+  await dlg.locator('.btn', { hasText: 'Importer' }).click();
+  await expect(page.locator('.toast').last()).toContainText('Trajet importé');
+  await expect(activePane().locator('[data-gps]')).toContainText('1 trajet');
+  await expect(activePane().locator('[data-gps]')).toContainText('Abba Moussa');
+  await activePane().locator('[data-gps] [data-cmd="fleet.tracks"]').click();
+  await expect(activePane().locator('h1')).toContainText('Trajets GPS — LT 7777 GP');
+  await expect(activePane().locator('.gps-table tbody tr')).toHaveCount(1);
+  await expect(activePane().locator('svg.gps-map path.gps-line')).toHaveCount(1);
+  await expect(activePane().locator('svg.gps-map .gps-stop')).toHaveCount(1);
+  const stats = activePane().locator('.gps-detail .gps-stats').first();
+  await expect(stats).toContainText('Distance');
+  const km = await stats.locator('div', { hasText: 'Distance' }).locator('dd').textContent();
+  expect(Number(km!.replace(/[^\d,]/g, '').replace(',', '.'))).toBeGreaterThan(35); // 240 × 0,0015° ≈ 40 km
+  await activePane().screenshot({ path: 'test-results/gps-trajet.png' });
+  // Impression : aperçu A4 RAHA avec le tracé
+  await cmd.click('file.print');
+  await expect(page.locator('.pv-layer svg.gps-map')).toBeVisible();
+  await page.keyboard.press('Escape');
+  // Export GPX
+  const [dl] = await Promise.all([page.waitForEvent('download'), cmd.click('gps.gpx')]);
+  expect(dl.suggestedFilename()).toMatch(/\.gpx$/);
+  // Un fichier sans heures de passage est refusé avec un message clair
+  await cmd.click('gps.import');
+  await page.locator('.dlg input[type=file]').setInputFiles({ name: 'itineraire.gpx', mimeType: 'application/gpx+xml', buffer: Buffer.from('<gpx><rte><rtept lat="4" lon="9"/><rtept lat="4.1" lon="9.1"/></rte></gpx>') });
+  await page.locator('.dlg .btn', { hasText: 'Importer' }).click();
+  await expect(page.locator('.dlg [data-err]')).toContainText('heures de passage');
+  await page.keyboard.press('Escape');
 });
 
 test('disposition stable en HD, Full HD et écran large (aucun débordement)', async () => {

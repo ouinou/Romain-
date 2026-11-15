@@ -1,5 +1,16 @@
 # Journal des versions
 
+## 2.5.0 — 15/11/2026
+Suivi GPS des trajets, rattaché au parc automobile. Voir `docs/13-SUIVI-GPS-TRAJETS.md`.
+- Import de traces GPX, KML (horodaté) ou CSV depuis la fiche du véhicule ou le nouvel écran « Suivi GPS » (barre latérale, groupe Ressources, et menu Transport).
+- Distance, temps de roulage, vitesses, arrêts de 5 min et plus : calculés par le serveur, positions aberrantes écartées.
+- Tracé affiché hors ligne (sans fond de carte), fiche de trajet imprimable au format RAHA, export GPX.
+- Fiche véhicule : kilomètres suivis, temps de roulage et derniers trajets.
+- Droits du module Parc automobile ; trajets isolés par société (RLS) ; trace non modifiable et non supprimable en base ; audit ; trajets inclus dans les sauvegardes.
+- Migration `0007_gps_tracks` : nouvelle table uniquement, aucune donnée existante modifiée.
+- Limite connue : pas de position en direct (le poste principal est hors ligne). Voir la documentation.
+- Vérifié : API 121/121 (dont 9 nouveaux tests GPS), navigateur 21/21, réseau local hors ligne à deux postes (migration appliquée sur la base intégrée).
+
 ## 2.4.3 — 10/11/2026
 Retour à l’écran de choix du poste quand RTMS s’ouvre directement (démonstration, ancien poste principal, ancienne adresse).
 - Nouveau raccourci « Choisir le rôle de ce poste » (menu Démarrer › RAHA TRANSPORT RTMS) : oublie le rôle enregistré et affiche l’écran de choix. Les données du poste principal et la copie de sécurité configurée ne sont pas touchées.

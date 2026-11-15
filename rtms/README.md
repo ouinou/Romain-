@@ -27,6 +27,7 @@ La v2.0 a transformé le prototype (un fichier HTML qui stockait tout dans le na
 10. [Application Windows et démonstration](docs/10-APPLICATION-WINDOWS.md)
 11. [Réseau local sans Internet (petites entreprises)](docs/11-RESEAU-LOCAL-HORS-LIGNE.md)
 12. [Licences : essai de 14 jours et activation](docs/12-LICENCES-ESSAI-ET-ACTIVATION.md)
+13. [Suivi GPS des trajets (parc automobile)](docs/13-SUIVI-GPS-TRAJETS.md)
 
 ## Démarrage rapide (développement)
 

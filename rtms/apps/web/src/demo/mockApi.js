@@ -4,11 +4,12 @@
 // ne jamais y saisir de données réelles. L'application réelle utilise l'API sécurisée.
 import { DEFS, MATRIX, ROLES, ACTIONS, RESOURCES } from './defs.js';
 import { seedRecords } from './seed.js';
+import { analyse, sampleRoute } from './gpsDemo.js';
 
 const KEY = 'rtms.demo.db.v1';
 // Démonstration uniquement : aucun compte réel n'est créé
 const DEMO_TEMP_PASS = 'demo (fictif)';
-const VERSION = '2.4.2';
+const VERSION = '2.5.0';
 const LOCKED = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 const defOf = (m) => DEFS.find((d) => d.key === m);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -363,6 +364,8 @@ async function handle(method, path, query, body) {
     }
     save(); return { dryRun: !!body.dryRun, report };
   }
+  // ----- trajets GPS (parc automobile)
+  if (path.startsWith('/api/gps/tracks')) return gpsHandle(method, path, query, body);
   // ----- enregistrements
   if ((m = path.match(/^\/api\/records\/([a-z]+)(?:\/(.+))?$/))) {
     const mod = m[1];
@@ -420,6 +423,65 @@ async function handle(method, path, query, body) {
   throw new HttpErr(404, 'introuvable', `Route ${method} ${path} introuvable (démonstration)`);
 }
 
+// ---------------------------------------------------------------- trajets GPS (démonstration)
+function seedTracks() {
+  if (db.tracks) return;
+  db.tracks = [];
+  const v = active('fleet').find((r) => r.data.Immatriculation === 'LT 4589 BH');
+  const m = active('transport').find((r) => r.data['Destination'] === 'Yaoundé');
+  if (!v) return;
+  const d = new Date(Date.now() - 2 * 86400000); d.setUTCHours(6, 10, 0, 0);
+  addTrack({ vehicleId: v.id, missionId: m?.id || null, driver: 'Ngono Paul', label: 'Douala – Yaoundé (exemple fictif)', source: 'gpx', fileName: 'exemple.gpx', points: sampleRoute(d.getTime() / 1000) }, db.users[0].id);
+}
+function addTrack(b, userId) {
+  const s = analyse(b.points);
+  const t = { id: uuid(), vehicleId: b.vehicleId, missionId: b.missionId || null, driver: b.driver || null, label: b.label || null, source: b.source, fileName: b.fileName || null,
+    startedAt: new Date(s.startedAt * 1000).toISOString(), endedAt: new Date(s.endedAt * 1000).toISOString(), pointCount: s.points.length, distanceM: s.distanceM, movingS: s.movingS,
+    maxSpeedKmh: s.maxSpeedKmh, stops: s.stops, points: s.points.map(([t0, a, o]) => [t0 - s.startedAt, a, o]), createdAt: new Date().toISOString(), createdBy: userId, cancelledAt: null };
+  db.tracks.unshift(t);
+  return { t, s };
+}
+function gpsPub(t, withPoints) {
+  const v = db.records.find((r) => r.id === t.vehicleId), m = t.missionId && db.records.find((r) => r.id === t.missionId);
+  const { points, ...rest } = t;
+  return { ...rest, vehicle: v?.reference || null, vehicleModel: v?.data['Marque / modèle'] || null, mission: m?.reference || null,
+    durationS: Math.round((Date.parse(t.endedAt) - Date.parse(t.startedAt)) / 1000), ...(withPoints ? { points } : {}) };
+}
+function gpsHandle(method, path, query, body) {
+  seedTracks();
+  const live = () => db.tracks.filter((t) => !t.cancelledAt);
+  if (path === '/api/gps/tracks' && method === 'GET') {
+    need('fleet', 'read');
+    const day = (iso) => new Date(Date.parse(iso) + 3600000).toISOString().slice(0, 10);
+    const rows = live().filter((t) => (!query.get('vehicle') || t.vehicleId === query.get('vehicle')) && (!query.get('mission') || t.missionId === query.get('mission'))
+      && (!query.get('from') || day(t.startedAt) >= query.get('from')) && (!query.get('to') || day(t.startedAt) <= query.get('to')))
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    const limit = Number(query.get('limit') || 50), offset = Number(query.get('offset') || 0);
+    return { rows: rows.slice(offset, offset + limit).map((t) => gpsPub(t)), total: rows.length, totals: { distanceM: rows.reduce((x, t) => x + t.distanceM, 0), movingS: rows.reduce((x, t) => x + t.movingS, 0) } };
+  }
+  if (path === '/api/gps/tracks' && method === 'POST') {
+    need('fleet', 'update');
+    const v = db.records.find((r) => r.id === body?.vehicleId && r.module === 'fleet' && !r.cancelledAt);
+    if (!v) throw new HttpErr(400, 'requete_invalide', 'Véhicule introuvable dans le parc automobile');
+    if (!Array.isArray(body.points) || body.points.length < 2) throw new HttpErr(400, 'requete_invalide', 'Trace GPS refusée', ['La trace doit contenir au moins deux positions']);
+    let r; try { r = addTrack(body, current().id); } catch (e) { throw new HttpErr(400, 'requete_invalide', 'Trace GPS refusée', [e.message]); }
+    audit('gps.import', 'gps_track', r.t.id, null, { vehicleId: body.vehicleId, points: r.s.points.length, distanceM: r.s.distanceM }); save();
+    return { __status: 201, id: r.t.id, pointCount: r.s.points.length, dropped: r.s.dropped, distanceM: r.s.distanceM, movingS: r.s.movingS, maxSpeedKmh: r.s.maxSpeedKmh, stops: r.s.stops.length };
+  }
+  const m = path.match(/^\/api\/gps\/tracks\/([^/]+)(?:\/(cancel|gpx))?$/);
+  const t = m && live().find((x) => x.id === m[1]);
+  if (!t) throw new HttpErr(404, 'introuvable', 'Trajet introuvable');
+  if (!m[2] && method === 'GET') { need('fleet', 'read'); return gpsPub(t, true); }
+  if (!m[2] && method === 'PATCH') { need('fleet', 'update'); for (const k of ['label', 'driver', 'missionId']) if (k in body) t[k] = body[k] || null; audit('gps.update', 'gps_track', t.id, null, body); save(); return { ok: true }; }
+  if (m[2] === 'cancel') { need('fleet', 'cancel'); t.cancelledAt = new Date().toISOString(); audit('gps.cancel', 'gps_track', t.id, null, { reason: body?.reason }); save(); return { ok: true }; }
+  if (m[2] === 'gpx') {
+    need('fleet', 'export');
+    const t0 = Date.parse(t.startedAt);
+    return new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="RTMS (démonstration)" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Trajet</name><trkseg>\n${t.points.map(([dt, a, o]) => `<trkpt lat="${a}" lon="${o}"><time>${new Date(t0 + dt * 1000).toISOString()}</time></trkpt>`).join('\n')}\n</trkseg></trk></gpx>\n`], { type: 'application/gpx+xml' });
+  }
+  throw new HttpErr(404, 'introuvable', 'Route introuvable (démonstration)');
+}
+
 /** Installe le serveur simulé : les appels /api/* ne quittent plus le navigateur. */
 export function installDemoApi() {
   const realFetch = window.fetch.bind(window);
@@ -433,7 +495,7 @@ export function installDemoApi() {
     await new Promise((r) => setTimeout(r, 40)); // léger délai, comme un vrai serveur
     try {
       const out = await handle(method, path, url.searchParams, body);
-      if (out instanceof Blob) return new Response(out, { status: 200, headers: { 'content-type': 'text/csv; charset=utf-8' } });
+      if (out instanceof Blob) return new Response(out, { status: 200, headers: { 'content-type': out.type || 'text/csv; charset=utf-8' } });
       const status = out?.__status || 200;
       if (out && out.__status) delete out.__status;
       return new Response(JSON.stringify(out), { status, headers: { 'content-type': 'application/json' } });

@@ -285,3 +285,8 @@ export function recordDoc(title, fields, record) {
 export function reportDoc(innerHtml) {
   return a4(`${brandHead()}<div class="doc-titlebar"><span>RAPPORT D’ACTIVITÉ</span><span>${esc(new Date().toLocaleDateString('fr-FR'))}</span></div>${innerHtml}`);
 }
+
+/** Fiche « trajet GPS » (tracé + chiffres) au format A4 RAHA. */
+export function gpsDoc(innerHtml, title = 'TRAJET GPS') {
+  return a4(`${brandHead()}<div class="doc-titlebar"><span>${esc(title)}</span><span>${esc(new Date().toLocaleDateString('fr-FR'))}</span></div>${innerHtml}`);
+}

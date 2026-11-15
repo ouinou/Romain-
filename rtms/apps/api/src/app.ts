@@ -14,6 +14,7 @@ import { dashboardRoutes } from './modules/dashboard.js';
 import { adminRoutes } from './admin/routes.js';
 import { workspaceRoutes } from './modules/workspace.js';
 import { presenceRoutes, touchPresence } from './security/presence.js';
+import { gpsRoutes } from './gps/routes.js';
 import { registerMetrics, licenseState } from './observability/metrics.js';
 import { captureError } from './observability/telemetry.js';
 
@@ -164,6 +165,7 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
   adminRoutes(app, ctx, APP_VERSION);
   workspaceRoutes(app, ctx);
   presenceRoutes(app, ctx);
+  gpsRoutes(app, ctx);
   if (opts.extraRoutes) await opts.extraRoutes(app);
 
   if (config.WEB_ROOT) {

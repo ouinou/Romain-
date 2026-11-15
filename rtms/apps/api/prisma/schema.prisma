@@ -85,6 +85,35 @@ model Record {
   @@map("records")
 }
 
+/// Trajet GPS d'un véhicule du parc (migration 0007). Points : [[s depuis le départ, lat, lon], …].
+/// Lu et écrit en SQL (src/gps/routes.ts) ; pas de suppression physique (déclencheur).
+model GpsTrack {
+  id           String    @id @default(uuid()) @db.Uuid
+  companyId    String    @map("company_id") @db.Uuid
+  vehicleId    String    @map("vehicle_id") @db.Uuid
+  missionId    String?   @map("mission_id") @db.Uuid
+  driver       String?
+  label        String?
+  source       String
+  fileName     String?   @map("file_name")
+  startedAt    DateTime  @map("started_at") @db.Timestamptz(3)
+  endedAt      DateTime  @map("ended_at") @db.Timestamptz(3)
+  pointCount   Int       @map("point_count")
+  distanceM    Int       @map("distance_m")
+  movingS      Int       @map("moving_s")
+  maxSpeedKmh  Decimal   @map("max_speed_kmh") @db.Decimal(6, 1)
+  stops        Json      @default("[]")
+  bbox         Json
+  points       Json
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  String    @map("created_by") @db.Uuid
+  cancelledAt  DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById String?  @map("cancelled_by") @db.Uuid
+  cancelReason String?   @map("cancel_reason")
+
+  @@map("gps_tracks")
+}
+
 /// Compteur de numérotation automatique (factures : F-AAAA-NNNN). Voir migration 0005.
 model DocumentCounter {
   companyId String @map("company_id") @db.Uuid

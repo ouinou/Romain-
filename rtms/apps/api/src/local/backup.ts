@@ -12,7 +12,7 @@ import zlib from 'node:zlib';
 import pg from 'pg';
 import { applyMigrations } from './migrate.js';
 
-const TABLES = ['companies', 'users', 'role_permissions', 'records', 'audit_log', 'installation', 'licenses', 'license_activations', 'license_events', 'document_counters'];
+const TABLES = ['companies', 'users', 'role_permissions', 'records', 'gps_tracks', 'audit_log', 'installation', 'licenses', 'license_activations', 'license_events', 'document_counters'];
 const SEQUENCES: [string, string][] = [['audit_log', 'audit_log_id_seq'], ['license_events', 'license_events_id_seq']];
 
 async function columns(c: pg.Client, table: string) {

@@ -26,6 +26,7 @@ import { ListView } from './views/ListView.js';
 import { RecordView } from './views/RecordView.js';
 import { ReportsView } from './views/ReportsView.js';
 import { SettingsView } from './views/SettingsView.js';
+import { TracksView } from './views/TracksView.js';
 
 const APP_VERSION = '2.2.0';
 
@@ -35,6 +36,7 @@ registerView('record', (t, ws) => new RecordView(t, ws));
 registerView('reports', (t, ws) => new ReportsView(t, ws));
 registerView('settings', (t, ws) => new SettingsView(t, ws));
 registerView('admin', (t, ws) => new AdminView(t, ws));
+registerView('tracks', (t, ws) => new TracksView(t, ws));
 
 // ---------------------------------------------------------------- commandes
 const view = (id, label, ic, key) => register({ id, label, icon: ic, key });
@@ -64,6 +66,11 @@ view('transport.waybill', 'Lettre de transport', 'file');
 view('transport.loading', 'Bon de chargement', 'file');
 view('invoice.print', 'Imprimer la facture', 'receipt');
 view('invoice.export', 'Exporter en PDF (Bureau, clé USB…)', 'export');
+view('fleet.tracks', 'Trajets GPS du véhicule', 'route');
+view('gps.import', 'Importer un trajet GPS', 'upload');
+view('gps.edit', 'Modifier le trajet', 'pencil');
+view('gps.cancel', 'Retirer le trajet', 'xcircle');
+view('gps.gpx', 'Exporter le trajet (GPX)', 'export');
 
 const g = (id, label, ic, key, fn, enabled) => register({ id, label, icon: ic, key, global: fn, enabled });
 let shell = null;
@@ -121,7 +128,7 @@ setMenus(() => [
     '-', { cmd: 'view.filters' }, { cmd: 'view.columns' }] },
   { label: 'Navigation', items: () => [{ cmd: 'nav.back' }, { cmd: 'tab.next' }, { cmd: 'tab.prev' }, '-', openItem('dashboard'), { cmd: 'search.global' }, '-',
     ...workspace.tabs.map((t) => ({ label: t.view.title(), icon: t.view.icon?.() || 'dashboard', checked: () => t.id === workspace.activeId, action: () => workspace.activate(t.id) }))] },
-  { label: 'Transport', byRole: true, items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('staff'), openItem('maintenance')] },
+  { label: 'Transport', byRole: true, items: () => [newItem('transport'), openItem('transport'), '-', { cmd: 'transport.vehicle' }, { cmd: 'transport.driver' }, { cmd: 'record.status' }, '-', { cmd: 'transport.order' }, { cmd: 'transport.waybill' }, { cmd: 'transport.loading' }, '-', openItem('fleet'), openItem('tracks'), openItem('staff'), openItem('maintenance')] },
   { label: 'Transit', byRole: true, items: () => [newItem('transit'), openItem('transit'), '-', openItem('documents')] },
   { label: 'Import / Export', byRole: true, items: () => [newItem('import'), newItem('export'), '-', openItem('import'), openItem('export')] },
   { label: 'Commerce', byRole: true, items: () => [newItem('commerce'), openItem('commerce'), '-', newItem('clients'), openItem('clients'), newItem('suppliers'), openItem('suppliers')] },

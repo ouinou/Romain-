@@ -161,11 +161,26 @@ export class RecordView {
       <form class="record-form ${editing ? 'editing' : 'reading'}" novalidate>
         ${this.sections().map(([title, fields]) => `<fieldset class="fs"><legend>${esc(title)}</legend><div class="fs-grid">${fields.map((f) => this.fieldHtml(f, editing)).join('')}</div></fieldset>`).join('')}
         ${this.computedHtml()}
+        ${this.module === 'fleet' && !editing && r && can('fleet') ? '<fieldset class="fs gps-fs" data-gps><legend>Trajets GPS</legend><div class="muted small">Chargement…</div></fieldset>' : ''}
         ${editing ? `<div class="form-actions"><button type="button" class="btn secondary" data-cmd="form.cancelEdit">Annuler</button>${VALIDATED_STATUS[this.module] && can(this.module, 'validate') ? `<button type="button" class="btn secondary" data-cmd="record.validate">${icon('check', 15)} Enregistrer et valider</button>` : ''}<button type="submit" class="btn">${icon('save', 15)} Enregistrer</button></div>` : ''}
       </form>`;
     if (editing) this.attachLookups();
+    if ($('[data-gps]', root)) this.loadGps();
     const first = editing && $('input:not([readonly]),select,textarea', root);
     if (first && this.mode === 'new' && this.ws.active() === this.tab) first.focus();
+  }
+
+  /** Fiche véhicule : derniers trajets GPS et kilomètres suivis (données du serveur). */
+  async loadGps() {
+    const box = $('[data-gps]', this.el);
+    try {
+      const r = await get(`/api/gps/tracks?vehicle=${this.recordId}&limit=5`);
+      const { fmtKm, fmtDuration, dayFr } = await import('../components/GpsMap.js');
+      box.innerHTML = `<legend>Trajets GPS</legend>
+        <p class="small">${r.total ? `<b>${r.total}</b> trajet(s) suivi(s) · <b>${esc(fmtKm(r.totals.distanceM))}</b> parcourus · ${esc(fmtDuration(r.totals.movingS))} de roulage` : 'Aucun trajet GPS pour ce véhicule.'}</p>
+        ${r.rows.length ? `<table class="mini wide-table"><thead><tr><th>Date</th><th>Chauffeur</th><th>Mission</th><th class="num">Distance</th></tr></thead><tbody>${r.rows.map((t) => `<tr><td>${esc(dayFr(t.startedAt))}</td><td>${esc(t.driver || '—')}</td><td>${esc(t.mission || '—')}</td><td class="num">${esc(fmtKm(t.distanceM))}</td></tr>`).join('')}</tbody></table>` : ''}
+        <div class="form-actions left"><button type="button" class="btn secondary" data-cmd="fleet.tracks">${icon('route', 15)} Voir les trajets sur le tracé</button>${can('fleet', 'update') ? `<button type="button" class="btn secondary" data-cmd="gps.import">${icon('upload', 15)} Importer un trajet</button>` : ''}</div>`;
+    } catch (e) { box.innerHTML = `<legend>Trajets GPS</legend><div class="muted small">${esc(e.message)}</div>`; }
   }
 
   /** Lignes affichées : format multi-lignes, ou ancienne saisie à une ligne. */
@@ -415,7 +430,7 @@ export class RecordView {
 
   toolbar() {
     if (this.mode === 'view') {
-      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : [];
+      const extra = this.module === 'transport' ? ['transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['fleet.tracks', 'gps.import'] : [];
       return [['record.new'], ['record.edit', 'record.duplicate'], ['record.validate'], [...extra, 'file.print', 'file.pdf'], ['record.cancel'], ['view.refresh']];
     }
     return [['form.save', 'record.validate', 'form.cancelEdit'], ['record.preview'], ['view.refresh']];
@@ -443,6 +458,8 @@ export class RecordView {
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return !editing && !!r && m === 'transport';
       case 'invoice.print': return m === 'invoices' && (editing || !!r);
       case 'invoice.export': return !editing && !!r && m === 'invoices';
+      case 'fleet.tracks': return !editing && !!r && m === 'fleet';
+      case 'gps.import': return !editing && !!r && m === 'fleet' && can('fleet', 'update');
       case 'view.refresh': return !!this.recordId;
       default: return false;
     }
@@ -485,6 +502,8 @@ export class RecordView {
       case 'transport.waybill': return printHtml(waybillDoc(this.record));
       case 'transport.loading': return printHtml(loadingDoc(this.record));
       case 'invoice.export': return exportInvoices([this.record]);
+      case 'fleet.tracks': return (await import('./TracksView.js')).openTracks(this.ws, this.recordId);
+      case 'gps.import': { const v = await import('./TracksView.js'); if (await v.importTrackDialog(this.recordId)) this.loadGps(); return undefined; }
       case 'view.refresh':
         if (this.isDirty() && !(await confirmDialog('Recharger et perdre les modifications en cours ?', { ok: 'Recharger', danger: true }))) return undefined;
         this.mode = this.mode === 'new' ? 'new' : 'view';

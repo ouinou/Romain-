@@ -414,7 +414,7 @@ export class ListView {
     if (!tr) return;
     e.preventDefault();
     if (!this.selected.has(tr.dataset.id)) this.select(tr.dataset.id);
-    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : [];
+    const extra = this.module === 'transport' ? ['transport.vehicle', 'transport.driver', 'transport.order', 'transport.waybill', 'transport.loading'] : this.module === 'invoices' ? ['invoice.print', 'invoice.export'] : this.module === 'fleet' ? ['fleet.tracks'] : [];
     showContextMenu(e.clientX, e.clientY, ['record.open', 'record.edit', 'record.duplicate', '-', 'record.status', 'record.validate', ...extra, '-', 'file.print', 'file.csv', '-', 'record.cancel']);
   }
 
@@ -453,6 +453,7 @@ export class ListView {
       case 'edit.deselect': return n > 0;
       case 'transport.vehicle': case 'transport.driver': return m === 'transport' && n === 1 && can(m, 'update');
       case 'transport.order': case 'transport.waybill': case 'transport.loading': return m === 'transport' && n === 1;
+      case 'fleet.tracks': return m === 'fleet';
       case 'invoice.print': return m === 'invoices' && n === 1;
       case 'invoice.export': return m === 'invoices' && (n >= 1 || this.rows.length > 0);
       default: return false;
@@ -518,6 +519,7 @@ export class ListView {
         return;
       }
       case 'transport.order': return printHtml(missionOrderDoc(one));
+      case 'fleet.tracks': return (await import('./TracksView.js')).openTracks(this.ws, one ? one.id : '');
       case 'transport.waybill': return printHtml(waybillDoc(one));
       case 'transport.loading': return printHtml(loadingDoc(one));
       case 'invoice.print': return printHtml(invoiceDoc(one));
