@@ -9,7 +9,7 @@ import { analyse, sampleRoute } from './gpsDemo.js';
 const KEY = 'rtms.demo.db.v1';
 // Démonstration uniquement : aucun compte réel n'est créé
 const DEMO_TEMP_PASS = 'demo (fictif)';
-const VERSION = '2.6.0';
+const VERSION = '2.6.1';
 const LOCKED = new Set(['Validé', 'Validée', 'Clôturé', 'Payée']);
 const defOf = (m) => DEFS.find((d) => d.key === m);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -117,7 +117,7 @@ function validate(m, input, { partial = false } = {}) {
     let v = input?.[f.name];
     if (v === '' || v === null) v = undefined;
     if (v === undefined) { if (f.required && !partial) errors.push(`${f.name} : champ obligatoire`); continue; }
-    if (f.type === 'number') { const n = Number(v); if (!Number.isFinite(n)) errors.push(`${f.name} : nombre attendu`); else if (f.min != null && n < f.min) errors.push(`${f.name} : valeur minimale ${f.min}`); else if (f.max != null && n > f.max) errors.push(`${f.name} : valeur maximale ${f.max}`); else out[f.name] = n; }
+    if (f.type === 'number') { const n = Number(v); if (!Number.isFinite(n)) errors.push(`${f.name} : nombre attendu`); else if (f.min != null && n < f.min) errors.push(`${f.name} : valeur minimale ${f.min}`); else if (n > (f.max ?? 1e12)) errors.push(`${f.name} : valeur maximale ${(f.max ?? 1e12).toLocaleString('fr-FR')}`); else out[f.name] = n; }
     else if (f.type === 'date') { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v))) errors.push(`${f.name} : date AAAA-MM-JJ attendue`); else out[f.name] = String(v); }
     else if (f.type === 'enum') { if (!f.options.includes(v)) errors.push(`${f.name} : valeur non autorisée`); else out[f.name] = v; }
     else if (f.type === 'lines') {
@@ -352,6 +352,8 @@ async function handle(method, path, query, body) {
     if ((action === 'create' || action === 'update') && body?.data && LOCKED.has(body.data[defOf(m[1])?.statusField]) && !allowed(m[1], 'validate')) throw new HttpErr(403, 'interdit', 'Ce statut nécessite le droit de validation');
   }
   if (path === '/api/auth/password') return { ok: true };
+  if (path === '/api/auth/password/reset') throw new HttpErr(400, 'requete_invalide', 'Démonstration : la réinitialisation du mot de passe fonctionne sur le vrai logiciel (code donné par l’administrateur).');
+  if (/^\/api\/admin\/users\/[^/]+\/reset-code$/.test(path)) { need('users', 'admin'); return { code: 'DEMO-DEMO-DEMO-DEMO', expiresAt: new Date(Date.now() + 1800000).toISOString(), minutes: 30 }; }
   if (path === '/api/modules') return DEFS;
   if (path === '/api/dashboard') { const s = stats(); return { counts: s.counts, finance: allowed('finance', 'read') || allowed('reports', 'read') ? s.finance : null, cash: allowed('finance', 'read') ? cash() : null, generatedAt: s.generatedAt }; }
   if (path === '/api/reports/clients') { need('clients', 'read'); return ranking(); }

@@ -25,7 +25,21 @@
   <form id="loginform" class="form" novalidate>
     <label class="wide">E-mail<input name="email" type="email" autocomplete="username" required></label>
     <label class="wide">Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>
-    <div class="actions wide"><button class="btn">Se connecter</button></div>
+    <div class="actions wide login-actions"><button class="btn">Se connecter</button><button type="button" class="link" data-act="forgot">Mot de passe oublié ?</button></div>
+  </form>
+  <form id="resetform" class="form hidden" novalidate>
+    <p class="wide small">Demandez à l’administrateur de RTMS un <b>code de réinitialisation</b> (Administration › Utilisateurs). Il est valable 30 minutes et ne sert qu’une fois.</p>
+    <label class="wide">E-mail<input name="email" type="email" autocomplete="username" required maxlength="200"></label>
+    <label class="wide">Code de réinitialisation<input name="code" autocomplete="one-time-code" required maxlength="40" placeholder="XXXX-XXXX-XXXX-XXXX" spellcheck="false"></label>
+    <label class="wide">Nouveau mot de passe (12 caractères minimum)<input name="next" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+    <div class="actions wide"><button type="button" class="btn secondary" data-act="auth-cancel">Annuler</button><button class="btn">Changer le mot de passe</button></div>
+  </form>
+  <form id="pwchangeform" class="form hidden" novalidate>
+    <p class="wide small">Première connexion : remplacez le mot de passe provisoire donné par l’administrateur par un mot de passe que vous seul connaissez.</p>
+    <label class="wide">Mot de passe provisoire<input name="current" type="password" autocomplete="current-password" required maxlength="200"></label>
+    <label class="wide">Nouveau mot de passe (12 caractères minimum)<input name="next" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+    <label class="wide">Confirmer le nouveau mot de passe<input name="confirm" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+    <div class="actions wide"><button type="button" class="btn secondary" data-act="auth-cancel">Annuler</button><button class="btn">Enregistrer</button></div>
   </form>
   <form id="mfaform" class="form hidden" novalidate>
     <label class="wide">Code à 6 chiffres de votre application d’authentification (ou code de secours)<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>

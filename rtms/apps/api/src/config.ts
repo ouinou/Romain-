@@ -58,6 +58,14 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     if (!cfg.COOKIE_SECURE) throw new Error('COOKIE_SECURE=false interdit en production');
     if (!cfg.PUBLIC_ORIGIN.startsWith('https://')) throw new Error('PUBLIC_ORIGIN doit être en HTTPS en production');
     if (cfg.LICENSE_ENFORCEMENT === 'off') throw new Error('LICENSE_ENFORCEMENT=off interdit en production');
+    // Pas de journaux de débogage en production (ils peuvent contenir des données métier)
+    if (['debug', 'trace'].includes(cfg.LOG_LEVEL)) throw new Error(`LOG_LEVEL=${cfg.LOG_LEVEL} interdit en production`);
+    // Mots de passe d'exemple ou de développement restés dans la configuration
+    for (const [k, v] of [['DATABASE_URL', cfg.DATABASE_URL], ['REDIS_URL', cfg.REDIS_URL]] as const) {
+      if (/change-me|REMPLACER|devapp|devowner|devlic|MOT_DE_PASSE/i.test(v)) throw new Error(`${k} contient un mot de passe d’exemple : remplacez-le`);
+    }
+    if (/REMPLACER/.test(cfg.DATA_ENCRYPTION_KEYS)) throw new Error('DATA_ENCRYPTION_KEYS non générée (openssl rand -base64 32)');
+    if (cfg.METRICS_TOKEN !== undefined && cfg.METRICS_TOKEN.length < 24) throw new Error('METRICS_TOKEN trop court (24 caractères minimum)');
   }
   return cfg;
 }

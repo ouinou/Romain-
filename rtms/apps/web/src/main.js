@@ -168,10 +168,16 @@ function showShortcuts() {
     <p class="muted small">Sur macOS, Ctrl correspond à ⌘. Dans un navigateur, certains raccourcis (Ctrl+W, Ctrl+N) restent réservés au navigateur, d’où Alt+W et Alt+N.</p>` });
 }
 
+/** Ouvre ce que désigne une alerte : l'enregistrement, ou le journal d'audit pour une alerte de sécurité. */
+function openNotice(m, id) {
+  if (m === 'security') return openSection('admin', 'audit');
+  return workspace.open({ id: `rec:${m}:${id}`, kind: 'record', mode: 'view', module: m, recordId: id, viewKey: VIEWS.find((v) => v.module === m)?.key });
+}
+
 function showNotifications(module) {
   const items = notifications().items.filter((n) => !module || n.module === module);
   return dialog({ title: module === 'invoices' ? 'Factures échues' : 'Centre de notifications', width: 560, body: `<div class="notif-dlg">${notificationListHtml(items, 'Aucune alerte en cours.')}</div>`, onMount: (el, close) => {
-    el.addEventListener('click', (e) => { const b = e.target.closest('[data-open-record]'); if (b) { close(null); const [m, id] = b.dataset.openRecord.split(':'); workspace.open({ id: `rec:${m}:${id}`, kind: 'record', mode: 'view', module: m, recordId: id, viewKey: VIEWS.find((v) => v.module === m)?.key }); } });
+    el.addEventListener('click', (e) => { const b = e.target.closest('[data-open-record]'); if (b) { close(null); const [m, id] = b.dataset.openRecord.split(':'); openNotice(m, id); } });
   } });
 }
 
@@ -200,7 +206,7 @@ document.addEventListener('click', (e) => {
   if (b.matches('[data-bell]')) return showNotifications();
   if (b.matches('[data-cmd]')) return run(b.dataset.cmd);
   const [m, id] = b.dataset.openRecord.split(':');
-  return workspace.open({ id: `rec:${m}:${id}`, kind: 'record', mode: 'view', module: m, recordId: id, viewKey: VIEWS.find((v) => v.module === m)?.key });
+  return openNotice(m, id);
 });
 window.addEventListener('pagehide', () => { if (session.me) workspace.save(); });
 window.addEventListener('beforeunload', (e) => {

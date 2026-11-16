@@ -32,6 +32,15 @@ export interface BuildOptions {
   extraRoutes?: (app: FastifyInstance) => void | Promise<void>;
 }
 
+/** Fichiers de l'interface web autorisés au téléchargement. */
+export function webPathAllowed(pathName: string) {
+  const p = decodeURIComponent(pathName);
+  if (p.includes('..') || p.includes('\\') || /\/\./.test(p)) return false;
+  if (p === '/' || p === '/index.html' || p === '/app.css') return true;
+  if (p.startsWith('/src/demo/')) return false; // serveur simulé de la démonstration : jamais sur un vrai serveur
+  return /^\/src\/[\w/.-]+\.js$/.test(p) || /^\/assets\/[\w/.-]+\.(png|jpe?g|webp|svg|ico|woff2?)$/i.test(p);
+}
+
 export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promise<FastifyInstance> {
   const { config } = ctx;
   const app = Fastify({
@@ -64,6 +73,8 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
     hsts: config.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
     crossOriginEmbedderPolicy: false,
   });
+  // Corps de requête : JSON uniquement (le texte brut accepté par défaut par Fastify est refusé : 415)
+  app.removeContentTypeParser('text/plain');
   await app.register(cookie);
   const cookieName = SESSION_COOKIE(config.COOKIE_SECURE);
   await app.register(rateLimit, {
@@ -171,7 +182,9 @@ export async function buildApp(ctx: AppContext, opts: BuildOptions = {}): Promis
   if (opts.extraRoutes) await opts.extraRoutes(app);
 
   if (config.WEB_ROOT) {
-    await app.register(fastifyStatic, { root: config.WEB_ROOT, index: ['index.html'], dotfiles: 'deny' });
+    // Liste blanche : seuls l'application et ses ressources sont servies, même si WEB_ROOT pointe
+    // vers le dossier du projet (package.json, tests, node_modules, démonstration sans sécurité…).
+    await app.register(fastifyStatic, { root: config.WEB_ROOT, index: ['index.html'], dotfiles: 'deny', allowedPath: webPathAllowed });
   }
   app.setNotFoundHandler((req, reply) => reply.status(404).send({ code: 'introuvable', message: `Route ${req.method} ${req.url.split('?')[0]} introuvable` }));
   return app;

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { audit } from '../audit/audit.js';
 import type { AppContext } from '../context.js';
 import { randomInt } from 'node:crypto';
-import { randomToken } from '../crypto.js';
+import { randomToken, sha256 } from '../crypto.js';
 import { withTenant } from '../db.js';
 import { badRequest, conflict, notFound } from '../errors.js';
 import { invalidatePermissions, requirePermission } from '../security/guard.js';
@@ -13,6 +13,9 @@ import { ACTIONS, MODULES, ROLES, SCREENS } from '../security/permissions.js';
 import { computeFields, isModule, MODULE_DEFS, recordSchema } from '../modules/definitions.js';
 import { bumpCompanyGeneration, encryptSensitive } from '../modules/routes.js';
 import type { ModuleKey } from '../security/permissions.js';
+
+/** Durée de validité d'un code de réinitialisation du mot de passe. */
+export const RESET_MINUTES = 30;
 
 const settingsSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -83,7 +86,7 @@ export function adminRoutes(app: FastifyInstance, ctx: AppContext, appVersion: s
     try {
       const u = await withTenant(ctx.prisma, tenant(req), async (tx) => {
         if (maxUsers && (await tx.user.count({ where: { status: 'active' } })) >= maxUsers) throw conflict(`Limite de ${maxUsers} utilisateurs de la licence atteinte`);
-        const created = await tx.user.create({ data: { ...b.data, companyId: req.session!.companyId, passwordHash: await hashPassword(temp) } });
+        const created = await tx.user.create({ data: { ...b.data, companyId: req.session!.companyId, passwordHash: await hashPassword(temp), mustChangePassword: true } });
         await audit(tx, { ...tenant(req), action: 'user.create', entity: 'user', entityId: created.id, after: b.data, ...meta(req) });
         return created;
       });
@@ -119,6 +122,26 @@ export function adminRoutes(app: FastifyInstance, ctx: AppContext, appVersion: s
     });
     if (b.status === 'disabled' || b.roleKey || b.resetMfa) await ctx.sessions.destroyAllForUser(id);
     return { ok: true };
+  });
+
+  // ---------- Code de réinitialisation du mot de passe (mot de passe oublié) ----------
+  // Usage unique, valable RESET_MINUTES minutes ; seul son SHA-256 est stocké ; un nouveau code
+  // annule le précédent. Le code n'apparaît jamais dans le journal d'audit.
+  app.post('/api/admin/users/:id/reset-code', { preHandler: requirePermission(ctx, 'users', 'admin') }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans 0/O/1/I, lisible au téléphone
+    const raw = Array.from({ length: 16 }, () => alphabet[randomInt(alphabet.length)]).join(''); // 80 bits
+    const expiresAt = new Date(Date.now() + RESET_MINUTES * 60_000);
+    await withTenant(ctx.prisma, tenant(req), async (tx) => {
+      const u = await tx.user.findFirst({ where: { id }, select: { id: true, status: true } });
+      if (!u) throw notFound();
+      if (u.status !== 'active') throw badRequest('Compte désactivé : réactivez-le d’abord');
+      await tx.$executeRaw`UPDATE password_resets SET used_at = now() WHERE user_id = ${id}::uuid AND used_at IS NULL`;
+      await tx.$executeRaw`INSERT INTO password_resets (company_id, user_id, token_hash, expires_at, created_by)
+                           VALUES (${req.session!.companyId}::uuid, ${id}::uuid, ${sha256(raw)}, ${expiresAt}, ${req.session!.userId}::uuid)`;
+      await audit(tx, { ...tenant(req), action: 'user.reset_code', entity: 'user', entityId: id, after: { expiresAt: expiresAt.toISOString() }, ...meta(req) });
+    });
+    return { code: raw.match(/.{4}/g)!.join('-'), expiresAt: expiresAt.toISOString(), minutes: RESET_MINUTES };
   });
 
   // ---------- Permissions par rôle (paramétrables, CdC §8) ----------

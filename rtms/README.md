@@ -29,6 +29,7 @@ La v2.0 a transformé le prototype (un fichier HTML qui stockait tout dans le na
 12. [Licences : essai de 14 jours et activation](docs/12-LICENCES-ESSAI-ET-ACTIVATION.md)
 13. [Suivi GPS des trajets (parc automobile)](docs/13-SUIVI-GPS-TRAJETS.md)
 14. [Clients automatiques, classement, caisse, BL et douane (2.6)](docs/14-CLIENTS-CAISSE-BL-DOUANE.md)
+15. [Contrôle de sécurité point par point (2.6.1)](docs/15-CONTROLE-SECURITE.md)
 
 ## Démarrage rapide (développement)
 

@@ -12,7 +12,7 @@ export function mountAuth(onReady) {
   const show = (msg) => {
     session.me = null;
     root.classList.remove('hidden');
-    ['mfaform', 'enroll', 'recovery'].forEach((id) => $(`#${id}`).classList.add('hidden'));
+    ['mfaform', 'enroll', 'recovery', 'resetform', 'pwchangeform'].forEach((id) => $(`#${id}`).classList.add('hidden'));
     $('#loginform').classList.remove('hidden');
     $('#loginform').reset();
     box(msg);
@@ -25,6 +25,7 @@ export function mountAuth(onReady) {
     box('');
     $('#loginform').classList.add('hidden');
     if (m.state === 'mfa_pending') { $('#mfaform').classList.remove('hidden'); $('#mfaform').code.focus(); return; }
+    if (m.state === 'password_change') { $('#mfaform').classList.add('hidden'); $('#pwchangeform').reset(); $('#pwchangeform').classList.remove('hidden'); $('#pwchangeform').current.focus(); return; }
     if (m.state === 'mfa_enroll') {
       const s = await post('/api/auth/mfa/setup');
       $('#qrimg').src = `data:image/svg+xml;base64,${btoa(s.qrSvg)}`;
@@ -55,6 +56,41 @@ export function mountAuth(onReady) {
       $('#codes').innerHTML = r.recoveryCodes.map((c) => `<span>${esc(c)}</span>`).join('');
       $('#recovery').classList.remove('hidden');
     } catch (err) { $('#loginerr').innerHTML = errorBox(err); }
+  });
+  // Mot de passe provisoire à remplacer (nouvel utilisateur)
+  $('#pwchangeform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    if (!f.reportValidity()) return;
+    if (f.next.value !== f.confirm.value) { box('Les deux nouveaux mots de passe ne sont pas identiques.'); return; }
+    try {
+      const r = await post('/api/auth/password', { current: f.current.value, next: f.next.value });
+      $('#pwchangeform').classList.add('hidden');
+      await after(r);
+    } catch (err) { $('#loginerr').innerHTML = errorBox(err); if (err.status === 401 && err.body.code !== 'identifiants_invalides') show(err.message); }
+  });
+  // Mot de passe oublié : code donné par l'administrateur
+  root.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-act=forgot]')) return;
+    $('#loginform').classList.add('hidden');
+    $('#resetform').reset();
+    $('#resetform').email.value = $('#loginform').email.value;
+    $('#resetform').classList.remove('hidden');
+    box('');
+    $('#resetform').code.focus();
+  });
+  $('#resetform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    if (!f.reportValidity()) return;
+    try {
+      await post('/api/auth/password/reset', { email: f.email.value.trim(), code: f.code.value.trim(), next: f.next.value });
+      const email = f.email.value.trim();
+      show('Mot de passe changé. Connectez-vous avec le nouveau mot de passe.');
+      $('#loginform [name=email]').value = email;
+      $('#loginerr').firstElementChild.className = 'ok';
+      $('#loginform [name=password]').focus();
+    } catch (err) { $('#loginerr').innerHTML = errorBox(err); f.next.value = ''; }
   });
   $('#recovery [data-act=enter-app]').addEventListener('click', () => { root.classList.add('hidden'); onReady(me); });
   root.addEventListener('click', (e) => { if (e.target.closest('[data-act=auth-cancel]')) { post('/api/auth/logout').catch(() => {}); show(); } });

@@ -98,6 +98,8 @@ export const MODULE_DEFS: Record<ModuleKey, ModuleDef> = {
 };
 
 const MAX_TEXT = 500;
+/** Plafond des montants et quantités : 1 000 milliards. Au-delà, c'est une erreur de saisie (et le calcul perdrait sa précision). */
+export const MAX_AMOUNT = 1e12;
 const MAX_LONG = 4000;
 const dateRe = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -107,7 +109,7 @@ function fieldSchema(f: FieldDef) {
     case 'number': {
       let num = z.coerce.number({ error: `${f.name} : nombre attendu` }).finite();
       if (f.min !== undefined) num = num.min(f.min, `${f.name} : valeur minimale ${f.min}`);
-      if (f.max !== undefined) num = num.max(f.max, `${f.name} : valeur maximale ${f.max}`);
+      num = num.max(f.max ?? MAX_AMOUNT, `${f.name} : valeur maximale ${(f.max ?? MAX_AMOUNT).toLocaleString('fr-FR')}`);
       s = num;
       break;
     }
@@ -120,8 +122,8 @@ function fieldSchema(f: FieldDef) {
     case 'lines':
       s = z.array(z.object({
         'Désignation': z.string().trim().min(1, 'Ligne de facture : désignation obligatoire').max(300),
-        'Quantité': z.coerce.number().finite().positive('Ligne de facture : quantité supérieure à 0'),
-        'Prix unitaire (FCFA)': z.coerce.number().finite().min(0, 'Ligne de facture : prix unitaire positif'),
+        'Quantité': z.coerce.number().finite().positive('Ligne de facture : quantité supérieure à 0').max(1e6, 'Ligne de facture : quantité trop grande'),
+        'Prix unitaire (FCFA)': z.coerce.number().finite().min(0, 'Ligne de facture : prix unitaire positif').max(MAX_AMOUNT, 'Ligne de facture : prix unitaire trop grand'),
       }).strict()).max(30, 'Lignes : 30 au maximum');
       break;
     default:

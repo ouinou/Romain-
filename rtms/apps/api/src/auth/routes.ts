@@ -25,10 +25,12 @@ const loginKey = (req: FastifyRequest) => {
   return `l:${req.ip}:${typeof email === 'string' ? sha256(email.toLowerCase()).slice(0, 16) : '-'}`;
 };
 const MAX_MFA_ATTEMPTS = 5;
+/** Code de réinitialisation : majuscules, sans tirets ni espaces (saisie tolérante). */
+export const normalizeResetCode = (c: string) => c.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 interface FoundUser {
   id: string; company_id: string; password_hash: string; status: string;
-  locked_until: Date | null; mfa_enabled: boolean; role_key: string; full_name: string;
+  locked_until: Date | null; mfa_enabled: boolean; role_key: string; full_name: string; must_change_password: boolean;
 }
 
 export function authRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -78,6 +80,8 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     if (u.locked_until && u.locked_until > new Date()) {
       await burnDummyVerify(body.data.password);
+      // Essais sur un compte verrouillé : tracés aussi (sinon une attaque devient invisible après le verrouillage)
+      await withTenant(ctx.prisma, tenant, (tx) => audit(tx, { ...tenant, action: 'auth.login_blocked', entity: 'user', entityId: u.id, ...meta(req) }));
       throw new HttpError(423, 'compte_verrouille', 'Compte temporairement verrouillé après plusieurs échecs. Réessayez plus tard.');
     }
 
@@ -101,7 +105,8 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
       await audit(tx, { ...tenant, action: 'auth.password_ok', entity: 'user', entityId: u.id, ...meta(req) });
     });
 
-    const state: SessionData['state'] = u.mfa_enabled ? 'mfa_pending' : mfaRequiredRoles.has(u.role_key) ? 'mfa_enroll' : 'active';
+    // Ordre : code MFA d'abord (si activé), puis mot de passe provisoire à remplacer, puis enrôlement MFA
+    const state: SessionData['state'] = u.mfa_enabled ? 'mfa_pending' : u.must_change_password ? 'password_change' : mfaRequiredRoles.has(u.role_key) ? 'mfa_enroll' : 'active';
     const { token, session } = await ctx.sessions.create({
       userId: u.id, companyId: u.company_id, roleKey: u.role_key, fullName: u.full_name, state,
       ip: req.ip, ua: req.headers['user-agent']?.slice(0, 200),
@@ -150,7 +155,7 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
       throw new HttpError(401, 'mfa_invalide', 'Code incorrect');
     }
 
-    const { token, session } = await ctx.sessions.rotate(req.sessionToken!, s, { state: 'active', mfaAttempts: 0 });
+    const { token, session } = await ctx.sessions.rotate(req.sessionToken!, s, { state: user.mustChangePassword ? 'password_change' : 'active', mfaAttempts: 0 });
     await withTenant(ctx.prisma, tenant, (tx) => audit(tx, { ...tenant, action: usedRecovery ? 'auth.login_recovery_code' : 'auth.login', entity: 'user', entityId: s.userId, ...meta(req) }));
     setCookie(reply, token);
     return publicSession(session);
@@ -209,10 +214,11 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // ---------- Changement de mot de passe : révoque les autres sessions ----------
+  // Aussi le passage obligé d'un nouvel utilisateur (mot de passe provisoire → personnel).
   app.post('/api/auth/password', {
-    preHandler: requireSession(ctx),
+    preHandler: requireSession(ctx, ['active', 'password_change']),
     config: { rateLimit: { max: 5, timeWindow: '15 minutes', hook: 'preHandler', keyGenerator: userKey } },
-  }, async (req) => {
+  }, async (req, reply) => {
     const s = req.session!;
     const body = z.object({ current: z.string().min(1).max(200), next: z.string().min(1).max(200) }).safeParse(req.body);
     if (!body.success) throw badRequest('Champs manquants');
@@ -223,10 +229,45 @@ export function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (safeEqual(body.data.current, body.data.next)) throw badRequest('Le nouveau mot de passe doit être différent');
     const hash = await hashPassword(body.data.next);
     await withTenant(ctx.prisma, s, async (tx) => {
-      await tx.user.update({ where: { id: s.userId }, data: { passwordHash: hash, passwordChangedAt: new Date() } });
+      await tx.user.update({ where: { id: s.userId }, data: { passwordHash: hash, passwordChangedAt: new Date(), mustChangePassword: false } });
       await audit(tx, { companyId: s.companyId, userId: s.userId, action: 'auth.password_changed', entity: 'user', entityId: s.userId, ...meta(req) });
     });
     await ctx.sessions.destroyAllForUser(s.userId, req.sessionToken);
+    if (s.state === 'password_change') {
+      const next: SessionData['state'] = !user.mfaEnabled && mfaRequiredRoles.has(user.roleKey) ? 'mfa_enroll' : 'active';
+      const { token, session } = await ctx.sessions.rotate(req.sessionToken!, s, { state: next });
+      setCookie(reply, token);
+      return { ok: true, ...(await publicSession(session)) };
+    }
+    return { ok: true };
+  });
+
+  // ---------- Mot de passe oublié : code donné par l'administrateur ----------
+  // Pas d'e-mail (le poste principal fonctionne hors ligne) : l'administrateur génère un code à
+  // usage unique, valable 30 minutes, qu'il remet à la personne. Le code seul ne suffit pas :
+  // il faut aussi l'e-mail du compte. Après usage, toutes les sessions du compte sont fermées.
+  app.post('/api/auth/password/reset', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes', hook: 'preHandler', keyGenerator: loginKey } },
+  }, async (req) => {
+    const body = z.object({ email: z.string().trim().email().max(200), code: z.string().trim().min(8).max(40), next: z.string().min(1).max(200) }).strict().safeParse(req.body);
+    if (!body.success) throw badRequest('E-mail, code et nouveau mot de passe requis');
+    const email = body.data.email.toLowerCase();
+    // Le mot de passe est contrôlé AVANT de consommer le code : une erreur de saisie ne le gaspille pas
+    const problems = passwordProblems(body.data.next, email);
+    if (problems.length) throw badRequest(`Mot de passe refusé : ${problems.join(', ')}`, problems);
+    const hash = await hashPassword(body.data.next);
+    const codeHash = sha256(normalizeResetCode(body.data.code));
+    const [r] = await ctx.prisma.$queryRaw<{ user_id: string; company_id: string }[]>`SELECT * FROM auth_redeem_reset(${email}, ${codeHash})`;
+    if (!r) {
+      await ctx.prisma.$transaction((tx) => audit(tx, { action: 'auth.reset_failed', entity: 'user', after: { emailHash: sha256(email) }, ...meta(req) }));
+      throw new HttpError(400, 'code_invalide', 'Code invalide, expiré ou déjà utilisé. Demandez un nouveau code à l’administrateur.');
+    }
+    const tenant = { companyId: r.company_id, userId: r.user_id };
+    await withTenant(ctx.prisma, tenant, async (tx) => {
+      await tx.user.update({ where: { id: r.user_id }, data: { passwordHash: hash, passwordChangedAt: new Date(), mustChangePassword: false, failedLogins: 0, lockedUntil: null } });
+      await audit(tx, { ...tenant, action: 'auth.password_reset', entity: 'user', entityId: r.user_id, ...meta(req) });
+    });
+    await ctx.sessions.destroyAllForUser(r.user_id);
     return { ok: true };
   });
 }

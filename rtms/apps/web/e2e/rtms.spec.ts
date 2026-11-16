@@ -551,6 +551,73 @@ test('suivi GPS : import d’un trajet GPX sur la fiche véhicule, tracé, chiff
   await page.keyboard.press('Escape');
 });
 
+test('sécurité : un nom de client piégé (XSS) s’affiche comme du texte, sans s’exécuter', async () => {
+  const evil = '<img src=x onerror="window.__xss=1">Client piégé';
+  await tool('clients').click();
+  await cmd.click('record.new');
+  await activePane().locator('[name="Nom / raison sociale"]').fill(evil);
+  await page.keyboard.press('Control+s');
+  await expect(activePane().locator('.record-form.reading')).toBeVisible();
+  await tool('clients').click();
+  await cmd.click('view.refresh');
+  await expect(activePane().locator('tbody')).toContainText('<img src=x');
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('piégé');
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
+  expect(await activePane().locator('tbody img').count()).toBe(0);
+});
+
+test('nouvel utilisateur : mot de passe provisoire à changer, puis code « mot de passe oublié »', async ({ browser }) => {
+  // L'administrateur crée le compte
+  await tool('admin').click();
+  await activePane().locator('[data-section=users]').click();
+  const email = `chauffeur-${Date.now()}@raha.test`;
+  await activePane().locator('[data-act=add-user]').click();
+  await page.locator('.dlg [name=fullName]').fill('Chauffeur Sécurité');
+  await page.locator('.dlg [name=email]').fill(email);
+  await page.locator('.dlg [name=roleKey]').selectOption('transport');
+  await page.locator('.dlg .btn', { hasText: 'Créer' }).click();
+  const temp = (await page.locator('.dlg .secret').textContent())!.trim();
+  await page.locator('.dlg .btn', { hasText: 'J’ai noté' }).click();
+  // Première connexion, dans un autre navigateur : changement obligatoire
+  const ctx2 = await browser.newContext();
+  const p2 = await ctx2.newPage();
+  await p2.goto('/');
+  await p2.fill('#loginform [name=email]', email);
+  await p2.fill('#loginform [name=password]', temp);
+  await p2.click('#loginform button.btn');
+  await expect(p2.locator('#pwchangeform')).toBeVisible();
+  await p2.fill('#pwchangeform [name=current]', temp);
+  await p2.fill('#pwchangeform [name=next]', 'Mon mot de passe personnel 2026');
+  await p2.fill('#pwchangeform [name=confirm]', 'Mon mot de passe personnel 2026');
+  await p2.click('#pwchangeform button.btn:not(.secondary)');
+  await expect(p2.locator('.statusbar')).toContainText('Connecté');
+  await ctx2.close();
+  // Mot de passe oublié : l'administrateur crée un code
+  await activePane().locator('tbody tr', { hasText: email }).locator('[data-act=reset-code]').click();
+  await page.locator('.dlg .btn', { hasText: 'Créer le code' }).click();
+  const code = (await page.locator('.dlg .secret').textContent())!.trim();
+  expect(code).toMatch(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  await page.locator('.dlg .btn', { hasText: 'Fermer' }).click();
+  const ctx3 = await browser.newContext();
+  const p3 = await ctx3.newPage();
+  await p3.goto('/');
+  await p3.click('[data-act=forgot]');
+  await p3.fill('#resetform [name=email]', email);
+  await p3.fill('#resetform [name=code]', code);
+  await p3.fill('#resetform [name=next]', 'Encore un nouveau mot de passe 77');
+  await p3.click('#resetform button.btn:not(.secondary)');
+  await expect(p3.locator('#loginerr .ok')).toContainText('Mot de passe changé');
+  await p3.fill('#loginform [name=password]', 'Encore un nouveau mot de passe 77');
+  await p3.click('#loginform button.btn');
+  await expect(p3.locator('.statusbar')).toContainText('Connecté');
+  // Le même code ne resservira pas
+  await p3.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+  await ctx3.close();
+});
+
 test('disposition stable en HD, Full HD et écran large (aucun débordement)', async () => {
   for (const [w, hgt] of [[1280, 720], [1366, 768], [1920, 1080], [2560, 1440]]) {
     await page.setViewportSize({ width: w, height: hgt });

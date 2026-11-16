@@ -7,6 +7,7 @@
  * - Isolation par société : RLS PostgreSQL (withTenant), comme pour les enregistrements.
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { audit } from '../audit/audit.js';
 import type { AppContext } from '../context.js';
@@ -44,13 +45,14 @@ type TrackRow = {
   pointCount: number; distanceM: number; movingS: number; maxSpeedKmh: string; stops: unknown; bbox: unknown; createdAt: Date; createdBy: string | null;
 };
 
-const SELECT = `
-  SELECT t.id, t.vehicle_id AS "vehicleId", v.reference AS vehicle, v.data->>'Marque / modèle' AS "vehicleModel",
+// Requêtes entièrement paramétrées (Prisma.sql) : aucune valeur n'est collée dans le texte SQL.
+const COLUMNS = Prisma.sql`
+  t.id, t.vehicle_id AS "vehicleId", v.reference AS vehicle, v.data->>'Marque / modèle' AS "vehicleModel",
          t.mission_id AS "missionId", m.reference AS mission, t.driver, t.label, t.source, t.file_name AS "fileName",
          t.started_at AS "startedAt", t.ended_at AS "endedAt", t.point_count AS "pointCount", t.distance_m AS "distanceM",
          t.moving_s AS "movingS", t.max_speed_kmh::text AS "maxSpeedKmh", t.stops, t.bbox, t.created_at AS "createdAt",
-         u.full_name AS "createdBy"
-    FROM gps_tracks t
+         u.full_name AS "createdBy"`;
+const FROM = Prisma.sql`    FROM gps_tracks t
     JOIN records v ON v.id = t.vehicle_id
     LEFT JOIN records m ON m.id = t.mission_id
     LEFT JOIN users u ON u.id = t.created_by`;
@@ -80,19 +82,17 @@ export function gpsRoutes(app: FastifyInstance, ctx: AppContext) {
     }).safeParse(req.query);
     if (!p.success) throw badRequest('Paramètres invalides');
     const q = p.data;
-    const cond: string[] = ['t.cancelled_at IS NULL'];
-    const args: unknown[] = [];
-    const add = (sql: string, v: unknown) => { args.push(v); cond.push(sql.replace('?', `$${args.length}`)); };
-    if (q.vehicle) add('t.vehicle_id = ?::uuid', q.vehicle);
-    if (q.mission) add('t.mission_id = ?::uuid', q.mission);
+    const cond: Prisma.Sql[] = [Prisma.sql`t.cancelled_at IS NULL`];
+    if (q.vehicle) cond.push(Prisma.sql`t.vehicle_id = ${q.vehicle}::uuid`);
+    if (q.mission) cond.push(Prisma.sql`t.mission_id = ${q.mission}::uuid`);
     // Journées au fuseau du Cameroun (UTC+1)
-    if (q.from) add("t.started_at >= ((?::date)::timestamp - interval '1 hour') AT TIME ZONE 'UTC'", q.from);
-    if (q.to) add("t.started_at < (((?::date) + 1)::timestamp - interval '1 hour') AT TIME ZONE 'UTC'", q.to);
-    const where = cond.join(' AND ');
+    if (q.from) cond.push(Prisma.sql`t.started_at >= ((${q.from}::date)::timestamp - interval '1 hour') AT TIME ZONE 'UTC'`);
+    if (q.to) cond.push(Prisma.sql`t.started_at < (((${q.to}::date) + 1)::timestamp - interval '1 hour') AT TIME ZONE 'UTC'`);
+    const where = Prisma.join(cond, ' AND ');
     return withTenant(ctx.prisma, tenant(req), async (tx) => {
-      const rows = await tx.$queryRawUnsafe<TrackRow[]>(`${SELECT} WHERE ${where} ORDER BY t.started_at DESC, t.id DESC LIMIT ${q.limit} OFFSET ${q.offset}`, ...args);
-      const [tot] = await tx.$queryRawUnsafe<[{ n: bigint; distance: bigint | null; moving: bigint | null }]>(
-        `SELECT count(*) AS n, sum(t.distance_m) AS distance, sum(t.moving_s) AS moving FROM gps_tracks t WHERE ${where}`, ...args);
+      const rows = await tx.$queryRaw<TrackRow[]>`SELECT ${COLUMNS} ${FROM} WHERE ${where} ORDER BY t.started_at DESC, t.id DESC LIMIT ${q.limit} OFFSET ${q.offset}`;
+      const [tot] = await tx.$queryRaw<[{ n: bigint; distance: bigint | null; moving: bigint | null }]>`
+        SELECT count(*) AS n, sum(t.distance_m) AS distance, sum(t.moving_s) AS moving FROM gps_tracks t WHERE ${where}`;
       return { rows: rows.map(present), total: Number(tot.n), totals: { distanceM: Number(tot.distance ?? 0), movingS: Number(tot.moving ?? 0) } };
     });
   });
@@ -101,7 +101,7 @@ export function gpsRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/api/gps/tracks/:id', { preHandler: requirePermission(ctx, 'fleet', 'read') }, async (req) => {
     const id = idParam(req);
     return withTenant(ctx.prisma, tenant(req), async (tx) => {
-      const rows = await tx.$queryRawUnsafe<(TrackRow & { points: unknown })[]>(`${SELECT.replace('u.full_name AS "createdBy"', 'u.full_name AS "createdBy", t.points')} WHERE t.id = $1::uuid AND t.cancelled_at IS NULL`, id);
+      const rows = await tx.$queryRaw<(TrackRow & { points: unknown })[]>`SELECT ${COLUMNS}, t.points ${FROM} WHERE t.id = ${id}::uuid AND t.cancelled_at IS NULL`;
       if (!rows.length) throw notFound('Trajet introuvable');
       return present(rows[0]!);
     });

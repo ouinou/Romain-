@@ -1,5 +1,17 @@
 # Journal des versions
 
+## 2.6.1 — 16/11/2026
+Contrôle de sécurité en 25 points. Détail : `docs/15-CONTROLE-SECURITE.md`.
+- Mot de passe oublié : code donné par l'administrateur, à usage unique, valable 30 minutes, lié à l'e-mail du compte ; sessions fermées après usage (migration `0009_password_reset`).
+- Mot de passe provisoire d'un nouvel utilisateur : changement obligatoire avant tout accès.
+- Essais de connexion sur un compte verrouillé désormais enregistrés ; alertes de sécurité (compte verrouillé, échecs répétés) pour les profils qui lisent l'audit.
+- Requêtes du suivi GPS entièrement paramétrées.
+- Serveur : liste blanche des fichiers servis (plus de `package.json`, tests, `node_modules` ni démonstration exposés) ; corps de requête JSON uniquement.
+- Montants et quantités plafonnés (1 000 milliards / 1 million).
+- Production : refus de démarrer avec journaux de débogage, mots de passe d'exemple ou jeton de supervision trop court.
+- Paquet inutilisé `@fastify/cors` retiré. `npm audit` : 0 vulnérabilité. Historique Git contrôlé : aucun secret.
+- Vérifié : API 141/141, navigateur 27/27, application de bureau, réseau local hors ligne à deux postes.
+
 ## 2.6.0 — 15/11/2026
 Suite de la visite chez RAHA TRANSPORT. Détails : `docs/14-CLIENTS-CAISSE-BL-DOUANE.md`.
 - Clients enregistrés automatiquement à la facture, à la mission, au dossier de transit ou au BL (téléphone repris de la facture, sans doublon, tracé dans l'audit).

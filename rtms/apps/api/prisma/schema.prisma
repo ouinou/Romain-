@@ -38,6 +38,8 @@ model User {
   mfaEnabled        Boolean   @default(false) @map("mfa_enabled")
   mfaSecretEnc      String?   @map("mfa_secret_enc")
   recoveryCodes     Json      @default("[]") @map("recovery_codes") // empreintes argon2
+  /// Mot de passe provisoire à remplacer à la prochaine connexion (migration 0009)
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
   passwordChangedAt DateTime  @default(now()) @map("password_changed_at") @db.Timestamptz(3)
   lastLoginAt       DateTime? @map("last_login_at") @db.Timestamptz(3)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -112,6 +114,20 @@ model GpsTrack {
   cancelReason String?   @map("cancel_reason")
 
   @@map("gps_tracks")
+}
+
+/// Code de réinitialisation du mot de passe (migration 0009) : empreinte SHA-256 seulement, usage unique.
+model PasswordReset {
+  id         String    @id @default(uuid()) @db.Uuid
+  companyId  String    @map("company_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt     DateTime? @map("used_at") @db.Timestamptz(3)
+  createdById String   @map("created_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("password_resets")
 }
 
 /// Compteur de numérotation automatique (factures : F-AAAA-NNNN). Voir migration 0005.

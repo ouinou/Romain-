@@ -42,6 +42,7 @@ export function requireSession(ctx: AppContext, allowStates: SessionData['state'
     const s = req.session;
     if (!s) throw unauthorized();
     if (!allowStates.includes(s.state)) {
+      if (s.state === 'password_change') throw new HttpError(401, 'changement_mot_de_passe_requis', 'Choisissez d’abord votre mot de passe personnel');
       throw new HttpError(401, s.state === 'mfa_enroll' ? 'mfa_enrolement_requis' : 'mfa_requis', 'Vérification en deux étapes requise');
     }
     req.perms ??= await loadPermissions(ctx, s.companyId, s.roleKey);

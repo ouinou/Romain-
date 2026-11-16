@@ -34,7 +34,28 @@ export function labelOf(module: ModuleKey, data: Record<string, unknown>): { tit
   }
 }
 
-interface Notice { module: ModuleKey; id: string; reference: string | null; level: 'warning' | 'danger'; message: string; due: string | null }
+interface Notice { module: ModuleKey | 'security'; id: string; reference: string | null; level: 'warning' | 'danger'; message: string; due: string | null }
+
+/**
+ * Alertes de sécurité tirées du journal d'audit :
+ * - compte verrouillé en ce moment (5 échecs de mot de passe ou plus) ;
+ * - 10 échecs de connexion, de code MFA ou de code de réinitialisation ou plus en 24 h.
+ */
+export const SUSPICIOUS_FAILURES_24H = 10;
+async function securityNotices(ctx: AppContext, t: { companyId: string; userId: string }): Promise<Notice[]> {
+  return withTenant(ctx.prisma, t, async (tx) => {
+    const locked = await tx.$queryRaw<{ id: string; full_name: string; locked_until: Date }[]>`
+      SELECT id, full_name, locked_until FROM users WHERE locked_until > now() ORDER BY locked_until DESC LIMIT 20`;
+    const [f] = await tx.$queryRaw<[{ n: bigint }]>`
+      SELECT count(*) AS n FROM audit_log
+       WHERE company_id = ${t.companyId}::uuid AND at > now() - interval '24 hours'
+         AND action IN ('auth.login_failed', 'auth.login_blocked', 'auth.mfa_failed', 'auth.reset_failed')`;
+    const out: Notice[] = locked.map((u) => ({ module: 'security', id: 'audit', reference: null, level: 'danger',
+      message: `Compte verrouillé après plusieurs mots de passe erronés — ${u.full_name}`, due: null }));
+    if (Number(f.n) >= SUSPICIOUS_FAILURES_24H) out.push({ module: 'security', id: 'audit', reference: null, level: 'danger', message: `${f.n} tentatives de connexion échouées en 24 h : vérifiez le journal d’audit`, due: null });
+    return out;
+  });
+}
 
 export function workspaceRoutes(app: FastifyInstance, ctx: AppContext) {
   const tenant = (req: FastifyRequest) => ({ companyId: req.session!.companyId, userId: req.session!.userId });
@@ -152,7 +173,9 @@ export function workspaceRoutes(app: FastifyInstance, ctx: AppContext) {
         LIMIT 200`);
       await ctx.redis.set(key, JSON.stringify(all), 'EX', 600);
     }
-    const items = all.filter((n) => can.has(n.module));
+    const items: Notice[] = all.filter((n) => can.has(n.module as ModuleKey));
+    // Activité suspecte : visible des profils qui lisent le journal d'audit (calculée à chaque appel)
+    if (req.perms!.has('audit:read')) items.unshift(...(await securityNotices(ctx, tenant(req))));
     const counts: Record<string, number> = {};
     for (const n of items) counts[n.module] = (counts[n.module] ?? 0) + 1;
     return { items, counts };

@@ -7,7 +7,8 @@
 import type { Redis } from 'ioredis';
 import { randomToken, sha256 } from '../crypto.js';
 
-export type SessionState = 'active' | 'mfa_pending' | 'mfa_enroll';
+/** password_change : mot de passe provisoire à remplacer avant tout accès (nouvel utilisateur). */
+export type SessionState = 'active' | 'mfa_pending' | 'mfa_enroll' | 'password_change';
 
 export interface SessionData {
   userId: string;

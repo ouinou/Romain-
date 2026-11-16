@@ -35,6 +35,7 @@ export class AdminView extends SectionedView {
             <td>${esc(dateTimeFr(u.lastLoginAt))}</td>
             ${admin ? `<td class="row-actions">${self ? '<span class="muted small">vous</span>' : `
               ${locked ? `<button type="button" class="btn secondary sm" data-act="unlock" data-id="${esc(u.id)}">Déverrouiller</button>` : ''}
+              ${u.status === 'active' ? `<button type="button" class="btn secondary sm" data-act="reset-code" data-id="${esc(u.id)}" data-name="${esc(u.fullName)}" title="Mot de passe oublié : code à usage unique, valable 30 minutes">Code mot de passe oublié</button>` : ''}
               ${u.mfaEnabled ? `<button type="button" class="btn secondary sm" data-act="reset-mfa" data-id="${esc(u.id)}" data-name="${esc(u.fullName)}">Réinitialiser MFA</button>` : ''}
               <button type="button" class="btn secondary sm" data-act="${u.status === 'active' ? 'disable' : 'enable'}" data-id="${esc(u.id)}" data-name="${esc(u.fullName)}">${u.status === 'active' ? 'Désactiver' : 'Réactiver'}</button>`}</td>` : ''}</tr>`;
         }).join('')}</tbody></table></div>
@@ -103,6 +104,13 @@ export class AdminView extends SectionedView {
         await dialog({ title: 'Utilisateur créé', body: `<p>Mot de passe provisoire à transmettre en main propre :</p><p class="secret">${esc(u.temporaryPassword)}</p><p class="muted small">Il ne sera plus affiché. L’utilisateur devra le changer.</p>`, actions: [{ label: 'J’ai noté le mot de passe', value: true }] });
         emit('operation', { message: `Utilisateur créé : ${r.fullName}` });
         return this.show();
+      }
+      if (act === 'reset-code') {
+        if (!(await confirmDialog(`Créer un code de réinitialisation du mot de passe pour ${btn.dataset.name} ?`, { detail: 'Le code précédent, s’il existe, est annulé. Remettez le nouveau code en main propre ou par téléphone, jamais par écrit dans un groupe.', ok: 'Créer le code' }))) return undefined;
+        const r = await post(`/api/admin/users/${id}/reset-code`);
+        emit('operation', { message: `Code de réinitialisation créé pour ${btn.dataset.name}` });
+        await dialog({ title: 'Code de réinitialisation', body: `<p>À transmettre à <b>${esc(btn.dataset.name)}</b> :</p><p class="secret">${esc(r.code)}</p><p class="muted small">Valable ${esc(r.minutes)} minutes (jusqu’à ${esc(new Date(r.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))}), une seule fois. Sur l’écran de connexion : « Mot de passe oublié ? », puis e-mail, code et nouveau mot de passe. Toutes ses sessions ouvertes seront fermées.</p>`, actions: [{ label: 'Fermer', value: true }] });
+        return undefined;
       }
       if (act === 'unlock') { await patch(`/api/admin/users/${id}`, { unlock: true }); emit('toast', { type: 'success', message: 'Compte déverrouillé.' }); return this.show(); }
       if (act === 'reset-mfa') {

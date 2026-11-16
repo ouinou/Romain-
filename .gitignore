@@ -22,3 +22,10 @@ rtms/apps/desktop/build-server/
 *cle-privee*
 *.private.pem
 rtms/livraison/*.exe
+
+# Sécurité (2.6.1) : jamais de configuration locale ni de sauvegarde dans Git
+.env
+.env.*
+!.env.example
+*.rtmsbak
+*.rtmsbak.sha256

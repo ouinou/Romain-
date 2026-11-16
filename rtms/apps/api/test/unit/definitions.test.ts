@@ -72,3 +72,15 @@ describe('Montant en lettres', () => {
     expect(amountInFrenchWords(n as number)).toBe(`${words} francs CFA`);
   });
 });
+
+describe('Montants : plafonds (2.6.1)', () => {
+  it('refuse un montant ou une quantité absurdes, qui fausseraient les totaux', () => {
+    expect(recordSchema('finance').safeParse({ 'Type (Recette/Dépense)': 'Recette', 'Libellé': 'x', 'Montant (FCFA)': 1e300, Date: '2026-11-16' }).success).toBe(false);
+    expect(recordSchema('finance').safeParse({ 'Type (Recette/Dépense)': 'Recette', 'Libellé': 'x', 'Montant (FCFA)': -5, Date: '2026-11-16' }).success).toBe(false);
+    expect(recordSchema('finance').safeParse({ 'Type (Recette/Dépense)': 'Recette', 'Libellé': 'x', 'Montant (FCFA)': 25_000_000, Date: '2026-11-16' }).success).toBe(true);
+    const inv = (q: number, p: number) => recordSchema('invoices').safeParse({ 'Numéro de facture': 'F-1', Client: 'C', Date: '2026-11-16', Statut: 'Brouillon', Lignes: [{ 'Désignation': 'T', 'Quantité': q, 'Prix unitaire (FCFA)': p }] }).success;
+    expect(inv(1e9, 10)).toBe(false);
+    expect(inv(2, 1e13)).toBe(false);
+    expect(inv(2, 450000)).toBe(true);
+  });
+});
