@@ -39,7 +39,7 @@
   var cache = null;
   function load() {
     if (cache) return cache;
-    cache = fetch(SB + "/rest/v1/site_content?select=key,value&key=in.(articles,formations,contact)", {
+    cache = fetch(SB + "/rest/v1/site_content?select=key,value&key=in.(articles,formations,contact,testimonials)", {
       headers: { apikey: KEY, Authorization: "Bearer " + KEY }
     }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (rows) { var o = {}; rows.forEach(function (x) { o[x.key] = x.value; }); return o; });
@@ -109,6 +109,14 @@
     return el("article", { class: "course" }, [left, right]);
   }
 
+  // Témoignage
+  function quote(q) {
+    var who = el("figcaption", null, [el("strong", { text: q.name || "" })]);
+    var role = [q.title, q.company].filter(Boolean).join(" · ");
+    if (role) who.appendChild(el("span", { text: role }));
+    return el("figure", { class: "quote" }, [el("blockquote", { text: "« " + String(q.text || "").trim() + " »" }), who]);
+  }
+
   function fail(box, msg) { clear(box); box.appendChild(el("p", { class: "muted", text: msg })); }
 
   var latest = document.getElementById("dernieres-actualites");
@@ -116,9 +124,17 @@
   var courses = document.getElementById("liste-formations");
   var art = document.getElementById("article");
   var info = document.getElementById("coordonnees");
+  var quotes = document.getElementById("liste-temoignages");
 
-  if (latest || list || courses || art || info) load().then(function (d) {
+  if (latest || list || courses || art || info || quotes) load().then(function (d) {
     var arts = articles(d);
+    if (quotes) {
+      clear(quotes);
+      var ts = Array.isArray(d.testimonials) ? d.testimonials : [];
+      var max = parseInt(quotes.getAttribute("data-max") || "0", 10);
+      (max ? ts.slice(0, max) : ts).forEach(function (q) { quotes.appendChild(quote(q)); });
+      if (!ts.length) fail(quotes, "Témoignages à venir.");
+    }
     if (latest) { clear(latest); arts.slice(0, 3).forEach(function (a) { latest.appendChild(articleCard(a)); }); }
     if (list) { clear(list); if (!arts.length) fail(list, "Aucune actualité pour le moment."); arts.forEach(function (a) { list.appendChild(articleCard(a)); }); }
     if (courses) {
@@ -151,7 +167,7 @@
       });
     }
   }).catch(function () {
-    [latest, list, courses].forEach(function (b) { if (b) fail(b, "Le contenu n'a pas pu être chargé. Réessayez dans un instant ou écrivez-nous sur WhatsApp."); });
+    [latest, list, courses, quotes].forEach(function (b) { if (b) fail(b, "Le contenu n'a pas pu être chargé. Réessayez dans un instant ou écrivez-nous sur WhatsApp."); });
     if (art) fail(art, "L'article n'a pas pu être chargé. Réessayez dans un instant.");
   });
 
