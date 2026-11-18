@@ -320,7 +320,7 @@ f"""<section>
           <li>L'ESSEC de l'Université de Douala</li>
           <li>Le Complexe scolaire Les Bourgeons</li>
           <li>RAHA</li>
-          <li>L'ASEESDT</li>
+          <li>L'ASEESTD</li>
           <li>La FJSP de l'Université de Douala (2025)</li>
           <li>La FLHS de l'Université de Douala (2024-2025)</li>
           <li>Keylang Centre (2026)</li>
@@ -344,13 +344,13 @@ f"""<section>
 </section>
 <section>
   <div class="wrap split">
-    <div class="photo" style="aspect-ratio:4/5;max-width:440px"><img src="/photos/semaine-culturelle-aseesdt.jpg" alt="Le fondateur d'ITI salue le président de l'ASEESDT lors de la Semaine culturelle 2026 à Douala" loading="lazy" style="object-position:center 25%"></div>
+    <div class="photo" style="aspect-ratio:4/5;max-width:440px"><img src="/photos/semaine-culturelle-aseestd.jpg" alt="Le fondateur d'ITI salue le président de l'ASEESTD lors de la Semaine culturelle 2026 à Douala" loading="lazy" style="object-position:center 25%"></div>
     <div>
       <p class="eyebrow">Partenaire officiel · Semaine culturelle 2026</p>
       <h2>Aux côtés des étudiants tchadiens de Douala</h2>
-      <p>ITI a été partenaire officiel de la Semaine culturelle 2026 de l'ASEESDT, l'Association des élèves, étudiants et stagiaires tchadiens de Douala, organisée sous le patronage du Consulat général du Tchad à Douala.</p>
+      <p>ITI a été partenaire officiel de la Semaine culturelle 2026 de l'ASEESTD, l'Association des élèves, étudiants et stagiaires tchadiens de Douala, organisée sous le patronage du Consulat général du Tchad à Douala.</p>
       <p>Le thème de cette édition, « Potentiel de la diaspora tchadienne : entre la valorisation du patrimoine et les défis de l'employabilité », rejoint notre mission : donner aux jeunes des compétences qui ouvrent la porte de l'emploi.</p>
-      <p class="muted">Sur la photo : Ouinou Ngassala Romain, fondateur d'ITI, avec le président de l'ASEESDT.</p>
+      <p class="muted">Sur la photo : Ouinou Ngassala Romain, fondateur d'ITI, avec le président de l'ASEESTD.</p>
     </div>
   </div>
 </section>
