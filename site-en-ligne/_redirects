@@ -1,1 +1,14 @@
-/* /index.html 200
+# Anciennes adresses vers les nouvelles pages
+/blog          /actualites/        301
+/blog/:id      /article/?id=:id    301
+/about         /a-propos/          301
+/ceo           /a-propos/          301
+/services      /domaines/          301
+/projects      /domaines/          301
+/testimonials  /a-propos/          301
+/stats         /a-propos/          301
+/faq           /contact/           301
+# Espace d'administration et politique de confidentialité (ancienne application)
+/admin         /admin/index.html   200
+/admin/*       /admin/index.html   200
+/politique     /admin/index.html   200
