@@ -171,3 +171,20 @@ form .btn { margin-top: 20px; }
 .gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 12px; background: var(--soft); }
 .gallery figcaption { margin-top: 10px; font-weight: 600; color: var(--navy); font-size: .95rem; }
 @media (max-width: 900px) { .gallery { grid-template-columns: repeat(2, 1fr); } .banner { aspect-ratio: 16 / 9; } }
+
+/* Témoignages */
+.quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.quote { margin: 0; background: var(--white); border: 1px solid var(--line); border-top: 3px solid var(--orange); border-radius: var(--radius); padding: 26px; display: flex; flex-direction: column; gap: 18px; }
+.quote blockquote { margin: 0; color: var(--ink); font-size: 1rem; line-height: 1.7; }
+.quote figcaption { margin-top: auto; }
+.quote figcaption strong { display: block; color: var(--navy); }
+.quote figcaption span { display: block; color: var(--muted); font-size: .9rem; }
+.soft .quote { background: var(--white); }
+@media (max-width: 900px) { .quotes { grid-template-columns: 1fr; } }
+
+/* En-tête : 7 liens sur une ligne */
+.nav { gap: 22px; }
+.nav a { white-space: nowrap; }
+.brand span { white-space: nowrap; }
+@media (max-width: 1340px) { .brand small { display: none; } .nav { gap: 18px; } }
+@media (max-width: 1040px) and (min-width: 901px) { .nav a { font-size: .88rem; } .nav { gap: 14px; } }

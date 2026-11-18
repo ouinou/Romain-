@@ -36,7 +36,7 @@ CSS = fichier_versionne("site.css", "css")
 JS = fichier_versionne("site.js", "js")
 
 NAV = [("/", "Accueil"), ("/domaines/", "Domaines"), ("/formations/", "Formations"),
-       ("/actualites/", "Actualités"), ("/a-propos/", "À propos"), ("/contact/", "Contact")]
+       ("/actualites/", "Actualités"), ("/temoignages/", "Témoignages"), ("/a-propos/", "À propos"), ("/contact/", "Contact")]
 
 def page(chemin, titre, description, contenu, actif):
     nav = "".join(f'<a href="{u}"{" aria-current=\"page\"" if u == actif else ""}>{t}</a>' for u, t in NAV)
@@ -117,10 +117,10 @@ DOMAINES = [
      ["Dimensionnement des besoins", "Installation des panneaux, batteries et onduleurs", "Suivi et maintenance"]),
     ("Vidéosurveillance et sécurité électronique",
      "Installation de caméras de surveillance et de systèmes de contrôle d'accès pour les domiciles, les commerces, les entreprises et les établissements.",
-     ["Étude du site et choix du matériel", "Installation et paramétrage des caméras", "Contrôle d'accès, maintenance et suivi"]),
+     ["Étude du site et choix du matériel", "Installation et paramétrage des caméras", "Contrôle d'accès, maintenance et suivi", "Plaques signalétiques lumineuses"]),
     ("Informatique, réseaux et bureautique",
-     "Installation et maintenance de réseaux, configuration de postes et de systèmes, et formation des équipes aux outils de bureau.",
-     ["Réseaux filaires et Wi-Fi", "Configuration et maintenance des postes", "Word, Excel, PowerPoint, Outlook"]),
+     "Installation de réseaux locaux, maintenance du matériel, logiciels de gestion et formation des équipes aux outils de bureau.",
+     ["Réseaux locaux filaires et Wi-Fi", "Réparation des postes et des imprimantes", "Logiciels de gestion sur mesure et installation de logiciels", "Word, Excel, PowerPoint, Outlook"]),
     ("Intelligence artificielle",
      "Accompagnement des entreprises dans l'usage concret de l'IA, et formations pour les étudiants et les professionnels qui veulent s'en servir correctement.",
      ["Rédaction, analyse et synthèse de documents", "Automatisation des tâches administratives", "Bonnes pratiques et sécurité des données"]),
@@ -180,6 +180,13 @@ f"""<section class="hero">
   </div>
 </section>
 <section class="soft">
+  <div class="wrap">
+    <div class="section-head"><p class="eyebrow">Ils témoignent</p><h2>Ce que disent nos clients et nos apprenants</h2></div>
+    <div class="quotes" id="liste-temoignages" data-max="3"><p class="loading">Chargement des témoignages…</p></div>
+    <div class="actions"><a class="btn btn-ghost" href="/temoignages/">Tous les témoignages</a></div>
+  </div>
+</section>
+<section>
   <div class="wrap">
     <div class="section-head"><p class="eyebrow">Actualités</p><h2>Nos dernières nouvelles</h2></div>
     <div class="grid" id="dernieres-actualites"><p class="loading">Chargement des actualités…</p></div>
@@ -269,6 +276,17 @@ ecrire("actualites/index.html", page("/actualites/", "Actualités | ITI",
 ecrire("article/index.html", page("/article/", "Actualité | ITI", "Actualité de l'Incubateur Technologique de l'Innovation.",
 """<section><div class="wrap"><article class="article" id="article"><p class="loading">Chargement de l'article…</p></article></div></section>""", "/actualites/"))
 
+# Témoignages
+ecrire("temoignages/index.html", page("/temoignages/", "Témoignages de clients et d'apprenants | ITI",
+  "Ce que disent de l'ITI les étudiants de l'ESSEC, le Consulat général du Tchad à Douala, Café Gourmet, le Complexe scolaire Les Bourgeons et nos autres clients.",
+f"""<section>
+  <div class="wrap">
+    <div class="section-head"><p class="eyebrow">Témoignages</p><h1>Ils nous ont fait confiance</h1><p class="lead">Étudiants, établissements scolaires, institutions et entreprises racontent nos formations et nos interventions.</p></div>
+    <div class="quotes" id="liste-temoignages"><p class="loading">Chargement des témoignages…</p></div>
+  </div>
+</section>
+<section class="dark"><div class="wrap"><h2>Et votre projet ?</h2><div class="actions"><a class="btn btn-primary" href="/contact/">Demander un devis</a><a class="btn btn-light" href="{WA}" target="_blank" rel="noopener noreferrer">WhatsApp</a></div></div></section>""", "/temoignages/"))
+
 # À propos
 ecrire("a-propos/index.html", page("/a-propos/", "À propos d'ITI et de son fondateur | ITI",
   "Créé à Douala en 2022 par l'ingénieur en électrotechnique Ouinou Ngassala Romain, ITI forme par la pratique et intervient au Cameroun, au Tchad, en Centrafrique et au Congo.",
@@ -285,6 +303,10 @@ f"""<section>
       <div>
         <h3>Ils nous ont fait confiance</h3>
         <ul class="muted">
+          <li>Le Consulat général du Tchad à Douala</li>
+          <li>L'ESSEC de l'Université de Douala</li>
+          <li>Le Complexe scolaire Les Bourgeons</li>
+          <li>RAHA</li>
           <li>L'ASEESDT</li>
           <li>La FJSP de l'Université de Douala (2025)</li>
           <li>La FLHS de l'Université de Douala (2024-2025)</li>
@@ -370,7 +392,7 @@ ecrire("_redirects", """# Anciennes adresses vers les nouvelles pages
 /ceo           /a-propos/          301
 /services      /domaines/          301
 /projects      /domaines/          301
-/testimonials  /a-propos/          301
+/testimonials  /temoignages/       301
 /stats         /a-propos/          301
 /faq           /contact/           301
 # Espace d'administration et politique de confidentialité (ancienne application)
@@ -379,7 +401,7 @@ ecrire("_redirects", """# Anciennes adresses vers les nouvelles pages
 /politique     /admin/index.html   200
 """)
 jour = datetime.date.today().isoformat()
-urls = ["/", "/domaines/", "/formations/", "/actualites/", "/a-propos/", "/contact/", "/portfolio/"]
+urls = ["/", "/domaines/", "/formations/", "/actualites/", "/temoignages/", "/a-propos/", "/contact/", "/portfolio/"]
 ecrire("sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
        + "".join(f"  <url><loc>{DOMAINE}{u}</loc><lastmod>{jour}</lastmod></url>\n" for u in urls) + "</urlset>\n")
 ecrire("robots.txt", f"User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: {DOMAINE}/sitemap.xml\n")
