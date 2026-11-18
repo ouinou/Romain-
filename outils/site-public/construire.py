@@ -82,7 +82,7 @@ def page(chemin, titre, description, contenu, actif):
     <div class="cols">
       <div>
         <h4>ITI – Incubateur Technologique de l'Innovation</h4>
-        <p>Formation professionnelle, électrotechnique, énergie solaire, vidéosurveillance, informatique et intelligence artificielle. Basés à Douala, présents au Cameroun, au Tchad, en Centrafrique et au Congo.</p>
+        <p>Formation professionnelle, électrotechnique, énergies renouvelables, vidéosurveillance, informatique, maintenance d'ordinateurs, intelligence artificielle et vente de matériel. Basés à Douala, présents au Cameroun, au Tchad, en Centrafrique et au Congo.</p>
       </div>
       <div>
         <h4>Le site</h4>
@@ -120,13 +120,16 @@ DOMAINES = [
      ["Étude du site et choix du matériel", "Installation et paramétrage des caméras", "Contrôle d'accès, maintenance et suivi", "Plaques signalétiques lumineuses"]),
     ("Informatique, réseaux et bureautique",
      "Installation de réseaux locaux, maintenance du matériel, logiciels de gestion et formation des équipes aux outils de bureau.",
-     ["Réseaux locaux filaires et Wi-Fi", "Réparation des postes et des imprimantes", "Logiciels de gestion sur mesure et installation de logiciels", "Word, Excel, PowerPoint, Outlook"]),
+     ["Réseaux locaux filaires et Wi-Fi", "Maintenance et réparation d'ordinateurs et d'imprimantes, en atelier ou sur site", "Logiciels de gestion sur mesure et installation de logiciels", "Word, Excel, PowerPoint, Outlook"]),
     ("Intelligence artificielle",
      "Accompagnement des entreprises dans l'usage concret de l'IA, et formations pour les étudiants et les professionnels qui veulent s'en servir correctement.",
      ["Rédaction, analyse et synthèse de documents", "Automatisation des tâches administratives", "Bonnes pratiques et sécurité des données"]),
     ("Ingénierie et accompagnement de projets",
      "Du projet à la réalisation : montage, études de faisabilité, dimensionnement technique, dossiers de financement et suivi d'exécution. Nous orientons aussi les jeunes porteurs de projets.",
      ["Études de faisabilité", "Dossiers techniques et de financement", "Suivi de réalisation"]),
+    ("Vente de matériel",
+     "Dans nos locaux de Fin goudron Mont ESSEC, nous vendons le matériel que nous installons et que nous utilisons en formation, avec conseil et installation si besoin.",
+     ["Caméras de surveillance et accessoires", "Ordinateurs et accessoires informatiques", "Livres de développement personnel, de gestion et de marketing"]),
     ("Qualité, hygiène, sécurité et environnement (QHSE)",
      "La qualité du travail, la sécurité des personnes et le respect de l'environnement font partie de chacune de nos interventions et de nos formations.",
      ["Sécurité électrique sur les chantiers et dans les ateliers", "Travail contrôlé et documenté", "Gestion responsable des équipements et des déchets"]),
@@ -148,7 +151,7 @@ f"""<section class="hero">
     <div>
       <p class="eyebrow">Incubateur Technologique de l'Innovation · Douala</p>
       <h1>Des compétences techniques qui servent dès le lendemain.</h1>
-      <p class="lead">Nous formons des techniciens et accompagnons entreprises et porteurs de projets en électrotechnique, énergies renouvelables, vidéosurveillance, informatique, bureautique et intelligence artificielle.</p>
+      <p class="lead">Nous formons des techniciens et accompagnons entreprises et porteurs de projets en électrotechnique, énergies renouvelables, vidéosurveillance, informatique, bureautique et intelligence artificielle. Nous assurons aussi la maintenance d'ordinateurs et la vente de matériel.</p>
       <div class="actions"><a class="btn btn-primary" href="/formations/">Voir les formations</a><a class="btn btn-ghost" href="/contact/">Demander un devis</a></div>
     </div>
     <div class="hero-photo"><img src="/photos/formation-ia-salle.jpg" alt="Séance de formation au numérique et à l'IA dans une salle d'ITI" width="1400" height="788"></div>
@@ -397,7 +400,7 @@ f"""<section>
         <label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="200">
         <label for="phone">Téléphone (facultatif)</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
         <label for="subject">Objet</label>
-        <select id="subject" name="subject"><option>Formation</option><option>Installation solaire</option><option>Vidéosurveillance</option><option>Informatique et réseaux</option><option>Intelligence artificielle</option><option>Projet ou partenariat</option><option>Autre</option></select>
+        <select id="subject" name="subject"><option>Formation</option><option>Installation solaire</option><option>Vidéosurveillance</option><option>Informatique et réseaux</option><option>Maintenance d'ordinateur</option><option>Achat de matériel</option><option>Intelligence artificielle</option><option>Projet ou partenariat</option><option>Autre</option></select>
         <label for="message">Message</label><textarea id="message" name="message" required maxlength="5000"></textarea>
         <button class="btn btn-primary" type="submit">Envoyer le message</button>
         <p class="notice" id="form-note" role="status"></p>
@@ -411,7 +414,7 @@ f"""<section>
     <div>
       <p class="eyebrow">Nos locaux</p>
       <h2>Venez nous rencontrer</h2>
-      <p>Nos formations ont lieu à Douala, Fin goudron Mont ESSEC. Vous y trouverez notre salle de formation et un espace de vente de matériel : caméras de surveillance, accessoires informatiques et livres.</p>
+      <p>Nos formations ont lieu à Douala, Fin goudron Mont ESSEC. Vous y trouverez notre salle de formation, un atelier de maintenance et de réparation d'ordinateurs, et un espace de vente : caméras de surveillance et accessoires, ordinateurs et accessoires informatiques, livres.</p>
       <div class="actions"><a class="btn btn-ghost" href="https://www.openstreetmap.org/?mlat=4.0511&amp;mlon=9.7679#map=17/4.0511/9.7679" target="_blank" rel="noopener noreferrer">Voir sur la carte</a></div>
     </div>
   </div>
