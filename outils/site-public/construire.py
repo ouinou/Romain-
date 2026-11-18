@@ -257,6 +257,16 @@ f"""<section>
     </div>
   </div>
 </section>
+<section style="padding-top:0">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">À la fin de chaque parcours</p>
+      <h2>Une attestation de formation</h2>
+      <p>Chaque participant qui suit la formation jusqu'au bout reçoit une attestation de l'Incubateur Technologique de l'Innovation, remise dans nos locaux de Fin goudron Mont ESSEC.</p>
+    </div>
+    <div class="photo" style="aspect-ratio:4/5;max-width:420px;justify-self:end"><img src="/photos/locaux-remise-attestations.jpg" alt="Trois participants tiennent leur attestation de formation dans les locaux d'ITI, devant le logo de l'incubateur" loading="lazy" style="object-position:center 60%"></div>
+  </div>
+</section>
 <section class="soft">
   <div class="wrap">
     <div class="section-head"><h2>Sessions et programmes</h2><p class="muted">Tarifs en francs CFA. Pour une session en entreprise ou un groupe, contactez-nous.</p></div>
@@ -380,6 +390,17 @@ f"""<section>
         <button class="btn btn-primary" type="submit">Envoyer le message</button>
         <p class="notice" id="form-note" role="status"></p>
       </form>
+    </div>
+  </div>
+</section>
+<section class="soft">
+  <div class="wrap split">
+    <div class="photo" style="aspect-ratio:4/5;max-width:420px"><img src="/photos/locaux-remise-attestations.jpg" alt="L'intérieur des locaux d'ITI, avec le logo de l'incubateur au mur" loading="lazy" style="object-position:center 30%"></div>
+    <div>
+      <p class="eyebrow">Nos locaux</p>
+      <h2>Venez nous rencontrer</h2>
+      <p>Nos formations ont lieu à Douala, Fin goudron Mont ESSEC. Vous y trouverez notre salle de formation et un espace de vente de matériel : caméras de surveillance, accessoires informatiques et livres.</p>
+      <div class="actions"><a class="btn btn-ghost" href="https://www.openstreetmap.org/?mlat=4.0511&amp;mlon=9.7679#map=17/4.0511/9.7679" target="_blank" rel="noopener noreferrer">Voir sur la carte</a></div>
     </div>
   </div>
 </section>""", "/contact/"))
