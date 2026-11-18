@@ -1,3 +1,9 @@
+# ATTENTION (18/11/2026) : à la demande du propriétaire, l'accueil et les pages d'origine
+# du site (application dans site-en-ligne/index.html) ont été rétablis. Ce générateur de
+# pages sobres est conservé pour référence ; ne pas l'exécuter sans accord, il remplacerait l'accueil.
+import sys
+if "--forcer" not in sys.argv:
+    sys.exit("Générateur désactivé : l'accueil d'origine est rétabli (voir commentaire en tête).")
 # Construit les pages publiques du site ITI dans site-en-ligne/.
 # L'ancienne application (espace admin) est conservée sur /admin.
 # Usage : python3 outils/site-public/construire.py
