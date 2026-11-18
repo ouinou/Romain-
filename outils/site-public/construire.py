@@ -112,8 +112,8 @@ DOMAINES = [
     ("Électrotechnique et maintenance",
      "Installations électriques de bâtiments et d'ateliers, dépannage, maintenance préventive et curative.",
      ["Lecture et réalisation de schémas", "Câblage et mise en conformité", "Diagnostic de pannes"]),
-    ("Énergie solaire et systèmes hybrides",
-     "Étude, dimensionnement, installation et maintenance de systèmes solaires et hybrides pour les foyers, les entreprises et les sites isolés.",
+    ("Énergies renouvelables : solaire, éolien, hybride",
+     "Étude, dimensionnement, installation et maintenance de systèmes solaires, de petites éoliennes et de systèmes hybrides pour les foyers, les entreprises et les sites isolés.",
      ["Dimensionnement des besoins", "Installation des panneaux, batteries et onduleurs", "Suivi et maintenance"]),
     ("Vidéosurveillance et sécurité électronique",
      "Installation de caméras de surveillance et de systèmes de contrôle d'accès pour les domiciles, les commerces, les entreprises et les établissements.",
@@ -148,7 +148,7 @@ f"""<section class="hero">
     <div>
       <p class="eyebrow">Incubateur Technologique de l'Innovation · Douala</p>
       <h1>Des compétences techniques qui servent dès le lendemain.</h1>
-      <p class="lead">Nous formons des techniciens et accompagnons entreprises et porteurs de projets en électrotechnique, énergie solaire, vidéosurveillance, informatique, bureautique et intelligence artificielle.</p>
+      <p class="lead">Nous formons des techniciens et accompagnons entreprises et porteurs de projets en électrotechnique, énergies renouvelables, vidéosurveillance, informatique, bureautique et intelligence artificielle.</p>
       <div class="actions"><a class="btn btn-primary" href="/formations/">Voir les formations</a><a class="btn btn-ghost" href="/contact/">Demander un devis</a></div>
     </div>
     <div class="hero-photo"><img src="/photos/formation-ia-salle.jpg" alt="Séance de formation au numérique et à l'IA dans une salle d'ITI" width="1400" height="788"></div>
@@ -170,7 +170,7 @@ f"""<section class="hero">
 </section>
 <section>
   <div class="wrap split">
-    <div class="photo"><img src="/photos/installation-videosurveillance.jpg" alt="Deux techniciens d'ITI installent une caméra de surveillance" loading="lazy" width="787" height="1400" style="object-position:center 20%"></div>
+    <div class="photo"><img src="/photos/videosurveillance-exterieur.jpg" alt="Technicien d'ITI en gilet de sécurité raccordant une caméra de surveillance extérieure" loading="lazy" style="object-position:center 35%"></div>
     <div>
       <p class="eyebrow">Sur le terrain</p>
       <h2>Installer, sécuriser, entretenir</h2>
@@ -216,9 +216,10 @@ f"""<section>
 </section>
 <section style="padding-top:0">
   <div class="wrap gallery">
-    <figure><img src="/portfolio/images/site-solaire.jpg" alt="Installation solaire réalisée par ITI" loading="lazy"><figcaption>Énergie solaire</figcaption></figure>
-    <figure><img src="/photos/installation-videosurveillance.jpg" alt="Pose d'une caméra de surveillance" loading="lazy" style="object-position:center 20%"><figcaption>Vidéosurveillance</figcaption></figure>
-    <figure><img src="/photos/formateur-en-salle.jpg" alt="Formateur d'ITI devant un groupe" loading="lazy"><figcaption>Formation</figcaption></figure>
+    <figure><img src="/photos/solaire-toiture.jpg" alt="Technicien d'ITI près de panneaux solaires posés sur une toiture" loading="lazy"><figcaption>Énergie solaire</figcaption></figure>
+    <figure><img src="/photos/eolienne.jpg" alt="Petite éolienne à pales en bois installée par ITI" loading="lazy"><figcaption>Petit éolien</figcaption></figure>
+    <figure><img src="/photos/videosurveillance-exterieur.jpg" alt="Raccordement d'une caméra de surveillance extérieure" loading="lazy" style="object-position:center 35%"><figcaption>Vidéosurveillance</figcaption></figure>
+    <figure><img src="/photos/installation-videosurveillance.jpg" alt="Pose d'une caméra de surveillance en intérieur" loading="lazy" style="object-position:center 20%"><figcaption>Sécurité électronique</figcaption></figure>
   </div>
 </section>
 <section class="soft">
@@ -229,7 +230,7 @@ f"""<section>
       <p>Un travail technique bien fait est un travail sûr. Sur nos chantiers comme dans nos ateliers de formation, nous appliquons les règles de sécurité électrique, nous contrôlons et documentons ce que nous livrons, et nous gérons de façon responsable le matériel en fin de vie.</p>
       <p>Notre fondateur se forme en management QHSE à l'ESSEC de l'Université de Douala : cette démarche est intégrée progressivement à nos formations et à nos interventions.</p>
     </div>
-    <div class="photo"><img src="/photos/equipe-terrain.jpg" alt="Deux membres de l'équipe ITI en gilets de sécurité, sur le terrain" loading="lazy" style="object-position:center 30%"></div>
+    <div class="photo"><img src="/photos/soudure-epi.jpg" alt="Soudure d'un support métallique avec masque de protection et gilet haute visibilité" loading="lazy" style="object-position:center 40%"></div>
   </div>
 </section>
 <section class="dark"><div class="wrap"><h2>Parlons de votre besoin</h2><div class="actions"><a class="btn btn-primary" href="/contact/">Demander un devis</a><a class="btn btn-light" href="{WA}" target="_blank" rel="noopener noreferrer">WhatsApp</a></div></div></section>""", "/domaines/"))
@@ -279,6 +280,7 @@ f"""<section>
         <p>En 2022, à Douala, un constat s'imposait : chaque année, des milliers de jeunes sortent des universités avec un diplôme, mais sans compétences directement utilisables. Dans le même temps, les entreprises peinent à trouver des techniciens qualifiés.</p>
         <p>L'ingénieur Ouinou Ngassala Romain a créé l'Incubateur Technologique de l'Innovation (ITI) pour répondre à ce décalage : former par la pratique, encadrer par des professionnels et mettre les apprenants face aux réalités du terrain.</p>
         <p>Depuis, ITI forme, installe et accompagne au Cameroun, au Tchad, en Centrafrique et au Congo.</p>
+        <div class="photo" style="margin-top:28px"><img src="/photos/table-ronde.jpg" alt="Le fondateur d'ITI prend la parole lors d'une table ronde à Douala" loading="lazy"></div>
       </div>
       <div>
         <h3>Ils nous ont fait confiance</h3>
@@ -300,6 +302,7 @@ f"""<section>
       <p class="eyebrow">Proches des jeunes</p>
       <h2>Aux côtés des étudiants et des jeunes diplômés</h2>
       <p>Orientation, choix d'un métier, premiers projets : nous allons à la rencontre des étudiants et des jeunes diplômés, à Douala et dans les communautés de la sous-région.</p>
+      <div class="photo" style="margin-top:24px;aspect-ratio:4/5;max-width:340px"><img src="/photos/equipe-terrain.jpg" alt="Deux membres de l'équipe ITI en gilets de sécurité" loading="lazy" style="object-position:center 30%"></div>
     </div>
     <div class="photo"><img src="/photos/ceremonie-graduation.jpg" alt="Le fondateur d'ITI échange avec de jeunes diplômés lors d'une cérémonie de graduation à Douala" loading="lazy" width="1280" height="853"></div>
   </div>
