@@ -1,0 +1,107 @@
+/* ITI – ajouts à l'accueil d'origine : diaporama, bandeau, scènes animées, sans icônes génériques */
+:root { --navy: #16324f; --orange: #e8501f; --orange-dark: #c94113; --muted: #5a6474; --soft: #f5f6f8; --white: #ffffff; }
+
+/* Photos qui défilent dans le fond de l'accueil */
+.iti-diapo { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transform: scale(1.08); transition: opacity 1.4s ease; }
+.iti-diapo.on { opacity: 1; animation: iti-zoom 7s linear forwards; }
+@keyframes iti-zoom { from { transform: scale(1.08); } to { transform: scale(1); } }
+
+/* Icônes génériques retirées (les icônes utiles – flèches, menu, téléphone, réseaux – restent) */
+svg.lucide-award, svg.lucide-briefcase, svg.lucide-chart-no-axes-column, svg.lucide-cpu, svg.lucide-database, svg.lucide-globe, svg.lucide-graduation-cap, svg.lucide-heart, svg.lucide-lightbulb, svg.lucide-shield, svg.lucide-target, svg.lucide-trending-up, svg.lucide-user-check, svg.lucide-users, svg.lucide-wifi, svg.lucide-zap, svg.lucide-eye, svg.lucide-file-text, svg.lucide-sun, svg.lucide-info, svg.lucide-circle-help, svg.lucide-quote { display: none !important; }
+:is(div,span):has(> svg.lucide-award:only-child), :is(div,span):has(> svg.lucide-briefcase:only-child), :is(div,span):has(> svg.lucide-chart-no-axes-column:only-child), :is(div,span):has(> svg.lucide-cpu:only-child), :is(div,span):has(> svg.lucide-database:only-child), :is(div,span):has(> svg.lucide-globe:only-child), :is(div,span):has(> svg.lucide-graduation-cap:only-child), :is(div,span):has(> svg.lucide-heart:only-child), :is(div,span):has(> svg.lucide-lightbulb:only-child), :is(div,span):has(> svg.lucide-shield:only-child), :is(div,span):has(> svg.lucide-target:only-child), :is(div,span):has(> svg.lucide-trending-up:only-child), :is(div,span):has(> svg.lucide-user-check:only-child), :is(div,span):has(> svg.lucide-users:only-child), :is(div,span):has(> svg.lucide-wifi:only-child), :is(div,span):has(> svg.lucide-zap:only-child), :is(div,span):has(> svg.lucide-eye:only-child), :is(div,span):has(> svg.lucide-file-text:only-child), :is(div,span):has(> svg.lucide-sun:only-child), :is(div,span):has(> svg.lucide-info:only-child), :is(div,span):has(> svg.lucide-circle-help:only-child), :is(div,span):has(> svg.lucide-quote:only-child) { display: none !important; }
+/* Coches de liste remplacées par une puce orange sobre */
+svg.lucide-circle-check-big { width: 8px !important; height: 8px !important; min-width: 8px; border-radius: 50%; background: var(--orange); margin-top: .5em; align-self: flex-start; }
+svg.lucide-circle-check-big * { display: none; }
+
+.iti-accueil .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.iti-accueil .eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--orange); margin-bottom: .6rem; }
+.iti-accueil h2 { color: var(--navy); font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 700; margin: 0 0 2rem; }
+.iti-accueil .section-head { text-align: center; }
+.iti-accueil .atelier { padding: 80px 0; background: #fff; }
+/* Bandeau de métiers qui défile */
+.marquee { background: var(--navy); color: var(--white); overflow: hidden; padding: 18px 0; }
+.marquee-track { display: flex; width: max-content; animation: defile 38s linear infinite; }
+.marquee-track span { font-weight: 650; font-size: 1.05rem; padding: 0 28px; white-space: nowrap; display: flex; align-items: center; gap: 28px; }
+.marquee-track span::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes defile { to { transform: translateX(-50%); } }
+
+/* Scènes animées */
+.atelier { padding: 72px 0; }
+.scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.scenes figure { margin: 0; background: var(--soft); border-radius: 16px; padding: 22px 22px 18px; transition: transform .3s, box-shadow .3s; }
+.scenes figure:hover { transform: translateY(-6px); box-shadow: 0 18px 40px -22px rgba(22,50,79,.45); }
+.scene { width: 100%; height: auto; display: block; }
+.scenes figcaption strong { display: block; color: var(--navy); font-size: 1.15rem; margin-top: 8px; }
+.scenes figcaption span { color: var(--muted); font-size: .95rem; }
+.vis-vis { transform-box: fill-box; transform-origin: center; animation: tourne 1.2s linear infinite; }
+.vis-tournevis { animation: appuie 1.2s ease-in-out infinite; }
+.vis-stries { animation: stries .4s linear infinite; }
+.vis-etincelles { animation: etincelle 1.2s ease-out infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+@keyframes appuie { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes stries { to { transform: translateX(10px); } }
+@keyframes etincelle { 0%,40% { opacity: 0; } 55% { opacity: 1; } 100% { opacity: 0; } }
+.cam-tete { transform-box: view-box; transform-origin: 24px 41px; animation: balaye 4.5s ease-in-out infinite; }
+.cam-led { animation: clignote 1.4s steps(1) infinite; }
+@keyframes balaye { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(18deg); } }
+@keyframes clignote { 50% { opacity: .15; } }
+.sol-soleil { transform-box: fill-box; transform-origin: center; animation: tourne 14s linear infinite; }
+.sol-reflet { animation: reflet 3s ease-in-out infinite; }
+.sol-eclair { animation: eclair 3s ease-in-out infinite; }
+@keyframes reflet { 0% { transform: skewX(-20deg) translateX(0); } 60%,100% { transform: skewX(-20deg) translateX(230px); } }
+@keyframes eclair { 0%,55%,100% { opacity: .15; } 65%,80% { opacity: 1; } }
+
+
+@media (max-width: 900px) { .scenes { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .iti-diapo.on, .marquee-track, .scene * { animation: none !important; }
+  .iti-diapo { transition: none; }
+}
+
+/* Voile sur les photos de l'accueil (lisibilité du titre) */
+.iti-voile { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(22,50,79,.88) 0%, rgba(22,50,79,.70) 50%, rgba(0,0,0,.55) 100%); }
+/* Photos des cartes « Nos solutions » */
+.iti-carte-photo { margin: -1.5rem -1.5rem 1.25rem; height: 190px; overflow: hidden; border-radius: 1rem 1rem 0 0; background: #f1f3f6; }
+.iti-carte-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+a:hover .iti-carte-photo img { transform: scale(1.06); }
+.iti-carte-photo img[src*="equipe-terrain"] { object-position: center 18%; }
+.iti-carte-photo img[src*="soudure-epi"] { object-position: center 35%; }
+
+/* « Ici, on apprend en faisant » : vraies photos animées en 3D */
+.iti-3d { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; perspective: 1100px; }
+.iti-3d-carte { margin: 0; transform-style: preserve-3d; animation: iti-balance 9s ease-in-out infinite; }
+.iti-3d-carte:nth-child(2) { animation-delay: -3s; }
+.iti-3d-carte:nth-child(3) { animation-delay: -6s; }
+.iti-3d-int { position: relative; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: #0f2438;
+  box-shadow: 0 30px 60px -28px rgba(15,36,56,.65), 0 10px 22px -12px rgba(15,36,56,.35); transform: translateZ(0); transition: transform .5s ease, box-shadow .5s ease; }
+.iti-3d-int img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); animation: iti-zoom-lent 14s ease-in-out infinite alternate; }
+.iti-3d-int::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,36,56,0) 45%, rgba(15,36,56,.88) 100%); }
+.iti-3d-int figcaption { position: absolute; left: 22px; right: 22px; bottom: 20px; z-index: 2; color: #fff; transform: translateZ(40px); }
+.iti-3d-int figcaption strong { display: block; font-size: 1.35rem; font-weight: 700; letter-spacing: -.01em; }
+.iti-3d-int figcaption strong::after { content: ""; display: block; width: 36px; height: 3px; border-radius: 2px; background: var(--orange); margin: 8px 0 8px; }
+.iti-3d-int figcaption span { font-size: .95rem; color: rgba(255,255,255,.85); }
+.iti-3d-reflet { position: absolute; inset: 0; z-index: 1; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.22) 50%, transparent 65%); transform: translateX(-120%); animation: iti-reflet 7s ease-in-out infinite; }
+.iti-3d-carte:nth-child(2) .iti-3d-reflet { animation-delay: 2.3s; }
+.iti-3d-carte:nth-child(3) .iti-3d-reflet { animation-delay: 4.6s; }
+.iti-3d-carte:hover { animation-play-state: paused; }
+.iti-3d-carte:hover .iti-3d-int { transform: translateZ(30px) scale(1.02); box-shadow: 0 40px 70px -26px rgba(15,36,56,.7); }
+@keyframes iti-balance { 0%,100% { transform: rotateY(-7deg) rotateX(3deg); } 50% { transform: rotateY(7deg) rotateX(-3deg); } }
+@keyframes iti-zoom-lent { from { transform: scale(1.12) translateY(0); } to { transform: scale(1.02) translateY(-2%); } }
+@keyframes iti-reflet { 0%,55% { transform: translateX(-120%); } 85%,100% { transform: translateX(120%); } }
+@media (max-width: 900px) { .iti-3d { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
+@media (prefers-reduced-motion: reduce) { .iti-3d-carte, .iti-3d-int img, .iti-3d-reflet { animation: none !important; } }
+
+/* Quatre objets 3D réalistes animés */
+.iti-objets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+.iti-objet { margin: 0; border-radius: 18px; overflow: hidden; background: radial-gradient(120% 90% at 50% 15%, #ffffff 0%, #eef2f6 55%, #dde4ec 100%);
+  box-shadow: 0 24px 48px -30px rgba(15,36,56,.55); transition: transform .4s ease, box-shadow .4s ease; }
+.iti-objet:hover { transform: translateY(-6px); box-shadow: 0 34px 60px -30px rgba(15,36,56,.6); }
+.iti-3d-scene { height: 280px; position: relative; }
+.iti-3d-scene canvas { display: block; width: 100% !important; height: 100% !important; }
+.iti-objet figcaption { padding: 4px 22px 22px; }
+.iti-objet figcaption strong { display: block; color: var(--navy); font-size: 1.15rem; font-weight: 700; }
+.iti-objet figcaption strong::after { content: ""; display: block; width: 32px; height: 3px; border-radius: 2px; background: var(--orange); margin: 8px 0; }
+.iti-objet figcaption span { color: var(--muted); font-size: .93rem; }
+@media (max-width: 1100px) { .iti-objets { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .iti-objets { grid-template-columns: 1fr; } .iti-3d-scene { height: 240px; } }

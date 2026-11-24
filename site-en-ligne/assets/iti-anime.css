@@ -91,3 +91,17 @@ a:hover .iti-carte-photo img { transform: scale(1.06); }
 @keyframes iti-reflet { 0%,55% { transform: translateX(-120%); } 85%,100% { transform: translateX(120%); } }
 @media (max-width: 900px) { .iti-3d { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
 @media (prefers-reduced-motion: reduce) { .iti-3d-carte, .iti-3d-int img, .iti-3d-reflet { animation: none !important; } }
+
+/* Quatre objets 3D réalistes animés */
+.iti-objets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+.iti-objet { margin: 0; border-radius: 18px; overflow: hidden; background: radial-gradient(120% 90% at 50% 15%, #ffffff 0%, #eef2f6 55%, #dde4ec 100%);
+  box-shadow: 0 24px 48px -30px rgba(15,36,56,.55); transition: transform .4s ease, box-shadow .4s ease; }
+.iti-objet:hover { transform: translateY(-6px); box-shadow: 0 34px 60px -30px rgba(15,36,56,.6); }
+.iti-3d-scene { height: 280px; position: relative; }
+.iti-3d-scene canvas { display: block; width: 100% !important; height: 100% !important; }
+.iti-objet figcaption { padding: 4px 22px 22px; }
+.iti-objet figcaption strong { display: block; color: var(--navy); font-size: 1.15rem; font-weight: 700; }
+.iti-objet figcaption strong::after { content: ""; display: block; width: 32px; height: 3px; border-radius: 2px; background: var(--orange); margin: 8px 0; }
+.iti-objet figcaption span { color: var(--muted); font-size: .93rem; }
+@media (max-width: 1100px) { .iti-objets { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .iti-objets { grid-template-columns: 1fr; } .iti-3d-scene { height: 240px; } }

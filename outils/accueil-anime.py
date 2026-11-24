@@ -27,6 +27,23 @@ rep('children:l.jsx("div",{className:"absolute inset-0 bg-gradient-to-br from-[#
 rep('r.length>0&&l.jsx("section",{className:"py-20 bg-gray-50",children:l.jsxs("div",{className:"container",children:[l.jsxs(en,{className:"flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-12"',
     'l.jsx(ItiAccueil,{}),r.length>0&&l.jsx("section",{className:"py-20 bg-gray-50",children:l.jsxs("div",{className:"container",children:[l.jsxs(en,{className:"flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-12"')
 
+# 2b. Images générées remplacées par les vraies photos d'ITI, partout dans le site
+CF = 'https://d2xsxph8kpxj0f.cloudfront.net/310519663472322953/SiZDkWCMs9VVpK9Ntbw4tM/'
+PHOTOS = {'iti-service-formation-mP4mqwjNwkUBVZQ5kt8sWA.webp': '/photos/formation-ia-salle.jpg',
+          'iti-solar-BNfYy6D8WeEasSdat48W8m.webp': '/photos/solaire-toiture.jpg',
+          'iti-robotics-hGbaHosv7AGjrAbnapGrqm.webp': '/photos/formateur-en-salle.jpg',
+          'IMAGE1(12)_571bd44d.png': '/photos/equipe-terrain.jpg',
+          'iti-service-engineering-XKMtG6eCwsxnFcjJjw7VAH.webp': '/photos/table-ronde.jpg',
+          'iti-service-solutions-fQm9b4oVHRSXqCEunm5Rxc.webp': '/photos/videosurveillance-exterieur.jpg',
+          'iti-service-solutions-fQm9b4oVHZQ5kt8sWA.webp': '/photos/videosurveillance-exterieur.jpg',
+          'iti-service-conseil-f99YpCL3e2ND82ehBDUV5o.webp': '/photos/ceremonie-graduation.jpg',
+          'IMAGE1(21)_8e7c3c8d.png': '/photos/installation-videosurveillance.jpg',
+          'iti-hero-WPuJvGQXHJPRC3qhDz8zKt.webp': '/photos/formation-ia-salle.jpg',
+          'iti-logo_bd84f922.webp': '/iti-logo.webp'}
+for nom, photo in PHOTOS.items():
+    s = s.replace(CF + nom, photo)
+assert CF not in s, 'image générée restante'
+
 # 3. « Nos solutions » : 6 domaines réels, chacun avec une vraie photo
 i = s.find('n6=['); j = s.find('],s6=[', i); assert i > 0 and j > i
 dom = [("Énergies renouvelables", "Systèmes solaires, petit éolien et systèmes hybrides : étude, installation et maintenance.", "/photos/solaire-toiture.jpg"),
@@ -49,5 +66,7 @@ for f in [D + '/index.html', D + '/admin/index.html'] + ([D + '/404.html'] if os
     x = x.replace(old, new)
     if 'iti-anime.css' not in x:
         x = x.replace('</head>', '  <link rel="stylesheet" href="/assets/iti-anime.css">\n  </head>', 1)
+    if f.endswith('/index.html') and 'admin' not in f and 'iti-3d.js' not in x:
+        x = x.replace('</body>', '  <script type="module" src="/assets/iti-3d.js"></script>\n  </body>', 1)
     open(f, 'w', encoding='utf-8').write(x)
 print('OK', new)
