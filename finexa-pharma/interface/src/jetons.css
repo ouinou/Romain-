@@ -1,0 +1,94 @@
+/* =========================================================================================================
+   FINEXA ERP : jetons de l'identité visuelle (design tokens). SEUL fichier où figurent des codes couleur
+   de l'interface. Les composants utilisent les rôles (--marine, --accent, --succes…), jamais les codes.
+   Une entreprise cliente peut remplacer --marine et --accent par ses couleurs (theme.ts) ; le reste suit.
+   Mêmes valeurs côté JavaScript : jetons.ts ; côté PDF : serveur/src/domaine/marque.ts.
+   ========================================================================================================= */
+:root {
+  /* Couleurs officielles FINEXA ERP */
+  --finexa-navy: #062B68;        /* bleu nuit */
+  --finexa-blue: #0647A9;        /* bleu profond */
+  --finexa-cyan: #00B8F0;        /* bleu cyan */
+  --finexa-green: #65C900;       /* vert vif */
+  --finexa-green-dark: #08752D;  /* vert foncé */
+  --finexa-white: #FFFFFF;
+  --finexa-background: #F4F7FB;  /* gris clair */
+  --finexa-text: #263449;        /* gris foncé */
+  --finexa-text-muted: #64748B;
+  --finexa-border: #DCE5EF;
+
+  /* Structure : barre de titre, menu latéral, barre d'état */
+  --blanc: var(--finexa-white);
+  --noir: var(--finexa-text);
+  --marine: var(--finexa-navy);
+  --marine-2: #12387a;           /* survol dans le menu latéral */
+  --marine-3: #1d4589;           /* module ouvert */
+  --marine-fin: #041e49;
+  --structure-ligne: #23457f;    /* séparateurs posés sur le bleu nuit */
+  --structure-texte: #d4dff0;    /* texte secondaire sur le bleu nuit (contraste 9,9:1) */
+
+  /* Actions et sélection */
+  --accent: var(--finexa-blue);
+  --accent-texte: #ffffff;       /* texte sur le bleu profond (8,7:1) */
+  --accent-fonce: var(--finexa-navy);   /* survol des boutons principaux */
+  --accent-doux: #e6eef9;        /* ligne ou élément sélectionné */
+  --lien: var(--finexa-blue);
+  --focus: var(--finexa-cyan);
+  --survol: #edf2f9;             /* survol neutre : boutons, onglets, lignes */
+  --appui: #dde6f1;              /* bouton enfoncé */
+  --onglet-inactif: #e8eef6;
+
+  /* Surfaces */
+  --fond: var(--finexa-background);
+  --carte: var(--finexa-white);
+  --gris: var(--finexa-background);     /* en-têtes de tableaux, barres d'outils */
+  --sous-total: #eaf0f7;
+  --bordure: var(--finexa-border);
+  --ligne: var(--bordure);
+  --ligne-2: #e6ecf3;
+  --texte: var(--finexa-text);
+  /* Texte secondaire : le gris de la charte (#64748B) n'atteint que 4,4:1 sur le gris clair ; un cran plus foncé
+     garde 5,1:1 sur le fond et 4,7:1 sur une ligne sélectionnée (WCAG AA). */
+  --discret: #5a697d;
+
+  /* États */
+  --succes: var(--finexa-green-dark);   --succes-fond: #e6f4ea; --succes-ligne: #b5dcc0; --succes-texte: #0a5a26;
+  --danger: #c62828;                     --danger-fond: #fcecec; --danger-ligne: #efbcbc; --danger-texte: #8e1c1c; --danger-fonce: #7a1414;
+  --avertissement: #8a3d00;              --avertissement-fond: #fff3e8; --avertissement-ligne: #f3caa6;
+  --info: var(--finexa-navy);            --info-fond: #eaf2fc; --info-ligne: #c7d8f0;
+  --en-ligne: var(--finexa-green);       /* pastille « connecté au serveur » */
+
+  /* Graphiques (lisibles sur blanc, distincts entre eux) */
+  --graphique-1: var(--finexa-blue);
+  --graphique-2: var(--finexa-green-dark);   /* le vert vif (2,1:1 sur blanc) serait illisible en trait fin */
+  --graphique-3: var(--finexa-cyan);
+
+  /* Ombres, voile, rayons */
+  --voile: rgba(6, 43, 104, 0.62);
+  --voile-menu: rgba(6, 43, 104, 0.55);
+  --ombre-legere: 0 6px 18px rgba(6, 43, 104, 0.12);
+  --ombre: 0 8px 24px rgba(6, 43, 104, 0.16);
+  --ombre-forte: 0 16px 48px rgba(6, 43, 104, 0.28);
+  --rayon-carte: 10px;
+  --rayon: 4px;
+
+  /* Typographie */
+  --police: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* Anciens noms, conservés pour les pages existantes */
+  --rouge: var(--danger);
+  --rouge-fond: var(--danger-fond);
+  --vert: var(--succes);
+  --vert-fond: var(--succes-fond);
+  --orange: var(--avertissement);
+  --orange-fond: var(--avertissement-fond);
+  --orange-doux: var(--accent-doux);
+  --info-texte: var(--info);
+  --bleu: var(--accent);
+  --bleu-fonce: var(--accent-fonce);
+  --cyan: var(--finexa-cyan);
+  --doux: var(--gris);
+  --entete: var(--gris);
+  color-scheme: light;
+}

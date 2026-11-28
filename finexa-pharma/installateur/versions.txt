@@ -1,0 +1,6 @@
+# Composants intégrés au setup Windows, avec leur empreinte SHA-256 (vérifiée à chaque construction).
+# Node.js : empreinte publiée par nodejs.org (SHASUMS256.txt) ; les autres : relevées au premier téléchargement.
+node-v22.23.4-win-x64.zip https://nodejs.org/dist/v22.23.4/node-v22.23.4-win-x64.zip cbc74b5e0982c9dbb41525fd8fb5dcd32fbee237863f7829072f4639a1ce5f20
+postgresql-16.15-1-windows-x64-binaries.zip https://get.enterprisedb.com/postgresql/postgresql-16.15-1-windows-x64-binaries.zip 25e6fcdfb8caec38691bf461125e7564508760666f7b8e5dc6a5f0818f58f81e
+WinSW-x64.exe https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe 05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da
+vc_redist.x64.exe https://aka.ms/vs/17/release/vc_redist.x64.exe cc0ff0eb1dc3f5188ae6300faef32bf5beeba4bdd6e8e445a9184072096b713b
